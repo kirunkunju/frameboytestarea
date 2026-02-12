@@ -37,198 +37,6 @@
             max-height: 100vh;
         }
 
-        /* Make responsive for smaller screens */
-        @media (max-width: 1024px) {
-            .timeline-layers-section {
-                width: 140px;
-            }
-            
-            .frame {
-                width: 60px;
-                height: 60px;
-            }
-            
-            .add-frame {
-                width: 60px;
-                height: 60px;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .app-container {
-                min-height: 300px;
-            }
-            
-            /* Scrollable toolbar instead of wrapping */
-            .toolbar {
-                overflow-x: auto;
-                overflow-y: hidden;
-                flex-wrap: nowrap;
-                padding: 6px 8px;
-                gap: 4px;
-                -webkit-overflow-scrolling: touch;
-                scrollbar-width: none;
-            }
-            .toolbar::-webkit-scrollbar { display: none; }
-            
-            .tool-group {
-                padding: 0 4px;
-                border-right: 1px solid #333;
-                flex-shrink: 0;
-                margin-bottom: 0;
-            }
-            .tool-group:last-child { border-right: none; }
-            
-            /* Icon-only buttons on mobile */
-            .btn-label {
-                display: none;
-            }
-            
-            button {
-                padding: 8px 10px;
-                font-size: 14px;
-                min-width: 38px;
-                min-height: 38px;
-                display: inline-flex;
-                align-items: center;
-                justify-content: center;
-            }
-            
-            input[type="range"] {
-                width: 60px;
-            }
-            
-            label {
-                font-size: 10px;
-            }
-            
-            /* Color/size group compact */
-            .tool-group label {
-                display: none;
-            }
-            #sizeValue {
-                font-size: 11px;
-                min-width: 18px;
-            }
-            
-            /* Timeline compact */
-            .timeline {
-                min-height: 140px;
-                height: 22vh;
-            }
-            
-            .timeline-layers-section {
-                width: 100px;
-            }
-            
-            .timeline-controls {
-                padding: 4px 6px;
-                overflow-x: auto;
-                scrollbar-width: none;
-            }
-            .timeline-controls::-webkit-scrollbar { display: none; }
-            
-            .playback-controls {
-                flex-shrink: 0;
-                gap: 3px;
-            }
-            
-            .fps-control {
-                flex-shrink: 0;
-            }
-            .fps-control label {
-                display: inline;
-                font-size: 10px;
-            }
-            
-            .frame {
-                width: 50px;
-                height: 50px;
-            }
-            
-            .add-frame {
-                width: 50px;
-                height: 50px;
-            }
-            
-            .layer-name {
-                font-size: 10px;
-            }
-            
-            .layer-opacity-control {
-                padding-left: 10px;
-            }
-            .layer-opacity-control input[type="range"] {
-                width: 50px;
-            }
-            
-            /* Dropdowns: ensure visible on mobile */
-            .dropdown-menu,
-            .brush-dropdown,
-            .onion-skin-dropdown {
-                position: fixed;
-                top: 56px;
-                left: 10px;
-                right: 10px;
-                max-width: calc(100vw - 20px);
-                z-index: 2000;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .toolbar {
-                padding: 4px 6px;
-                gap: 2px;
-            }
-            
-            button {
-                padding: 6px 8px;
-                font-size: 13px;
-                min-width: 34px;
-                min-height: 34px;
-            }
-            
-            .timeline-layers-section {
-                width: 80px;
-            }
-            
-            .timeline {
-                min-height: 120px;
-                height: 20vh;
-            }
-            
-            .frame {
-                width: 40px;
-                height: 40px;
-            }
-            
-            .add-frame {
-                width: 40px;
-                height: 40px;
-                font-size: 18px;
-            }
-            
-            input[type="color"] {
-                width: 32px;
-                height: 28px;
-            }
-        }
-
-        /* Landscape mobile */
-        @media (max-height: 500px) and (orientation: landscape) {
-            .timeline {
-                min-height: 80px;
-                height: 20vh;
-            }
-            
-            .toolbar {
-                padding: 3px 5px;
-            }
-            
-            button {
-                padding: 4px 6px;
-            }
-        }
 
         /* Toolbar */
         .toolbar {
@@ -945,6 +753,200 @@
             background: #3a3a3a;
             margin: 4px 0;
         }
+
+        /* Make responsive for smaller screens */
+        @media (max-width: 1024px) {
+            .timeline-layers-section {
+                width: 140px;
+            }
+            
+            .frame {
+                width: 60px;
+                height: 60px;
+            }
+            
+            .add-frame {
+                width: 60px;
+                height: 60px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                min-height: 300px;
+            }
+            
+            /* Scrollable toolbar instead of wrapping */
+            .toolbar {
+                overflow-x: auto;
+                overflow-y: hidden;
+                flex-wrap: nowrap;
+                padding: 6px 8px;
+                gap: 4px;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
+            }
+            .toolbar::-webkit-scrollbar { display: none; }
+            
+            .tool-group {
+                padding: 0 4px;
+                border-right: 1px solid #333;
+                flex-shrink: 0;
+                margin-bottom: 0;
+            }
+            .tool-group:last-child { border-right: none; }
+            
+            /* Icon-only buttons on mobile */
+            .btn-label {
+                display: none;
+            }
+            
+            button {
+                padding: 8px 10px;
+                font-size: 14px;
+                min-width: 38px;
+                min-height: 38px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            input[type="range"] {
+                width: 60px;
+            }
+            
+            label {
+                font-size: 10px;
+            }
+            
+            /* Color/size group compact */
+            .tool-group label {
+                display: none;
+            }
+            #sizeValue {
+                font-size: 11px;
+                min-width: 18px;
+            }
+            
+            /* Timeline compact */
+            .timeline {
+                min-height: 140px;
+                height: 22vh;
+            }
+            
+            .timeline-layers-section {
+                width: 100px;
+            }
+            
+            .timeline-controls {
+                padding: 4px 6px;
+                overflow-x: auto;
+                scrollbar-width: none;
+            }
+            .timeline-controls::-webkit-scrollbar { display: none; }
+            
+            .playback-controls {
+                flex-shrink: 0;
+                gap: 3px;
+            }
+            
+            .fps-control {
+                flex-shrink: 0;
+            }
+            .fps-control label {
+                display: inline;
+                font-size: 10px;
+            }
+            
+            .frame {
+                width: 50px;
+                height: 50px;
+            }
+            
+            .add-frame {
+                width: 50px;
+                height: 50px;
+            }
+            
+            .layer-name {
+                font-size: 10px;
+            }
+            
+            .layer-opacity-control {
+                padding-left: 10px;
+            }
+            .layer-opacity-control input[type="range"] {
+                width: 50px;
+            }
+            
+            /* Dropdowns: ensure visible on mobile */
+            .dropdown-menu,
+            .brush-dropdown,
+            .onion-skin-dropdown {
+                position: fixed;
+                top: 56px;
+                left: 10px;
+                right: 10px;
+                max-width: calc(100vw - 20px);
+                z-index: 2000;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .toolbar {
+                padding: 4px 6px;
+                gap: 2px;
+            }
+            
+            button {
+                padding: 6px 8px;
+                font-size: 13px;
+                min-width: 34px;
+                min-height: 34px;
+            }
+            
+            .timeline-layers-section {
+                width: 80px;
+            }
+            
+            .timeline {
+                min-height: 120px;
+                height: 20vh;
+            }
+            
+            .frame {
+                width: 40px;
+                height: 40px;
+            }
+            
+            .add-frame {
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+            }
+            
+            input[type="color"] {
+                width: 32px;
+                height: 28px;
+            }
+        }
+
+        /* Landscape mobile */
+        @media (max-height: 500px) and (orientation: landscape) {
+            .timeline {
+                min-height: 80px;
+                height: 20vh;
+            }
+            
+            .toolbar {
+                padding: 3px 5px;
+            }
+            
+            button {
+                padding: 4px 6px;
+            }
+        }
+
     </style>
 </head>
 <body>
