@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="2D Animation Studio - Create frame-by-frame animations">
-    <title>FrameBoy.v0</title>
+    <meta name="description" content="FrameBoy - Create frame-by-frame animations">
+    <title>FrameBoy</title>
     <!-- Gifshot library for GIF export (more reliable than gif.js) -->
     <script src="https://cdn.jsdelivr.net/npm/gifshot@0.4.5/dist/gifshot.min.js"></script>
     <style>
@@ -21,13 +21,6 @@
             overflow: hidden;
             width: 100%;
             height: 100%;
-            margin: 0;
-            padding: 0;
-        }
-
-        /* Make it embeddable in Squarespace */
-        body.embedded {
-            background: transparent;
         }
 
         html {
@@ -63,28 +56,42 @@
 
         @media (max-width: 768px) {
             .app-container {
-                min-height: 400px;
+                min-height: 300px;
             }
             
-            .timeline-layers-section {
-                width: 110px;
-            }
-            
+            /* Scrollable toolbar instead of wrapping */
             .toolbar {
-                flex-wrap: wrap;
-                padding: 5px;
-                gap: 5px;
+                overflow-x: auto;
+                overflow-y: hidden;
+                flex-wrap: nowrap;
+                padding: 6px 8px;
+                gap: 4px;
+                -webkit-overflow-scrolling: touch;
+                scrollbar-width: none;
             }
+            .toolbar::-webkit-scrollbar { display: none; }
             
             .tool-group {
-                padding: 0 5px;
-                border-right: none;
-                margin-bottom: 5px;
+                padding: 0 4px;
+                border-right: 1px solid #333;
+                flex-shrink: 0;
+                margin-bottom: 0;
+            }
+            .tool-group:last-child { border-right: none; }
+            
+            /* Icon-only buttons on mobile */
+            .btn-label {
+                display: none;
             }
             
             button {
-                padding: 6px 8px;
-                font-size: 11px;
+                padding: 8px 10px;
+                font-size: 14px;
+                min-width: 38px;
+                min-height: 38px;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
             }
             
             input[type="range"] {
@@ -95,9 +102,43 @@
                 font-size: 10px;
             }
             
+            /* Color/size group compact */
+            .tool-group label {
+                display: none;
+            }
+            #sizeValue {
+                font-size: 11px;
+                min-width: 18px;
+            }
+            
+            /* Timeline compact */
             .timeline {
-                min-height: 150px;
+                min-height: 140px;
                 height: 22vh;
+            }
+            
+            .timeline-layers-section {
+                width: 100px;
+            }
+            
+            .timeline-controls {
+                padding: 4px 6px;
+                overflow-x: auto;
+                scrollbar-width: none;
+            }
+            .timeline-controls::-webkit-scrollbar { display: none; }
+            
+            .playback-controls {
+                flex-shrink: 0;
+                gap: 3px;
+            }
+            
+            .fps-control {
+                flex-shrink: 0;
+            }
+            .fps-control label {
+                display: inline;
+                font-size: 10px;
             }
             
             .frame {
@@ -113,24 +154,46 @@
             .layer-name {
                 font-size: 10px;
             }
+            
+            .layer-opacity-control {
+                padding-left: 10px;
+            }
+            .layer-opacity-control input[type="range"] {
+                width: 50px;
+            }
+            
+            /* Dropdowns: ensure visible on mobile */
+            .dropdown-menu,
+            .brush-dropdown,
+            .onion-skin-dropdown {
+                position: fixed;
+                top: 56px;
+                left: 10px;
+                right: 10px;
+                max-width: calc(100vw - 20px);
+                z-index: 2000;
+            }
         }
 
         @media (max-width: 480px) {
             .toolbar {
-                font-size: 10px;
+                padding: 4px 6px;
+                gap: 2px;
             }
             
             button {
-                padding: 4px 6px;
-                font-size: 10px;
+                padding: 6px 8px;
+                font-size: 13px;
+                min-width: 34px;
+                min-height: 34px;
             }
             
             .timeline-layers-section {
-                width: 90px;
+                width: 80px;
             }
             
             .timeline {
-                min-height: 130px;
+                min-height: 120px;
                 height: 20vh;
             }
             
@@ -144,13 +207,18 @@
                 height: 40px;
                 font-size: 18px;
             }
+            
+            input[type="color"] {
+                width: 32px;
+                height: 28px;
+            }
         }
 
         /* Landscape mobile */
         @media (max-height: 500px) and (orientation: landscape) {
             .timeline {
                 min-height: 80px;
-                height: 25vh;
+                height: 20vh;
             }
             
             .toolbar {
@@ -192,6 +260,10 @@
             cursor: pointer;
             font-size: 14px;
             transition: background 0.2s;
+        }
+
+        .btn-label {
+            display: inline;
         }
 
         button:hover {
@@ -523,12 +595,6 @@
             background: #2a2a2a;
         }
 
-        .timeline-frames {
-            flex: 1;
-            overflow-x: auto;
-            overflow-y: hidden;
-        }
-
         .frames-container {
             display: flex;
             padding: 10px;
@@ -656,10 +722,7 @@
             border-radius: 0;
         }
         
-        .brush-cursor.oval-h {
-            border-radius: 50%;
-        }
-        
+        .brush-cursor.oval-h,
         .brush-cursor.oval-v {
             border-radius: 50%;
         }
@@ -890,7 +953,7 @@
         <div class="toolbar">
             <div class="tool-group">
                 <div class="dropdown-container">
-                    <button id="brushTool" class="active" title="Brush">🖌️ Brush ▼</button>
+                    <button id="brushTool" class="active" title="Brush (B)">🖌️ <span class="btn-label">Brush ▼</span></button>
                     <div class="brush-dropdown" id="brushDropdown">
                         <div class="brush-setting-row">
                             <label>Shape:</label>
@@ -922,7 +985,7 @@
                     </div>
                 </div>
                 <div class="dropdown-container">
-                    <button id="eraserTool" title="Eraser">🧹 Eraser ▼</button>
+                    <button id="eraserTool" title="Eraser (E)">🧹 <span class="btn-label">Eraser ▼</span></button>
                     <div class="brush-dropdown" id="eraserDropdown">
                         <div class="brush-setting-row">
                             <label>Shape:</label>
@@ -954,7 +1017,7 @@
                     </div>
                 </div>
                 <div class="dropdown-container">
-                    <button id="shapeTool" title="Shapes">📐 Shapes ▼</button>
+                    <button id="shapeTool" title="Shapes">📐 <span class="btn-label">Shapes ▼</span></button>
                     <div class="dropdown-menu" id="shapeDropdown">
                         <button class="dropdown-item" data-shape="line">📏 Line</button>
                         <button class="dropdown-item" data-shape="rect">⬜ Rectangle</button>
@@ -962,9 +1025,9 @@
                         <button class="dropdown-item" data-shape="triangle">🔺 Triangle</button>
                     </div>
                 </div>
-                <button id="fillTool" title="Fill Bucket">🪣 Fill</button>
-                <button id="lassoTool" title="Lasso Selection">🎯 Lasso</button>
-                <button id="transformTool" title="Free Transform">🔄 Transform</button>
+                <button id="fillTool" title="Fill Bucket (F)">🪣 <span class="btn-label">Fill</span></button>
+                <button id="lassoTool" title="Lasso Selection (L)">🎯 <span class="btn-label">Lasso</span></button>
+                <button id="transformTool" title="Free Transform (V/T)">🔄 <span class="btn-label">Transform</span></button>
             </div>
             <div class="tool-group">
                 <label>Color:</label>
@@ -974,11 +1037,11 @@
                 <span id="sizeValue">5</span>
             </div>
             <div class="tool-group">
-                <button id="copyBtn" title="Copy selection or frame (Ctrl+C)">📋 Copy</button>
-                <button id="pasteBtn" title="Paste (Ctrl+V)">📌 Paste</button>
-                <button id="pasteInPlaceBtn" title="Paste in Place (Ctrl+Shift+V)">📍 Paste in Place</button>
+                <button id="copyBtn" title="Copy (Ctrl+C)">📋 <span class="btn-label">Copy</span></button>
+                <button id="pasteBtn" title="Paste (Ctrl+V)">📌 <span class="btn-label">Paste</span></button>
+                <button id="pasteInPlaceBtn" title="Paste in Place (Ctrl+Shift+V)">📍 <span class="btn-label">Paste in Place</span></button>
                 <div class="dropdown-container">
-                    <button id="onionSkinToggle">👁️ Onion Skin ▼</button>
+                    <button id="onionSkinToggle" title="Onion Skin">👁️ <span class="btn-label">Onion Skin ▼</span></button>
                     <div class="onion-skin-dropdown" id="onionSkinDropdown">
                         <div class="onion-setting-row">
                             <label>Enabled:</label>
@@ -1012,12 +1075,12 @@
                 </div>
             </div>
             <div class="tool-group">
-                <button id="undoBtn">↶ Undo</button>
-                <button id="redoBtn">↷ Redo</button>
+                <button id="undoBtn" title="Undo (Ctrl+Z)">↶ <span class="btn-label">Undo</span></button>
+                <button id="redoBtn" title="Redo (Ctrl+Y)">↷ <span class="btn-label">Redo</span></button>
             </div>
             <div class="tool-group">
                 <div class="dropdown-container">
-                    <button id="exportBtn">📦 Export ▼</button>
+                    <button id="exportBtn" title="Export">📦 <span class="btn-label">Export ▼</span></button>
                     <div class="dropdown-menu" id="exportDropdown">
                         <button class="dropdown-item" id="exportPngZip">PNG Frames (ZIP)</button>
                         <button class="dropdown-item" id="exportGifBtn">GIF Animation</button>
@@ -1043,14 +1106,14 @@
             <div class="timeline-header">
                 <div class="timeline-controls">
                     <div class="playback-controls">
-                        <button id="playBtn">▶️ Play</button>
-                        <button id="stopBtn">⏹️ Stop</button>
-                        <button id="prevFrame">◀️</button>
-                        <button id="nextFrame">▶️</button>
-                        <button id="insertFrame">+ Insert Frame</button>
-                        <button id="duplicateFrame">⧉ Duplicate Frame</button>
-                        <button id="clearFrame">🧽 Clear Frame</button>
-                        <button id="deleteFrame">🗑️ Delete Frame</button>
+                        <button id="playBtn" title="Play (Space)">▶️ <span class="btn-label">Play</span></button>
+                        <button id="stopBtn" title="Stop (Space)">⏹️ <span class="btn-label">Stop</span></button>
+                        <button id="prevFrame" title="Previous Frame (,)">◀️</button>
+                        <button id="nextFrame" title="Next Frame (.)">▶️</button>
+                        <button id="insertFrame" title="Insert Frame (F6)">➕ <span class="btn-label">Insert</span></button>
+                        <button id="duplicateFrame" title="Duplicate Frame (Ctrl+D)">⧉ <span class="btn-label">Duplicate</span></button>
+                        <button id="clearFrame" title="Clear Frame (Backspace)">🧽 <span class="btn-label">Clear</span></button>
+                        <button id="deleteFrame" title="Delete Frame (F7)">🗑️ <span class="btn-label">Delete</span></button>
                     </div>
                     <div class="fps-control">
                         <label>FPS:</label>
@@ -1086,8 +1149,8 @@
     </div>
 
     <script>
-        // Animation Studio App
-        class AnimationStudio {
+        // FrameBoy App
+        class FrameBoy {
             constructor() {
                 this.canvas = document.getElementById('mainCanvas');
                 this.ctx = this.canvas.getContext('2d');
@@ -1362,7 +1425,7 @@
                             'circle': '⭕',
                             'triangle': '🔺'
                         };
-                        shapeButton.innerHTML = `${icons[shape]} ${item.textContent.split(' ')[1]} ▼`;
+                        shapeButton.innerHTML = `${icons[shape]} <span class="btn-label">${item.textContent.split(' ')[1]} ▼</span>`;
                     });
                 });
                 
@@ -1754,9 +1817,8 @@
                 this.render();
             }
             
-            saveState() {
-                // Create a deep copy of the entire application state
-                const state = {
+            snapshotState() {
+                return {
                     layers: this.layers.map(layer => ({
                         id: layer.id,
                         name: layer.name,
@@ -1767,8 +1829,7 @@
                             const frameCopy = document.createElement('canvas');
                             frameCopy.width = frame.width;
                             frameCopy.height = frame.height;
-                            const copyCtx = frameCopy.getContext('2d');
-                            copyCtx.drawImage(frame, 0, 0);
+                            frameCopy.getContext('2d').drawImage(frame, 0, 0);
                             return frameCopy;
                         })
                     })),
@@ -1776,8 +1837,10 @@
                     currentFrameIndex: this.currentFrameIndex,
                     nextLayerId: this.nextLayerId
                 };
-                
-                this.undoStack.push(state);
+            }
+            
+            saveState() {
+                this.undoStack.push(this.snapshotState());
                 
                 // Limit history size
                 if (this.undoStack.length > this.maxHistorySize) {
@@ -1808,28 +1871,7 @@
                 }
                 
                 // Save current state to redo stack before undoing
-                const currentState = {
-                    layers: this.layers.map(layer => ({
-                        id: layer.id,
-                        name: layer.name,
-                        visible: layer.visible,
-                        opacity: layer.opacity,
-                        frames: layer.frames.map(frame => {
-                            if (!frame) return null;
-                            const frameCopy = document.createElement('canvas');
-                            frameCopy.width = frame.width;
-                            frameCopy.height = frame.height;
-                            const copyCtx = frameCopy.getContext('2d');
-                            copyCtx.drawImage(frame, 0, 0);
-                            return frameCopy;
-                        })
-                    })),
-                    currentLayerId: this.currentLayerId,
-                    currentFrameIndex: this.currentFrameIndex,
-                    nextLayerId: this.nextLayerId
-                };
-                
-                this.redoStack.push(currentState);
+                this.redoStack.push(this.snapshotState());
                 
                 // Restore previous state
                 const previousState = this.undoStack.pop();
@@ -1849,28 +1891,7 @@
                 }
                 
                 // Save current state to undo stack before redoing
-                const currentState = {
-                    layers: this.layers.map(layer => ({
-                        id: layer.id,
-                        name: layer.name,
-                        visible: layer.visible,
-                        opacity: layer.opacity,
-                        frames: layer.frames.map(frame => {
-                            if (!frame) return null;
-                            const frameCopy = document.createElement('canvas');
-                            frameCopy.width = frame.width;
-                            frameCopy.height = frame.height;
-                            const copyCtx = frameCopy.getContext('2d');
-                            copyCtx.drawImage(frame, 0, 0);
-                            return frameCopy;
-                        })
-                    })),
-                    currentLayerId: this.currentLayerId,
-                    currentFrameIndex: this.currentFrameIndex,
-                    nextLayerId: this.nextLayerId
-                };
-                
-                this.undoStack.push(currentState);
+                this.undoStack.push(this.snapshotState());
                 
                 // Restore redo state
                 const redoState = this.redoStack.pop();
@@ -1880,7 +1901,7 @@
             }
             
             restoreState(state) {
-                // Restore layers
+                // Restore layers (deep copy to avoid shared references)
                 this.layers = state.layers.map(layer => ({
                     id: layer.id,
                     name: layer.name,
@@ -1891,8 +1912,7 @@
                         const frameCopy = document.createElement('canvas');
                         frameCopy.width = frame.width;
                         frameCopy.height = frame.height;
-                        const copyCtx = frameCopy.getContext('2d');
-                        copyCtx.drawImage(frame, 0, 0);
+                        frameCopy.getContext('2d').drawImage(frame, 0, 0);
                         return frameCopy;
                     })
                 }));
@@ -2070,7 +2090,7 @@
                 if (!this.isDrawing && !this.isTransforming) return;
                 
                 // Store last mouse event for shape finalization
-                window.lastMouseEvent = e;
+                this.lastMouseEvent = e;
                 
                 const canvas = e.target === this.selectionCanvas ? this.selectionCanvas : this.canvas;
                 const rect = canvas.getBoundingClientRect();
@@ -2155,7 +2175,7 @@
                             this.hoverTimer = null; // Clear timer reference
                         }, 500);
                     }
-                } else if (!nearCorner) {
+                } else {
                     // Clear hover state when not near any corner
                     if (this.hoverTimer) {
                         clearTimeout(this.hoverTimer);
@@ -2244,7 +2264,7 @@
                     const scaleX = this.canvas.width / rect.width;
                     const scaleY = this.canvas.height / rect.height;
                     // Finalize shape by drawing it to the frame
-                    const mouseEvent = window.lastMouseEvent;
+                    const mouseEvent = this.lastMouseEvent;
                     if (mouseEvent) {
                         const x = (mouseEvent.clientX - rect.left) * scaleX;
                         const y = (mouseEvent.clientY - rect.top) * scaleY;
@@ -2452,15 +2472,6 @@
                 this.saveState();
                 const layer = this.getCurrentLayer();
                 layer.frames[this.currentFrameIndex] = this.createEmptyFrame();
-                this.render();
-            }
-            
-            toggleOnionSkin() {
-                this.onionSkinEnabled = !this.onionSkinEnabled;
-                const btn = document.getElementById('onionSkinToggle');
-                const checkbox = document.getElementById('onionEnabled');
-                btn.style.opacity = this.onionSkinEnabled ? '1' : '0.5';
-                checkbox.checked = this.onionSkinEnabled;
                 this.render();
             }
             
@@ -3394,8 +3405,6 @@
                     clearInterval(this.playbackInterval);
                     this.playbackInterval = null;
                 }
-                // Full render to rebuild timeline and layers UI
-                this.render();
             }
             
             render() {
@@ -3473,26 +3482,15 @@
                     this.ctx.restore();
                 }
                 
-                // During playback, only update the active frame highlight — 
-                // skip full DOM rebuild to keep UI responsive
-                if (this.isPlaying) {
-                    const container = document.getElementById('framesContainer');
-                    const frames = container.querySelectorAll('.frame');
-                    frames.forEach((f, idx) => {
-                        f.classList.toggle('active', idx === this.currentFrameIndex);
-                    });
-                } else {
-                    this.renderTimeline();
-                    this.renderLayers();
-                }
+                this.renderTimeline();
+                this.renderLayers();
             }
             
             renderLayers() {
                 const layersList = document.getElementById('layersList');
                 layersList.innerHTML = '';
                 
-                [...this.layers].reverse().forEach((layer, reversedIndex) => {
-                    const actualIndex = this.layers.length - 1 - reversedIndex;
+                [...this.layers].reverse().forEach((layer) => {
                     
                     const div = document.createElement('div');
                     div.className = 'layer-item' + (layer.id === this.currentLayerId ? ' active' : '');
@@ -3861,6 +3859,21 @@
                 this.render();
             }
             
+            // Helper to trigger a file download from a blob
+            downloadBlob(blob, filename) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }, 100);
+            }
+            
             async exportGif() {
                 const layer = this.getCurrentLayer();
                 if (layer.frames.length === 0) {
@@ -3872,132 +3885,6 @@
                 this.exportFramesAsPNG();
             }
             
-            async exportAsVideo(exportBtn, originalText) {
-                exportBtn.textContent = 'Creating video...';
-                exportBtn.disabled = true;
-                
-                try {
-                    // Calculate total number of frames (max across all layers)
-                    const maxFrames = Math.max(...this.layers.map(l => l.frames.length));
-                    
-                    if (maxFrames === 0) {
-                        alert('No frames to export!');
-                        exportBtn.textContent = originalText;
-                        exportBtn.disabled = false;
-                        return;
-                    }
-                    
-                    // Check if browser supports MediaRecorder
-                    if (!window.MediaRecorder) {
-                        throw new Error('Video recording not supported in this browser');
-                    }
-                    
-                    // Create a temporary canvas for recording
-                    const recordCanvas = document.createElement('canvas');
-                    recordCanvas.width = this.canvas.width;
-                    recordCanvas.height = this.canvas.height;
-                    const recordCtx = recordCanvas.getContext('2d');
-                    
-                    // Get canvas stream
-                    const stream = recordCanvas.captureStream(this.fps);
-                    const mediaRecorder = new MediaRecorder(stream, {
-                        mimeType: 'video/webm;codecs=vp9',
-                        videoBitsPerSecond: 2500000
-                    });
-                    
-                    const chunks = [];
-                    
-                    mediaRecorder.ondataavailable = (e) => {
-                        if (e.data.size > 0) {
-                            chunks.push(e.data);
-                        }
-                    };
-                    
-                    mediaRecorder.onstop = () => {
-                        const blob = new Blob(chunks, { type: 'video/webm' });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `frameboy-animation-${Date.now()}.webm`;
-                        a.style.display = 'none';
-                        document.body.appendChild(a);
-                        a.click();
-                        
-                        setTimeout(() => {
-                            document.body.removeChild(a);
-                            URL.revokeObjectURL(url);
-                        }, 100);
-                        
-                        exportBtn.textContent = '✓ Video Downloaded!';
-                        setTimeout(() => {
-                            exportBtn.textContent = originalText;
-                            exportBtn.disabled = false;
-                        }, 2000);
-                    };
-                    
-                    mediaRecorder.onerror = (e) => {
-                        console.error('MediaRecorder error:', e);
-                        exportBtn.textContent = originalText;
-                        exportBtn.disabled = false;
-                        alert('Video recording failed. Downloading frames as PNG instead.');
-                        this.exportFramesAsPNG();
-                    };
-                    
-                    // Start recording
-                    mediaRecorder.start();
-                    
-                    // Play through all frames
-                    const frameDelay = 1000 / this.fps;
-                    let currentFrame = 0;
-                    
-                    const drawNextFrame = () => {
-                        if (currentFrame < maxFrames) {
-                            // Clear and draw white background
-                            recordCtx.fillStyle = 'white';
-                            recordCtx.fillRect(0, 0, recordCanvas.width, recordCanvas.height);
-                            
-                            // Draw all visible layers for this frame
-                            for (const layer of this.layers) {
-                                if (layer.visible && layer.frames[currentFrame]) {
-                                    recordCtx.globalAlpha = layer.opacity || 1.0;
-                                    recordCtx.drawImage(layer.frames[currentFrame], 0, 0);
-                                    recordCtx.globalAlpha = 1.0;
-                                }
-                            }
-                            
-                            // Update progress
-                            const progress = Math.round((currentFrame / maxFrames) * 100);
-                            exportBtn.textContent = `Recording... ${progress}%`;
-                            
-                            currentFrame++;
-                            setTimeout(drawNextFrame, frameDelay);
-                        } else {
-                            // Loop once more to ensure smooth playback
-                            setTimeout(() => {
-                                mediaRecorder.stop();
-                            }, frameDelay * 2);
-                        }
-                    };
-                    
-                    drawNextFrame();
-                    
-                } catch (error) {
-                    console.error('Video export error:', error);
-                    exportBtn.textContent = originalText;
-                    exportBtn.disabled = false;
-                    
-                    const usePNG = confirm(`Video export failed: ${error.message}\n\nWould you like to download frames as PNG images instead?`);
-                    if (usePNG) {
-                        this.exportFramesAsPNG();
-                    }
-                }
-            }
-            
-            async loadGifJS() {
-                // No longer used, kept for compatibility
-                return Promise.resolve();
-            }
-            
             async exportFramesAsPNG() {
                 const exportBtn = document.getElementById('exportBtn');
                 
@@ -4006,7 +3893,7 @@
                     return;
                 }
                 
-                const originalText = exportBtn.textContent;
+                const originalText = exportBtn.innerHTML;
                 
                 exportBtn.textContent = 'Creating ZIP...';
                 exportBtn.disabled = true;
@@ -4024,7 +3911,7 @@
                     
                     if (maxFrames === 0) {
                         alert('No frames to export!');
-                        exportBtn.textContent = originalText;
+                        exportBtn.innerHTML = originalText;
                         exportBtn.disabled = false;
                         return;
                     }
@@ -4102,28 +3989,17 @@
                     });
                     
                     // Download the zip
-                    const url = URL.createObjectURL(zipBlob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `animation-frames-${Date.now()}.zip`;
-                    a.style.display = 'none';
-                    document.body.appendChild(a);
-                    a.click();
-                    
-                    setTimeout(() => {
-                        document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
-                    }, 100);
+                    this.downloadBlob(zipBlob, `animation-frames-${Date.now()}.zip`);
                     
                     exportBtn.textContent = '✓ ZIP Downloaded!';
                     setTimeout(() => {
-                        exportBtn.textContent = originalText;
+                        exportBtn.innerHTML = originalText;
                         exportBtn.disabled = false;
                     }, 2000);
                     
                 } catch (error) {
                     console.error('ZIP export error:', error);
-                    exportBtn.textContent = originalText;
+                    exportBtn.innerHTML = originalText;
                     exportBtn.disabled = false;
                     alert(`Failed to create ZIP file: ${error.message}\n\nFrames will download individually instead.`);
                     
@@ -4133,17 +4009,14 @@
             }
             
             async exportAsGif() {
-                // Get export button with very specific check
                 const exportBtn = document.getElementById('exportBtn');
                 
-                if (!exportBtn || exportBtn.id !== 'exportBtn') {
-                    console.error('Export button not found correctly');
+                if (!exportBtn) {
                     alert('Export button not found. Please refresh the page.');
                     return;
                 }
                 
-                const originalText = exportBtn.textContent;
-                console.log('Export button original text:', originalText);
+                const originalText = exportBtn.innerHTML;
                 
                 try {
                     exportBtn.textContent = 'Preparing GIF...';
@@ -4154,7 +4027,7 @@
                     
                     if (maxFrames === 0) {
                         alert('No frames to export!');
-                        exportBtn.textContent = originalText;
+                        exportBtn.innerHTML = originalText;
                         exportBtn.disabled = false;
                         return;
                     }
@@ -4195,18 +4068,12 @@
                         frameImages.push(tempCanvas.toDataURL('image/png'));
                         
                         // Update progress
-                        const currentBtn = document.getElementById('exportBtn');
-                        if (currentBtn && currentBtn.id === 'exportBtn') {
-                            const progress = Math.round((i / maxFrames) * 50);
-                            currentBtn.textContent = `Rendering frames... ${progress}%`;
-                        }
+                        const progress = Math.round((i / maxFrames) * 50);
+                        exportBtn.textContent = `Rendering frames... ${progress}%`;
                     }
                     
                     // Create GIF from frames
-                    const statusBtn = document.getElementById('exportBtn');
-                    if (statusBtn && statusBtn.id === 'exportBtn') {
-                        statusBtn.textContent = 'Creating GIF... 50%';
-                    }
+                    exportBtn.textContent = 'Creating GIF... 50%';
                     
                     gifshot.createGIF({
                         images: frameImages,
@@ -4236,30 +4103,14 @@
                             const blob = new Blob(byteArrays, { type: 'image/gif' });
                             
                             // Download
-                            const url = URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = url;
-                            a.download = `frameboy-animation-${Date.now()}.gif`;
-                            document.body.appendChild(a);
-                            a.click();
-                            
-                            setTimeout(() => {
-                                document.body.removeChild(a);
-                                URL.revokeObjectURL(url);
-                            }, 100);
+                            this.downloadBlob(blob, `frameboy-animation-${Date.now()}.gif`);
                             
                             // Restore button
-                            const finalBtn = document.getElementById('exportBtn');
-                            if (finalBtn && finalBtn.id === 'exportBtn') {
-                                finalBtn.textContent = '✓ GIF Downloaded!';
-                                finalBtn.disabled = false;
-                                setTimeout(() => {
-                                    const restoreBtn = document.getElementById('exportBtn');
-                                    if (restoreBtn && restoreBtn.id === 'exportBtn') {
-                                        restoreBtn.textContent = originalText;
-                                    }
-                                }, 2000);
-                            }
+                            exportBtn.textContent = '✓ GIF Downloaded!';
+                            exportBtn.disabled = false;
+                            setTimeout(() => {
+                                exportBtn.innerHTML = originalText;
+                            }, 2000);
                         } else {
                             throw new Error(obj.error);
                         }
@@ -4267,18 +4118,15 @@
                     
                 } catch (error) {
                     console.error('GIF export error:', error);
-                    const errorBtn = document.getElementById('exportBtn');
-                    if (errorBtn && errorBtn.id === 'exportBtn') {
-                        errorBtn.textContent = originalText;
-                        errorBtn.disabled = false;
-                    }
+                    exportBtn.innerHTML = originalText;
+                    exportBtn.disabled = false;
                     alert(`Failed to create GIF: ${error.message}\n\nTry PNG ZIP export instead.`);
                 }
             }
             
             async exportAsMp4() {
                 const exportBtn = document.getElementById('exportBtn');
-                const originalText = exportBtn.textContent;
+                const originalText = exportBtn.innerHTML;
                 
                 try {
                     exportBtn.textContent = 'Creating MP4...';
@@ -4288,7 +4136,7 @@
                     
                     if (maxFrames === 0) {
                         alert('No frames to export!');
-                        exportBtn.textContent = originalText;
+                        exportBtn.innerHTML = originalText;
                         exportBtn.disabled = false;
                         return;
                     }
@@ -4335,29 +4183,18 @@
                     
                     mediaRecorder.onstop = () => {
                         const blob = new Blob(chunks, { type: mimeType.split(';')[0] });
-                        const url = URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = `frameboy-animation-${Date.now()}.${fileExt}`;
-                        a.style.display = 'none';
-                        document.body.appendChild(a);
-                        a.click();
-                        
-                        setTimeout(() => {
-                            document.body.removeChild(a);
-                            URL.revokeObjectURL(url);
-                        }, 100);
+                        this.downloadBlob(blob, `frameboy-animation-${Date.now()}.${fileExt}`);
                         
                         exportBtn.textContent = '✓ Video Downloaded!';
                         exportBtn.disabled = false;
                         setTimeout(() => {
-                            exportBtn.textContent = originalText;
+                            exportBtn.innerHTML = originalText;
                         }, 2000);
                     };
                     
                     mediaRecorder.onerror = (e) => {
                         console.error('MediaRecorder error:', e);
-                        exportBtn.textContent = originalText;
+                        exportBtn.innerHTML = originalText;
                         exportBtn.disabled = false;
                         alert('Video recording failed.');
                     };
@@ -4400,7 +4237,7 @@
                     
                 } catch (error) {
                     console.error('MP4 export error:', error);
-                    exportBtn.textContent = originalText;
+                    exportBtn.innerHTML = originalText;
                     exportBtn.disabled = false;
                     alert(`Video export failed: ${error.message}`);
                 }
@@ -4414,14 +4251,7 @@
                         if (frame) {
                             setTimeout(() => {
                                 frame.toBlob((blob) => {
-                                    const url = URL.createObjectURL(blob);
-                                    const a = document.createElement('a');
-                                    a.href = url;
-                                    a.download = `frame_${String(index + 1).padStart(3, '0')}.png`;
-                                    document.body.appendChild(a);
-                                    a.click();
-                                    document.body.removeChild(a);
-                                    URL.revokeObjectURL(url);
+                                    this.downloadBlob(blob, `frame_${String(index + 1).padStart(3, '0')}.png`);
                                 });
                             }, index * 200);
                         }
@@ -4493,21 +4323,14 @@
                 
                 // Download the sprite sheet
                 spriteSheet.toBlob((blob) => {
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'animation_spritesheet.png';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    setTimeout(() => URL.revokeObjectURL(url), 100);
+                    this.downloadBlob(blob, 'animation_spritesheet.png');
                     alert('Sprite sheet downloaded! You can use this with CSS animations or game engines.');
                 });
             }
         }
         
         // Initialize the app
-        const app = new AnimationStudio();
+        const app = new FrameBoy();
     </script>
 </body>
 </html>
