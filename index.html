@@ -3343,133 +3343,154 @@
             
             // Flood Fill (Paint Bucket) Algorithm
             floodFill(startX, startY) {
-                this.saveState();
-                
                 const layer = this.getCurrentLayer();
                 const frame = layer.frames[this.currentFrameIndex];
                 const ctx = frame.getContext('2d');
+                const width = this.canvas.width;
+                const height = this.canvas.height;
                 
                 // Get image data
-                const imageData = ctx.getImageData(0, 0, this.canvas.width, this.canvas.height);
+                const imageData = ctx.getImageData(0, 0, width, height);
                 const data = imageData.data;
                 
-                // Get target color (color to replace)
-                const startPos = (startY * this.canvas.width + startX) * 4;
+                // Bounds check
+                if (startX < 0 || startX >= width || startY < 0 || startY >= height) return;
+                
+                // Get target color (color at click point)
+                const startPos = (startY * width + startX) * 4;
                 const targetR = data[startPos];
                 const targetG = data[startPos + 1];
                 const targetB = data[startPos + 2];
                 const targetA = data[startPos + 3];
                 
-                // Get fill color (selected color)
+                // Get fill color
                 const fillColor = this.hexToRgb(this.color);
                 
-                // Don't fill if target color is same as fill color
+                // Don't fill if target is already the fill color
                 if (targetR === fillColor.r && targetG === fillColor.g && 
                     targetB === fillColor.b && targetA === 255) {
-                    return;
+                    return; // No saveState — no phantom undo entry
                 }
                 
-                // Tolerance for anti-aliased edges (helps with smooth lines)
+                // NOW save state, after confirming the fill will actually do something
+                this.saveState();
+                
                 const tolerance = 50;
                 
-                // Check if colors match within tolerance
-                const colorMatch = (pos) => {
-                    const r = data[pos];
-                    const g = data[pos + 1];
-                    const b = data[pos + 2];
+                // Use Uint8Array bitmap instead of string Set — O(1) lookup, zero allocation
+                const visited = new Uint8Array(width * height); // 0 = unvisited, 1 = filled
+                
+                // Color match check using bitmap index
+                const colorMatch = (idx) => {
+                    const pos = idx * 4;
                     const a = data[pos + 3];
-                    
-                    // If pixel is mostly transparent, it matches
-                    if (a < 30) return true;
-                    
-                    // Calculate color difference
-                    const dr = Math.abs(r - targetR);
-                    const dg = Math.abs(g - targetG);
-                    const db = Math.abs(b - targetB);
-                    const da = Math.abs(a - targetA);
-                    
-                    return dr <= tolerance && dg <= tolerance && db <= tolerance && da <= tolerance;
+                    if (a < 30) return true; // Transparent pixels match
+                    return Math.abs(data[pos] - targetR) <= tolerance &&
+                           Math.abs(data[pos + 1] - targetG) <= tolerance &&
+                           Math.abs(data[pos + 2] - targetB) <= tolerance &&
+                           Math.abs(a - targetA) <= tolerance;
                 };
                 
-                // First pass: Standard flood fill
-                const stack = [[startX, startY]];
-                const filled = new Set();
-                const width = this.canvas.width;
-                const height = this.canvas.height;
+                // Scanline flood fill — much faster than per-pixel stack
+                const stack = [startX + startY * width];
+                let filledCount = 0;
                 
                 while (stack.length > 0) {
-                    const [x, y] = stack.pop();
+                    let idx = stack.pop();
+                    let x = idx % width;
+                    const y = (idx - x) / width;
                     
-                    // Check bounds
-                    if (x < 0 || x >= width || y < 0 || y >= height) continue;
+                    // Scan left to find the start of this span
+                    while (x > 0 && !visited[(idx - 1)] && colorMatch(idx - 1)) {
+                        x--;
+                        idx--;
+                    }
                     
-                    const key = `${x},${y}`;
-                    if (filled.has(key)) continue;
+                    // Scan right, filling pixels and checking rows above and below
+                    let spanAbove = false;
+                    let spanBelow = false;
                     
-                    const pos = (y * width + x) * 4;
-                    
-                    // Check if pixel matches target color
-                    if (colorMatch(pos)) {
-                        filled.add(key);
-                        
-                        // Fill pixel
+                    while (x < width && !visited[idx] && colorMatch(idx)) {
+                        // Fill this pixel
+                        visited[idx] = 1;
+                        const pos = idx * 4;
                         data[pos] = fillColor.r;
                         data[pos + 1] = fillColor.g;
                         data[pos + 2] = fillColor.b;
                         data[pos + 3] = 255;
+                        filledCount++;
                         
-                        // Add adjacent pixels to stack
-                        stack.push([x + 1, y]);
-                        stack.push([x - 1, y]);
-                        stack.push([x, y + 1]);
-                        stack.push([x, y - 1]);
+                        // Check pixel above
+                        if (y > 0) {
+                            const aboveIdx = idx - width;
+                            if (!visited[aboveIdx] && colorMatch(aboveIdx)) {
+                                if (!spanAbove) {
+                                    stack.push(aboveIdx);
+                                    spanAbove = true;
+                                }
+                            } else {
+                                spanAbove = false;
+                            }
+                        }
+                        
+                        // Check pixel below
+                        if (y < height - 1) {
+                            const belowIdx = idx + width;
+                            if (!visited[belowIdx] && colorMatch(belowIdx)) {
+                                if (!spanBelow) {
+                                    stack.push(belowIdx);
+                                    spanBelow = true;
+                                }
+                            } else {
+                                spanBelow = false;
+                            }
+                        }
+                        
+                        x++;
+                        idx++;
                     }
                 }
                 
-                // Second pass: Fill anti-aliased edge pixels
-                // This eliminates white fringing around linework
-                const edgePixels = new Set();
-                for (const key of filled) {
-                    const [fx, fy] = key.split(',').map(Number);
-                    
-                    // Check 8 surrounding pixels for edge detection
-                    for (let dy = -1; dy <= 1; dy++) {
-                        for (let dx = -1; dx <= 1; dx++) {
-                            if (dx === 0 && dy === 0) continue;
+                // Second pass: anti-alias edge blending
+                // Only check pixels adjacent to filled pixels that weren't filled themselves
+                if (filledCount > 0) {
+                    // Collect edge pixels efficiently using the bitmap
+                    const edgePixels = [];
+                    for (let y = 0; y < height; y++) {
+                        for (let x = 0; x < width; x++) {
+                            const idx = y * width + x;
+                            if (visited[idx]) continue; // Skip filled pixels
                             
-                            const nx = fx + dx;
-                            const ny = fy + dy;
-                            const nkey = `${nx},${ny}`;
+                            const pos = idx * 4;
+                            const a = data[pos + 3];
+                            if (a === 0 || a >= 200) continue; // Skip fully transparent or opaque
                             
-                            if (nx >= 0 && nx < width && ny >= 0 && ny < height && !filled.has(nkey)) {
-                                const pos = (ny * width + nx) * 4;
-                                const a = data[pos + 3];
-                                
-                                // If it's a semi-transparent pixel (anti-aliasing), blend it
-                                if (a > 0 && a < 200) {
-                                    edgePixels.add(nkey);
-                                }
+                            // Check if any neighbor is filled (4-connected for speed)
+                            let adjacentToFill = false;
+                            if (x > 0 && visited[idx - 1]) adjacentToFill = true;
+                            else if (x < width - 1 && visited[idx + 1]) adjacentToFill = true;
+                            else if (y > 0 && visited[idx - width]) adjacentToFill = true;
+                            else if (y < height - 1 && visited[idx + width]) adjacentToFill = true;
+                            
+                            if (adjacentToFill) {
+                                edgePixels.push(pos);
                             }
                         }
                     }
-                }
-                
-                // Fill edge pixels with blended color
-                for (const key of edgePixels) {
-                    const [ex, ey] = key.split(',').map(Number);
-                    const pos = (ey * width + ex) * 4;
                     
-                    const oldR = data[pos];
-                    const oldG = data[pos + 1];
-                    const oldB = data[pos + 2];
-                    const oldA = data[pos + 3];
-                    
-                    // Blend the fill color with existing pixel
-                    const blendFactor = oldA / 255;
-                    data[pos] = Math.round(fillColor.r * (1 - blendFactor) + oldR * blendFactor);
-                    data[pos + 1] = Math.round(fillColor.g * (1 - blendFactor) + oldG * blendFactor);
-                    data[pos + 2] = Math.round(fillColor.b * (1 - blendFactor) + oldB * blendFactor);
-                    data[pos + 3] = 255;
+                    // Blend edge pixels
+                    for (const pos of edgePixels) {
+                        const oldR = data[pos];
+                        const oldG = data[pos + 1];
+                        const oldB = data[pos + 2];
+                        const oldA = data[pos + 3];
+                        
+                        const blendFactor = oldA / 255;
+                        data[pos] = Math.round(fillColor.r * (1 - blendFactor) + oldR * blendFactor);
+                        data[pos + 1] = Math.round(fillColor.g * (1 - blendFactor) + oldG * blendFactor);
+                        data[pos + 2] = Math.round(fillColor.b * (1 - blendFactor) + oldB * blendFactor);
+                        data[pos + 3] = 255;
+                    }
                 }
                 
                 // Put modified image data back
