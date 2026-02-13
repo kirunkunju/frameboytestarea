@@ -1259,11 +1259,12 @@
         class FrameBoy {
             constructor() {
                 this.canvas = document.getElementById('mainCanvas');
-                this.ctx = this.canvas.getContext('2d', { desynchronized: true });
+                // desynchronized reduces latency in Chrome/Edge; Safari ignores it safely
+                this.ctx = this.canvas.getContext('2d', { desynchronized: true }) || this.canvas.getContext('2d');
                 this.onionCanvas = document.getElementById('onionCanvas');
                 this.onionCtx = this.onionCanvas.getContext('2d');
                 this.selectionCanvas = document.getElementById('selectionCanvas');
-                this.selectionCtx = this.selectionCanvas.getContext('2d', { desynchronized: true });
+                this.selectionCtx = this.selectionCanvas.getContext('2d', { desynchronized: true }) || this.selectionCanvas.getContext('2d');
                 this.brushCursor = document.getElementById('brushCursor');
                 
                 this.layers = [{ id: 1, name: 'Layer 1', visible: true, opacity: 1.0, frames: [] }];
@@ -1328,6 +1329,7 @@
                 this.currentPressure = 0.5;
                 this.pointerType = 'mouse'; // 'pen', 'touch', 'mouse'
                 this.pressureEnabled = true;
+                this.hasStylusInput = false; // True once we detect real pen/stylus pressure
                 
                 this.initializeFrame();
                 this.setupEventListeners();
@@ -1379,30 +1381,59 @@
             }
             
             setupEventListeners() {
-                // Unified Pointer Events - handles mouse, touch, AND Apple Pencil natively
+                // Helper: read pressure from a pointer event safely
+                // Safari sometimes reports 0 on first event; don't overwrite good pressure with 0
+                const readPressure = (e) => {
+                    // Track pointer type from the actual event
+                    if (e.pointerType) {
+                        this.pointerType = e.pointerType;
+                    }
+                    if (e.pointerType === 'pen') {
+                        this.hasStylusInput = true;
+                    }
+                    
+                    const isPen = e.pointerType === 'pen' || 
+                        (e.pointerType === 'touch' && this.hasStylusInput && e.pressure > 0 && e.pressure !== 0.5);
+                    
+                    if (isPen) {
+                        this.pointerType = 'pen'; // Correct Safari mis-reporting
+                        if (e.pressure > 0) {
+                            this.currentPressure = e.pressure;
+                        }
+                        // If pressure is 0, keep last known good value (Safari first-event bug)
+                    } else {
+                        this.currentPressure = 0.5; // Mouse/finger: fixed size
+                    }
+                };
+                
+                // Unified Pointer Events - handles mouse, touch, AND Apple Pencil
                 const setupPointerEvents = (canvasEl) => {
                     canvasEl.addEventListener('pointerdown', (e) => {
                         e.preventDefault();
                         canvasEl.setPointerCapture(e.pointerId);
-                        this.currentPressure = e.pressure || 0.5;
-                        this.pointerType = e.pointerType; // 'pen', 'touch', 'mouse'
+                        this.pointerType = e.pointerType;
+                        if (e.pointerType === 'pen') this.hasStylusInput = true;
+                        readPressure(e);
                         this.startDrawing(e);
                     });
                     canvasEl.addEventListener('pointermove', (e) => {
                         e.preventDefault();
-                        // Process coalesced events for Apple Pencil smoothness
-                        // Apple Pencil generates ~240Hz input; coalesced events capture every point
-                        if (this.isDrawing && (this.tool === 'brush' || this.tool === 'eraser') && e.getCoalescedEvents) {
-                            const coalesced = e.getCoalescedEvents();
-                            if (coalesced.length > 1) {
-                                for (const ce of coalesced) {
-                                    this.currentPressure = ce.pressure || 0.5;
-                                    this.draw(ce);
+                        readPressure(e);
+                        
+                        // Process coalesced events for high-frequency input (Chrome/Edge)
+                        // Safari doesn't support this — falls through to single event path
+                        if (this.isDrawing && (this.tool === 'brush' || this.tool === 'eraser') && typeof e.getCoalescedEvents === 'function') {
+                            try {
+                                const coalesced = e.getCoalescedEvents();
+                                if (coalesced && coalesced.length > 1) {
+                                    for (const ce of coalesced) {
+                                        readPressure(ce);
+                                        this.draw(ce);
+                                    }
+                                    return;
                                 }
-                                return;
-                            }
+                            } catch(err) { /* Safari may throw; fall through */ }
                         }
-                        this.currentPressure = e.pressure || 0.5;
                         this.draw(e);
                     });
                     canvasEl.addEventListener('pointerup', (e) => {
@@ -1420,10 +1451,46 @@
                         }
                     });
                     
-                    // Apple Pencil palm rejection: when pen is active, ignore touch on canvas
+                    // Safari Apple Pencil pressure fallback via Touch Events
+                    // Safari delivers more reliable pressure through touch.force + touchforcechange
+                    canvasEl.addEventListener('touchforcechange', (e) => {
+                        if (e.touches.length > 0) {
+                            const touch = e.touches[0];
+                            // touchType 'stylus' = Apple Pencil (Safari-specific)
+                            if (touch.touchType === 'stylus' || touch.force > 0) {
+                                this.hasStylusInput = true;
+                                this.pointerType = 'pen';
+                                if (touch.force > 0) {
+                                    this.currentPressure = touch.force;
+                                }
+                            }
+                        }
+                    }, { passive: true });
+                    
+                    // Also read force from touchmove for Safari
+                    canvasEl.addEventListener('touchmove', (e) => {
+                        if (e.touches.length > 0) {
+                            const touch = e.touches[0];
+                            if (touch.touchType === 'stylus' && touch.force > 0) {
+                                this.hasStylusInput = true;
+                                this.pointerType = 'pen';
+                                this.currentPressure = touch.force;
+                            }
+                        }
+                    }, { passive: true });
+                    
+                    // Palm rejection: when pen is active, block finger touches on canvas
                     canvasEl.addEventListener('touchstart', (e) => {
-                        if (this.pointerType === 'pen') {
-                            e.preventDefault();
+                        if (this.hasStylusInput) {
+                            // Allow stylus touches through, block finger touches
+                            for (const touch of e.touches) {
+                                if (touch.touchType !== 'stylus' && touch.touchType !== 'direct') {
+                                    // It's a finger touch while stylus is known — block it
+                                }
+                            }
+                            if (e.touches.length > 0 && e.touches[0].touchType !== 'stylus') {
+                                e.preventDefault();
+                            }
                         }
                     }, { passive: false });
                 };
@@ -2186,7 +2253,7 @@
             
             // Get effective brush size factoring in Apple Pencil pressure
             getPressureBrushSize() {
-                if (this.pressureEnabled && this.pointerType === 'pen') {
+                if (this.pressureEnabled && (this.pointerType === 'pen' || this.hasStylusInput)) {
                     // Pen pressure: 0.0 to 1.0 — scale brush between 30% and 100% of set size
                     const pressureScale = 0.3 + this.currentPressure * 0.7;
                     return Math.max(1, this.brushSize * pressureScale);
