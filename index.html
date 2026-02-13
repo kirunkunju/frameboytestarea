@@ -86,6 +86,12 @@
         button:hover {
             background: #4a4a4a;
         }
+        
+        /* Instant press feedback for Apple Pencil & touch */
+        button:active {
+            background: #555;
+            transition: none;
+        }
 
         button.active {
             background: #0066cc;
@@ -266,6 +272,7 @@
             max-height: 95%;
             object-fit: contain;
             touch-action: none;
+            will-change: contents;
         }
 
         #mainCanvas {
@@ -288,14 +295,15 @@
         
         .transform-handle {
             position: absolute;
-            width: 12px;
-            height: 12px;
+            width: 16px;
+            height: 16px;
             background: white;
             border: 2px solid #0066cc;
             border-radius: 50%;
             cursor: pointer;
             z-index: 4;
             transform: translate(-50%, -50%);
+            touch-action: none;
         }
         
         .transform-handle.corner { cursor: nwse-resize; }
@@ -787,20 +795,14 @@
                 min-height: 100dvh;
             }
             
-            /* Toolbar: single scrollable row */
+            /* Toolbar: 2-row wrapping layout — all buttons visible */
             .toolbar {
-                overflow-x: auto;
-                overflow-y: hidden;
-                flex-wrap: nowrap;
-                padding: 6px 8px;
+                flex-wrap: wrap;
+                padding: 4px 6px;
                 gap: 2px;
-                -webkit-overflow-scrolling: touch;
-                scrollbar-width: none;
-                max-height: 56px;
-                position: relative;
-                touch-action: pan-x;
+                overflow: visible;
+                max-height: none;
             }
-            .toolbar::-webkit-scrollbar { display: none; }
             
             .tool-group {
                 padding: 0 3px;
@@ -818,30 +820,37 @@
             }
             
             button {
-                padding: 8px;
-                font-size: 16px;
-                min-width: 40px;
-                min-height: 40px;
+                padding: 7px;
+                font-size: 15px;
+                min-width: 38px;
+                min-height: 38px;
                 display: inline-flex;
                 align-items: center;
                 justify-content: center;
                 flex-shrink: 0;
             }
             
+            /* Active press state — immediate feedback for Apple Pencil & touch */
+            button:active {
+                background: #0066cc;
+                transform: scale(0.93);
+                transition: none;
+            }
+            
             input[type="range"] {
                 width: 50px;
-                min-height: 40px;
+                min-height: 32px;
                 flex-shrink: 0;
             }
             
             input[type="color"] {
-                min-width: 36px;
-                min-height: 36px;
+                min-width: 34px;
+                min-height: 34px;
                 flex-shrink: 0;
             }
             
             /* Hide labels in toolbar */
-            .tool-group label {
+            .tool-group > label {
                 display: none;
             }
             #sizeValue {
@@ -850,7 +859,7 @@
                 flex-shrink: 0;
             }
             
-            /* Keep dropdown containers from blocking scroll */
+            /* Keep dropdown containers inline */
             .dropdown-container {
                 flex-shrink: 0;
             }
@@ -885,10 +894,10 @@
             }
             
             .playback-controls button {
-                padding: 6px;
+                padding: 5px;
                 font-size: 13px;
-                min-width: 36px;
-                min-height: 36px;
+                min-width: 34px;
+                min-height: 34px;
             }
             
             .fps-control {
@@ -963,20 +972,20 @@
 
         @media (max-width: 480px) {
             .toolbar {
-                padding: 4px 6px;
+                padding: 3px 4px;
                 gap: 1px;
-                max-height: 50px;
             }
             
             .toolbar button {
-                padding: 6px;
+                padding: 5px;
                 font-size: 14px;
-                min-width: 36px;
-                min-height: 36px;
+                min-width: 34px;
+                min-height: 34px;
             }
             
             .tool-group {
                 gap: 1px;
+                padding: 0 2px;
             }
             
             .timeline-layers-section {
@@ -989,8 +998,8 @@
             }
             
             .playback-controls button {
-                min-width: 32px;
-                min-height: 32px;
+                min-width: 30px;
+                min-height: 30px;
                 padding: 4px;
                 font-size: 12px;
             }
@@ -1007,14 +1016,14 @@
             }
             
             input[type="color"] {
-                min-width: 32px;
-                min-height: 32px;
-                width: 32px;
-                height: 32px;
+                min-width: 30px;
+                min-height: 30px;
+                width: 30px;
+                height: 30px;
             }
             
             input[type="range"] {
-                width: 45px;
+                width: 44px;
             }
         }
 
@@ -1044,6 +1053,10 @@
                 <div class="dropdown-container">
                     <button id="brushTool" class="active" title="Brush (B)">🖌️ <span class="btn-label">Brush ▼</span></button>
                     <div class="brush-dropdown" id="brushDropdown">
+                        <div class="brush-setting-row">
+                            <label>Pressure:</label>
+                            <input type="checkbox" id="pressureEnabled" checked>
+                        </div>
                         <div class="brush-setting-row">
                             <label>Shape:</label>
                             <div class="shape-picker" id="brushShapePicker">
@@ -1242,11 +1255,11 @@
         class FrameBoy {
             constructor() {
                 this.canvas = document.getElementById('mainCanvas');
-                this.ctx = this.canvas.getContext('2d');
+                this.ctx = this.canvas.getContext('2d', { desynchronized: true });
                 this.onionCanvas = document.getElementById('onionCanvas');
                 this.onionCtx = this.onionCanvas.getContext('2d');
                 this.selectionCanvas = document.getElementById('selectionCanvas');
-                this.selectionCtx = this.selectionCanvas.getContext('2d');
+                this.selectionCtx = this.selectionCanvas.getContext('2d', { desynchronized: true });
                 this.brushCursor = document.getElementById('brushCursor');
                 
                 this.layers = [{ id: 1, name: 'Layer 1', visible: true, opacity: 1.0, frames: [] }];
@@ -1310,6 +1323,7 @@
                 // Apple Pencil / Pointer properties
                 this.currentPressure = 0.5;
                 this.pointerType = 'mouse'; // 'pen', 'touch', 'mouse'
+                this.pressureEnabled = true;
                 
                 this.initializeFrame();
                 this.setupEventListeners();
@@ -1372,6 +1386,18 @@
                     });
                     canvasEl.addEventListener('pointermove', (e) => {
                         e.preventDefault();
+                        // Process coalesced events for Apple Pencil smoothness
+                        // Apple Pencil generates ~240Hz input; coalesced events capture every point
+                        if (this.isDrawing && (this.tool === 'brush' || this.tool === 'eraser') && e.getCoalescedEvents) {
+                            const coalesced = e.getCoalescedEvents();
+                            if (coalesced.length > 1) {
+                                for (const ce of coalesced) {
+                                    this.currentPressure = ce.pressure || 0.5;
+                                    this.draw(ce);
+                                }
+                                return;
+                            }
+                        }
                         this.currentPressure = e.pressure || 0.5;
                         this.draw(e);
                     });
@@ -1390,14 +1416,12 @@
                         }
                     });
                     
-                    // Low-latency Apple Pencil input (coalesced events)
-                    if ('onpointerrawupdate' in window) {
-                        canvasEl.addEventListener('pointerrawupdate', (e) => {
-                            if (this.isDrawing && (this.tool === 'brush' || this.tool === 'eraser')) {
-                                this.currentPressure = e.pressure || 0.5;
-                            }
-                        });
-                    }
+                    // Apple Pencil palm rejection: when pen is active, ignore touch on canvas
+                    canvasEl.addEventListener('touchstart', (e) => {
+                        if (this.pointerType === 'pen') {
+                            e.preventDefault();
+                        }
+                    }, { passive: false });
                 };
                 
                 setupPointerEvents(this.canvas);
@@ -1411,24 +1435,22 @@
                 
                 brushBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    if (this.tool === 'brush') {
-                        brushDropdown.classList.toggle('show');
-                        eraserDropdown.classList.remove('show');
-                    } else {
-                        this.selectTool('brush');
-                        brushDropdown.classList.remove('show');
-                    }
+                    this.selectTool('brush');
+                    brushDropdown.classList.toggle('show');
+                    eraserDropdown.classList.remove('show');
+                    document.getElementById('shapeDropdown').classList.remove('show');
+                    document.getElementById('exportDropdown').classList.remove('show');
+                    document.getElementById('onionSkinDropdown').classList.remove('show');
                 });
                 
                 eraserBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    if (this.tool === 'eraser') {
-                        eraserDropdown.classList.toggle('show');
-                        brushDropdown.classList.remove('show');
-                    } else {
-                        this.selectTool('eraser');
-                        eraserDropdown.classList.remove('show');
-                    }
+                    this.selectTool('eraser');
+                    eraserDropdown.classList.toggle('show');
+                    brushDropdown.classList.remove('show');
+                    document.getElementById('shapeDropdown').classList.remove('show');
+                    document.getElementById('exportDropdown').classList.remove('show');
+                    document.getElementById('onionSkinDropdown').classList.remove('show');
                 });
                 
                 // Prevent dropdown clicks from propagating
@@ -1455,6 +1477,11 @@
                 document.getElementById('brushSmoothing').addEventListener('input', (e) => {
                     this.brushSmoothing = parseInt(e.target.value);
                     document.getElementById('brushSmoothingValue').textContent = e.target.value + '%';
+                });
+                
+                // Pressure toggle
+                document.getElementById('pressureEnabled').addEventListener('change', (e) => {
+                    this.pressureEnabled = e.target.checked;
                 });
                 
                 // Eraser dropdown controls
@@ -2082,7 +2109,7 @@
                     
                     for (let handle of this.transformHandles) {
                         const dist = Math.sqrt(Math.pow(x - handle.x, 2) + Math.pow(y - handle.y, 2));
-                        if (dist < 15) { // Increased hit area for touch
+                        if (dist < 20) { // Large hit area for Apple Pencil & touch
                             // Check if we're in rotation mode and this is a corner
                             const isCorner = handle.type === 'nw' || handle.type === 'ne' || 
                                            handle.type === 'se' || handle.type === 'sw';
@@ -2148,7 +2175,7 @@
             
             // Get effective brush size factoring in Apple Pencil pressure
             getPressureBrushSize() {
-                if (this.pointerType === 'pen') {
+                if (this.pressureEnabled && this.pointerType === 'pen') {
                     // Pen pressure: 0.0 to 1.0 — scale brush between 30% and 100% of set size
                     const pressureScale = 0.3 + this.currentPressure * 0.7;
                     return Math.max(1, this.brushSize * pressureScale);
@@ -4409,18 +4436,37 @@
         // Initialize the app
         const app = new FrameBoy();
         
-        // Apple Pencil fast-tap fix:
-        // iPadOS Safari can delay or drop click events from pen input.
-        // This ensures all pen taps on buttons fire instantly.
-        document.addEventListener('pointerup', (e) => {
+        // Apple Pencil tap fix:
+        // iPadOS Safari sometimes delays or fails to fire click events from stylus.
+        // Solution: fire click on pointerdown for pen, then suppress the delayed native click.
+        const penTapState = { lastTarget: null, lastTime: 0 };
+        
+        document.addEventListener('pointerdown', (e) => {
             if (e.pointerType !== 'pen') return;
-            const btn = e.target.closest('button, .shape-icon, .dropdown-item, .frame, .add-frame, .layer-item, .add-layer-btn-inline, .delete-layer-btn-inline, input[type="checkbox"]');
-            if (btn) {
-                // Synthesize an immediate click — prevents the ~300ms delay
-                e.preventDefault();
+            const btn = e.target.closest('button, .shape-icon, .dropdown-item, .add-frame, .add-layer-btn-inline, .delete-layer-btn-inline, input[type="checkbox"]');
+            if (btn && !e.target.closest('canvas')) {
+                // Fire the click synchronously first (handlers run immediately)
                 btn.click();
+                // THEN mark it so the delayed native click gets suppressed
+                penTapState.lastTarget = btn;
+                penTapState.lastTime = Date.now();
             }
-        }, { passive: false });
+        });
+        
+        // Capture-phase: suppress the delayed native click Safari sends ~300ms later
+        document.addEventListener('click', (e) => {
+            if (!penTapState.lastTarget) return;
+            if (Date.now() - penTapState.lastTime > 800) {
+                penTapState.lastTarget = null;
+                return;
+            }
+            const btn = e.target.closest('button, .shape-icon, .dropdown-item, .add-frame, .add-layer-btn-inline, .delete-layer-btn-inline, input[type="checkbox"]');
+            if (btn === penTapState.lastTarget) {
+                e.stopImmediatePropagation();
+                e.preventDefault();
+                penTapState.lastTarget = null;
+            }
+        }, true);
         
         // Mobile: close dropdown overlays when tapping outside
         document.addEventListener('pointerdown', (e) => {
