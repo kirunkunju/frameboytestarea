@@ -1090,6 +1090,10 @@
                     <button id="eraserTool" title="Eraser (E)">🧹 <span class="btn-label">Eraser ▼</span></button>
                     <div class="brush-dropdown" id="eraserDropdown">
                         <div class="brush-setting-row">
+                            <label>Pressure:</label>
+                            <input type="checkbox" id="eraserPressureEnabled" checked>
+                        </div>
+                        <div class="brush-setting-row">
                             <label>Shape:</label>
                             <div class="shape-picker" id="eraserShapePicker">
                                 <div class="shape-icon active" data-shape="round" title="Round">
@@ -1479,9 +1483,16 @@
                     document.getElementById('brushSmoothingValue').textContent = e.target.value + '%';
                 });
                 
-                // Pressure toggle
-                document.getElementById('pressureEnabled').addEventListener('change', (e) => {
+                // Pressure toggle — keep brush and eraser checkboxes synced
+                const brushPressureCb = document.getElementById('pressureEnabled');
+                const eraserPressureCb = document.getElementById('eraserPressureEnabled');
+                brushPressureCb.addEventListener('change', (e) => {
                     this.pressureEnabled = e.target.checked;
+                    eraserPressureCb.checked = e.target.checked;
+                });
+                eraserPressureCb.addEventListener('change', (e) => {
+                    this.pressureEnabled = e.target.checked;
+                    brushPressureCb.checked = e.target.checked;
                 });
                 
                 // Eraser dropdown controls
