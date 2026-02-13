@@ -1410,8 +1410,8 @@
                         this.stopDrawing();
                     });
                     canvasEl.addEventListener('pointerleave', (e) => {
-                        // Only stop on mouse leave, not pen/touch (they use capture)
-                        if (e.pointerType === 'mouse') {
+                        // Don't stop if actively drawing — pointer capture keeps events flowing
+                        if (e.pointerType === 'mouse' && !this.isDrawing && !this.isTransforming) {
                             this.stopDrawing();
                         }
                     });
