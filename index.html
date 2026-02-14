@@ -1517,6 +1517,10 @@
                 // Unified Pointer Events - handles mouse, touch, AND Apple Pencil
                 const setupPointerEvents = (canvasEl) => {
                     canvasEl.addEventListener('pointerdown', (e) => {
+                        // CRITICAL: Stop event from bubbling to UI elements
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
                         // Track stylus usage for palm rejection
                         if (e.pointerType === 'pen') {
                             this.hasStylusInput = true;
@@ -1527,20 +1531,15 @@
                         if (this.tool === 'brush' || this.tool === 'eraser') {
                             // If we already have an active pointer, reject this one
                             if (this.activePointerId !== null && this.activePointerId !== e.pointerId) {
-                                e.preventDefault();
-                                e.stopPropagation();
                                 return;
                             }
                             
                             // Palm rejection: if stylus is active, block finger touches
                             if (this.hasStylusInput && e.pointerType === 'touch') {
-                                e.preventDefault();
-                                e.stopPropagation();
                                 return;
                             }
                         }
                         
-                        e.preventDefault();
                         this.activePointerId = e.pointerId;
                         canvasEl.setPointerCapture(e.pointerId);
                         this.pointerType = e.pointerType;
@@ -1549,14 +1548,15 @@
                         this.startDrawing(e);
                     });
                     canvasEl.addEventListener('pointermove', (e) => {
+                        // Prevent event from bubbling to UI elements
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
                         // Only process moves from the active pointer
                         if (this.activePointerId !== null && this.activePointerId !== e.pointerId) {
-                            e.preventDefault();
-                            e.stopPropagation();
                             return;
                         }
                         
-                        e.preventDefault();
                         readPressure(e);
                         
                         // Process coalesced events for high-frequency input (Chrome/Edge)
@@ -1577,6 +1577,7 @@
                     });
                     canvasEl.addEventListener('pointerup', (e) => {
                         e.preventDefault();
+                        e.stopPropagation();
                         // Only process up events from the active pointer
                         if (this.activePointerId === e.pointerId) {
                             this.activePointerId = null;
@@ -1588,6 +1589,7 @@
                     });
                     canvasEl.addEventListener('pointercancel', (e) => {
                         e.preventDefault();
+                        e.stopPropagation();
                         // Only process cancel events from the active pointer
                         if (this.activePointerId === e.pointerId) {
                             this.activePointerId = null;
@@ -4781,6 +4783,10 @@
         
         document.addEventListener('pointerdown', (e) => {
             if (e.pointerType !== 'pen') return;
+            // Explicitly exclude canvas elements
+            if (e.target.tagName === 'CANVAS') return;
+            if (e.target.closest('canvas')) return;
+            
             const btn = e.target.closest('button, .shape-icon, .dropdown-item, .add-frame, .add-layer-btn-inline, .delete-layer-btn-inline, input[type="checkbox"]');
             if (btn && !e.target.closest('canvas')) {
                 // Mark that we're about to fire a manual click
@@ -4800,6 +4806,10 @@
             // Don't suppress if this is our own manual click
             if (penTapState.isManualClick) return;
             
+            // Explicitly exclude canvas clicks
+            if (e.target.tagName === 'CANVAS') return;
+            if (e.target.closest('canvas')) return;
+            
             if (!penTapState.lastTarget) return;
             if (Date.now() - penTapState.lastTime > 800) {
                 penTapState.lastTarget = null;
@@ -4816,6 +4826,10 @@
         // Mobile: close dropdown overlays when tapping outside
         document.addEventListener('pointerdown', (e) => {
             if (window.innerWidth > 768) return;
+            // Don't close dropdowns when interacting with canvas
+            if (e.target.tagName === 'CANVAS') return;
+            if (e.target.closest('canvas')) return;
+            
             const isDropdown = e.target.closest('.brush-dropdown, .dropdown-menu, .onion-skin-dropdown');
             const isToggle = e.target.closest('button');
             if (!isDropdown && !isToggle) {
