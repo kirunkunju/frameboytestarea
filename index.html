@@ -1422,6 +1422,7 @@
                 this.pressureEnabled = true;
                 this.hasStylusInput = false; // True once we detect real pen/stylus pressure (for pressure detection)
                 this.activePointerId = null; // Track which pointer is currently drawing
+                this.strokeStateSaved = false; // Track if we've saved undo state for current stroke
                 
                 this.initializeFrame();
                 this.setupEventListeners();
@@ -1562,7 +1563,10 @@
                             }
                         }
                         
-                        // Set this as the active pointer
+                        // Capture pointer FIRST for proper tracking
+                        canvasEl.setPointerCapture(e.pointerId);
+                        
+                        // Set pointer state
                         this.activePointerId = e.pointerId;
                         this.pointerType = e.pointerType;
                         
@@ -1571,7 +1575,7 @@
                             this.hasStylusInput = true;
                         }
                         
-                        canvasEl.setPointerCapture(e.pointerId);
+                        // Read pressure and start drawing immediately
                         readPressure(e);
                         this.startDrawing(e);
                     });
@@ -2557,8 +2561,14 @@
                     return;
                 }
                 
-                // Save state before starting to draw
-                this.saveState();
+                // For brush/eraser: draw immediately, then save state asynchronously
+                // This gives instant feedback while deferring the expensive undo snapshot
+                const isBrushOrEraser = (this.tool === 'brush' || this.tool === 'eraser');
+                
+                if (!isBrushOrEraser) {
+                    // For other tools, save state synchronously
+                    this.saveState();
+                }
                 
                 this.isDrawing = true;
                 const rect = this.canvas.getBoundingClientRect();
@@ -2570,8 +2580,27 @@
                 this.smoothX = this.lastX;
                 this.smoothY = this.lastY;
                 
-                if (this.tool === 'brush' || this.tool === 'eraser') {
+                if (isBrushOrEraser) {
+                    // Draw IMMEDIATELY for instant feedback
                     this.drawPoint(this.lastX, this.lastY);
+                    
+                    // Save state asynchronously so it doesn't block the draw
+                    // Use requestIdleCallback if available, otherwise setTimeout
+                    if (typeof requestIdleCallback !== 'undefined') {
+                        requestIdleCallback(() => {
+                            if (!this.strokeStateSaved) {
+                                this.saveState();
+                                this.strokeStateSaved = true;
+                            }
+                        });
+                    } else {
+                        setTimeout(() => {
+                            if (!this.strokeStateSaved) {
+                                this.saveState();
+                                this.strokeStateSaved = true;
+                            }
+                        }, 0);
+                    }
                 }
             }
             
@@ -2736,6 +2765,9 @@
             
             stopDrawing() {
                 if (!this.isDrawing && !this.isTransforming) return;
+                
+                // Reset stroke state flag for next stroke
+                this.strokeStateSaved = false;
                 
                 // Handle lasso completion
                 if (this.tool === 'lasso' && this.isDrawing) {
