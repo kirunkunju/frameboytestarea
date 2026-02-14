@@ -175,6 +175,10 @@
         label {
             font-size: 12px;
             margin-right: 5px;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
 
         /* Main content area */
@@ -369,6 +373,10 @@
             border-top: 1px solid #3a3a3a;
             display: flex;
             flex-direction: column;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
         
         .timeline-header {
@@ -381,11 +389,19 @@
             display: flex;
             gap: 5px;
             align-items: center;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
 
         .playback-controls {
             display: flex;
             gap: 5px;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
 
         .fps-control {
@@ -393,6 +409,10 @@
             display: flex;
             align-items: center;
             gap: 5px;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
         
         .timeline-body {
@@ -1545,30 +1565,18 @@
                         e.preventDefault();
                         e.stopPropagation();
                         
-                        // Single-touch enforcement for brush/eraser - ONLY while actively drawing
+                        // Single-touch enforcement for brush/eraser
                         if (this.tool === 'brush' || this.tool === 'eraser') {
-                            // Palm rejection: if we're currently drawing with pencil, block finger touches
-                            // But allow switching between pencil and finger between strokes
-                            if (this.isDrawing && this.activePointerId !== null) {
-                                // We're in the middle of a stroke
-                                if (this.activePointerId !== e.pointerId) {
-                                    // Different pointer trying to draw - reject it
-                                    return;
-                                }
-                                
-                                // Also check if current stroke is with pencil and new touch is finger
-                                if (this.pointerType === 'pen' && e.pointerType === 'touch') {
-                                    // Pencil is actively drawing, block finger
-                                    return;
-                                }
+                            // ONLY block if a different pointer is trying to draw while one is already active
+                            if (this.activePointerId !== null && this.activePointerId !== e.pointerId) {
+                                // A different pointer is trying to draw - reject it
+                                return;
                             }
                             
-                            // iPad Safari fix: Sometimes isDrawing gets stuck true
-                            // If we're not drawing but isDrawing is true, force clear it
-                            if (this.isDrawing && this.activePointerId === null) {
-                                console.warn('iPad fix: Clearing stuck isDrawing state');
-                                this.isDrawing = false;
-                                this.strokeStateSaved = false;
+                            // Palm rejection: block fingers while actively drawing with pencil
+                            if (this.isDrawing && this.pointerType === 'pen' && e.pointerType === 'touch') {
+                                // Pencil is actively drawing, block finger
+                                return;
                             }
                         }
                         
@@ -1641,20 +1649,22 @@
                             this.stateWatchdog = null;
                         }
                         
-                        // CRITICAL for iPad: Clear state IMMEDIATELY for instant next-tap readiness
+                        // CRITICAL for iPad: Clear ALL state IMMEDIATELY and SYNCHRONOUSLY
+                        // This must happen before anything else to ensure instant next-tap readiness
                         const wasActivePointer = (this.activePointerId === e.pointerId);
                         
                         if (wasActivePointer) {
-                            // Clear pointer tracking immediately
+                            // Clear ALL state immediately - don't wait for stopDrawing
                             this.activePointerId = null;
+                            this.isDrawing = false;  // Clear this FIRST!
                             
                             // Release pointer capture immediately
                             if (canvasEl.hasPointerCapture(e.pointerId)) {
                                 canvasEl.releasePointerCapture(e.pointerId);
                             }
                             
-                            // Call stopDrawing to handle cleanup
-                            this.stopDrawing();
+                            // Call render to finalize the drawing
+                            this.render();
                         }
                     });
                     canvasEl.addEventListener('pointercancel', (e) => {
