@@ -273,6 +273,10 @@
             object-fit: contain;
             touch-action: none;
             will-change: contents;
+            /* Prevent text/element selection on iPad */
+            -webkit-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
         }
 
         #mainCanvas {
@@ -1392,17 +1396,33 @@
                         this.hasStylusInput = true;
                     }
                     
+                    // Enhanced detection for iPad Sidecar and Safari
+                    // Safari often reports Apple Pencil as 'touch' type, but with pressure data
+                    const hasPressureData = e.pressure > 0 && e.pressure !== 0.5;
+                    const hasVariablePressure = hasPressureData && (e.pressure < 0.49 || e.pressure > 0.51);
+                    
+                    // Detect stylus based on:
+                    // 1. Explicit pen type
+                    // 2. Touch with variable pressure (not 0.5 default)
+                    // 3. Previous stylus detection in session
                     const isPen = e.pointerType === 'pen' || 
-                        (e.pointerType === 'touch' && this.hasStylusInput && e.pressure > 0 && e.pressure !== 0.5);
+                        hasVariablePressure ||
+                        (e.pointerType === 'touch' && this.hasStylusInput && hasPressureData);
                     
                     if (isPen) {
-                        this.pointerType = 'pen'; // Correct Safari mis-reporting
-                        if (e.pressure > 0) {
+                        this.pointerType = 'pen';
+                        this.hasStylusInput = true;
+                        if (hasPressureData) {
                             this.currentPressure = e.pressure;
                         }
                         // If pressure is 0, keep last known good value (Safari first-event bug)
                     } else {
                         this.currentPressure = 0.5; // Mouse/finger: fixed size
+                    }
+                    
+                    // Debug logging (enabled via console: window.enablePressureDebug = true)
+                    if (window.enablePressureDebug && this.isDrawing) {
+                        console.log(`Pressure: ${this.currentPressure.toFixed(3)} | Type: ${e.pointerType} | Detected as: ${this.pointerType} | Raw: ${e.pressure}`);
                     }
                 };
                 
@@ -1454,9 +1474,16 @@
                     // Safari Apple Pencil pressure fallback via Touch Events
                     // Safari delivers more reliable pressure through touch.force + touchforcechange
                     canvasEl.addEventListener('touchforcechange', (e) => {
+                        // Prevent multi-touch gestures
+                        if (e.touches.length > 1) {
+                            e.preventDefault();
+                            return;
+                        }
+                        
                         if (e.touches.length > 0) {
                             const touch = e.touches[0];
                             // touchType 'stylus' = Apple Pencil (Safari-specific)
+                            // Also check for any force > 0 which indicates stylus
                             if (touch.touchType === 'stylus' || touch.force > 0) {
                                 this.hasStylusInput = true;
                                 this.pointerType = 'pen';
@@ -1465,22 +1492,38 @@
                                 }
                             }
                         }
-                    }, { passive: true });
+                    }, { passive: false });
                     
                     // Also read force from touchmove for Safari
                     canvasEl.addEventListener('touchmove', (e) => {
+                        // Prevent multi-touch gestures during drawing
+                        if (e.touches.length > 1) {
+                            e.preventDefault();
+                            return;
+                        }
+                        
                         if (e.touches.length > 0) {
                             const touch = e.touches[0];
-                            if (touch.touchType === 'stylus' && touch.force > 0) {
+                            // Detect Apple Pencil via touchType or force
+                            if (touch.touchType === 'stylus' || touch.force > 0) {
                                 this.hasStylusInput = true;
                                 this.pointerType = 'pen';
-                                this.currentPressure = touch.force;
+                                if (touch.force > 0) {
+                                    this.currentPressure = touch.force;
+                                }
                             }
                         }
-                    }, { passive: true });
+                    }, { passive: false });
                     
                     // Palm rejection: when pen is active, block finger touches on canvas
+                    // Also prevent multi-touch gestures
                     canvasEl.addEventListener('touchstart', (e) => {
+                        // Always prevent multi-touch gestures (pinch, zoom, rotate)
+                        if (e.touches.length > 1) {
+                            e.preventDefault();
+                            return;
+                        }
+                        
                         if (this.hasStylusInput) {
                             // Allow stylus touches through, block finger touches
                             for (const touch of e.touches) {
@@ -1493,10 +1536,102 @@
                             }
                         }
                     }, { passive: false });
+                    
+                    // Prevent multi-touch on touchend as well
+                    canvasEl.addEventListener('touchend', (e) => {
+                        // If there are still touches remaining (multi-touch), prevent
+                        if (e.touches.length > 0) {
+                            e.preventDefault();
+                        }
+                    }, { passive: false });
+                    
+                    // Prevent context menu on long press (iPad Safari)
+                    canvasEl.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                    });
+                    
+                    // Prevent drag/selection on canvas
+                    canvasEl.addEventListener('dragstart', (e) => {
+                        e.preventDefault();
+                    });
+                    
+                    canvasEl.addEventListener('selectstart', (e) => {
+                        e.preventDefault();
+                    });
                 };
                 
                 setupPointerEvents(this.canvas);
                 setupPointerEvents(this.selectionCanvas);
+                
+                // iPad gesture controls: 2-finger tap to undo, 3-finger tap to redo
+                const setupGestureControls = () => {
+                    let touchStartTime = 0;
+                    let touchStartCount = 0;
+                    const TAP_TIMEOUT = 300; // ms - max time for a tap
+                    const TAP_MOVE_THRESHOLD = 10; // px - max movement for a tap
+                    let touchStartPositions = [];
+                    
+                    const canvasContainer = document.querySelector('.canvas-container');
+                    
+                    canvasContainer.addEventListener('touchstart', (e) => {
+                        // Only track multi-touch gestures (2+ fingers)
+                        if (e.touches.length < 2) return;
+                        
+                        touchStartTime = Date.now();
+                        touchStartCount = e.touches.length;
+                        touchStartPositions = Array.from(e.touches).map(t => ({
+                            x: t.clientX,
+                            y: t.clientY
+                        }));
+                    }, { passive: true });
+                    
+                    canvasContainer.addEventListener('touchend', (e) => {
+                        // Check if this was a quick tap gesture
+                        const tapDuration = Date.now() - touchStartTime;
+                        
+                        // Must be quick and all fingers lifted
+                        if (e.touches.length === 0 && tapDuration < TAP_TIMEOUT) {
+                            // Check if fingers didn't move much (it's a tap, not a swipe)
+                            let isTap = true;
+                            if (e.changedTouches.length === touchStartCount) {
+                                for (let i = 0; i < e.changedTouches.length && i < touchStartPositions.length; i++) {
+                                    const touch = e.changedTouches[i];
+                                    const start = touchStartPositions[i];
+                                    if (start) {
+                                        const moveDistance = Math.sqrt(
+                                            Math.pow(touch.clientX - start.x, 2) + 
+                                            Math.pow(touch.clientY - start.y, 2)
+                                        );
+                                        if (moveDistance > TAP_MOVE_THRESHOLD) {
+                                            isTap = false;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            if (isTap) {
+                                if (touchStartCount === 2) {
+                                    // 2-finger tap = Undo
+                                    this.undo();
+                                    // Visual feedback
+                                    this.showGestureFeedback('Undo');
+                                } else if (touchStartCount === 3) {
+                                    // 3-finger tap = Redo
+                                    this.redo();
+                                    // Visual feedback
+                                    this.showGestureFeedback('Redo');
+                                }
+                            }
+                        }
+                        
+                        // Reset tracking
+                        touchStartCount = 0;
+                        touchStartPositions = [];
+                    }, { passive: true });
+                };
+                
+                setupGestureControls();
                 
                 // Tool selection
                 const brushBtn = document.getElementById('brushTool');
@@ -2109,6 +2244,49 @@
                 this.restoreState(redoState);
                 
                 this.updateUndoRedoButtons();
+            }
+            
+            showGestureFeedback(action) {
+                // Create a temporary overlay to show gesture feedback
+                const feedback = document.createElement('div');
+                feedback.textContent = action;
+                feedback.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: rgba(0, 0, 0, 0.8);
+                    color: white;
+                    padding: 20px 40px;
+                    border-radius: 10px;
+                    font-size: 24px;
+                    font-weight: bold;
+                    z-index: 10000;
+                    pointer-events: none;
+                    animation: fadeInOut 0.6s ease-in-out;
+                `;
+                
+                // Add animation keyframes if not already present
+                if (!document.querySelector('#gesture-feedback-style')) {
+                    const style = document.createElement('style');
+                    style.id = 'gesture-feedback-style';
+                    style.textContent = `
+                        @keyframes fadeInOut {
+                            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+                            30% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+                            70% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+                            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
+                        }
+                    `;
+                    document.head.appendChild(style);
+                }
+                
+                document.body.appendChild(feedback);
+                
+                // Remove after animation completes
+                setTimeout(() => {
+                    document.body.removeChild(feedback);
+                }, 600);
             }
             
             restoreState(state) {
