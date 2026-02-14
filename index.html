@@ -1565,17 +1565,22 @@
                         e.preventDefault();
                         e.stopPropagation();
                         
+                        // Debug logging for iPad
+                        console.log('Pointerdown:', e.pointerType, 'activeId:', this.activePointerId, 'isDrawing:', this.isDrawing);
+                        
                         // Single-touch enforcement for brush/eraser
                         if (this.tool === 'brush' || this.tool === 'eraser') {
                             // ONLY block if a different pointer is trying to draw while one is already active
                             if (this.activePointerId !== null && this.activePointerId !== e.pointerId) {
                                 // A different pointer is trying to draw - reject it
+                                console.log('Blocked: different pointer');
                                 return;
                             }
                             
                             // Palm rejection: block fingers while actively drawing with pencil
                             if (this.isDrawing && this.pointerType === 'pen' && e.pointerType === 'touch') {
                                 // Pencil is actively drawing, block finger
+                                console.log('Blocked: palm rejection');
                                 return;
                             }
                         }
@@ -1609,6 +1614,7 @@
                         
                         // Read pressure and start drawing immediately
                         readPressure(e);
+                        console.log('Calling startDrawing');
                         this.startDrawing(e);
                     });
                     canvasEl.addEventListener('pointermove', (e) => {
@@ -1643,6 +1649,8 @@
                         e.preventDefault();
                         e.stopPropagation();
                         
+                        console.log('Pointerup:', e.pointerId, 'isDrawing:', this.isDrawing);
+                        
                         // Clear watchdog timer
                         if (this.stateWatchdog) {
                             clearTimeout(this.stateWatchdog);
@@ -1650,21 +1658,25 @@
                         }
                         
                         // CRITICAL for iPad: Clear ALL state IMMEDIATELY and SYNCHRONOUSLY
-                        // This must happen before anything else to ensure instant next-tap readiness
                         const wasActivePointer = (this.activePointerId === e.pointerId);
                         
                         if (wasActivePointer) {
-                            // Clear ALL state immediately - don't wait for stopDrawing
+                            console.log('Clearing state and scheduling render');
+                            // Clear state immediately
                             this.activePointerId = null;
-                            this.isDrawing = false;  // Clear this FIRST!
+                            this.isDrawing = false;
                             
                             // Release pointer capture immediately
                             if (canvasEl.hasPointerCapture(e.pointerId)) {
                                 canvasEl.releasePointerCapture(e.pointerId);
                             }
                             
-                            // Call render to finalize the drawing
-                            this.render();
+                            // iPad Safari fix: Ensure drawing operations complete before render
+                            // Use requestAnimationFrame to let canvas drawing settle
+                            requestAnimationFrame(() => {
+                                console.log('Rendering after RAF');
+                                this.render();
+                            });
                         }
                     });
                     canvasEl.addEventListener('pointercancel', (e) => {
@@ -2631,6 +2643,8 @@
                 // This gives instant feedback while deferring the expensive undo snapshot
                 const isBrushOrEraser = (this.tool === 'brush' || this.tool === 'eraser');
                 
+                console.log('startDrawing:', this.tool, 'isBrushOrEraser:', isBrushOrEraser);
+                
                 if (!isBrushOrEraser) {
                     // For other tools, save state synchronously
                     this.saveState();
@@ -2648,7 +2662,9 @@
                 
                 if (isBrushOrEraser) {
                     // Draw IMMEDIATELY for instant feedback
+                    console.log('Drawing point at:', this.lastX, this.lastY);
                     this.drawPoint(this.lastX, this.lastY);
+                    console.log('Point drawn');
                     
                     // Save state asynchronously so it doesn't block the draw
                     // Use requestIdleCallback if available, otherwise setTimeout
@@ -2906,6 +2922,10 @@
                 }
                 frameCtx.globalCompositeOperation = 'source-over';
                 
+                // iPad Safari fix: Force canvas operations to complete
+                // getImageData forces a sync/flush of pending canvas operations
+                frameCtx.getImageData(0, 0, 1, 1);
+                
                 // Also draw directly to main canvas for immediate feedback
                 this.ctx.globalCompositeOperation = this.tool === 'eraser' ? 'destination-out' : 'source-over';
                 this.ctx.fillStyle = this.color;
@@ -2925,6 +2945,9 @@
                     this.ctx.fill();
                 }
                 this.ctx.globalCompositeOperation = 'source-over';
+                
+                // iPad Safari fix: Force main canvas operations to complete too
+                this.ctx.getImageData(0, 0, 1, 1);
             }
             
             drawLine(x1, y1, x2, y2) {
