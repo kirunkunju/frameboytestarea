@@ -35,6 +35,7 @@
             height: 100vh;
             min-height: 400px;
             max-height: 100vh;
+            -webkit-touch-callout: none;
         }
 
 
@@ -285,6 +286,12 @@
             position: relative;
             overflow: auto;
             min-height: 200px;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         canvas {
@@ -299,6 +306,8 @@
             -moz-user-select: none;
             -ms-user-select: none;
             user-select: none;
+            -webkit-touch-callout: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
         #mainCanvas {
@@ -1721,6 +1730,59 @@
                 
                 setupPointerEvents(this.canvas);
                 setupPointerEvents(this.selectionCanvas);
+                
+                // Prevent iOS double-tap text selection menu and context menu
+                const preventIOSMenus = (canvasEl) => {
+                    canvasEl.addEventListener('dblclick', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    });
+                    
+                    canvasEl.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    });
+                    
+                    // Prevent long-press context menu on iOS
+                    let longPressTimer = null;
+                    canvasEl.addEventListener('touchstart', (e) => {
+                        longPressTimer = setTimeout(() => {
+                            // Cancel any context menu attempt
+                            longPressTimer = null;
+                        }, 500);
+                    }, { passive: true });
+                    
+                    canvasEl.addEventListener('touchend', () => {
+                        if (longPressTimer) {
+                            clearTimeout(longPressTimer);
+                            longPressTimer = null;
+                        }
+                    }, { passive: true });
+                    
+                    canvasEl.addEventListener('touchmove', () => {
+                        if (longPressTimer) {
+                            clearTimeout(longPressTimer);
+                            longPressTimer = null;
+                        }
+                    }, { passive: true });
+                };
+                
+                preventIOSMenus(this.canvas);
+                preventIOSMenus(this.selectionCanvas);
+                
+                // Also prevent on canvas container
+                const canvasContainer = document.querySelector('.canvas-container');
+                if (canvasContainer) {
+                    canvasContainer.addEventListener('dblclick', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    });
+                    
+                    canvasContainer.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    });
+                }
                 
                 // Tool selection
                 const brushBtn = document.getElementById('brushTool');
@@ -4837,6 +4899,42 @@
                     .forEach(d => d.classList.remove('show'));
             }
         });
+        
+        // Prevent iOS double-tap selection menu and context menu globally for canvas
+        document.addEventListener('dblclick', (e) => {
+            if (e.target.tagName === 'CANVAS' || e.target.closest('canvas') || e.target.closest('.canvas-container')) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+            }
+        }, true);
+        
+        document.addEventListener('contextmenu', (e) => {
+            if (e.target.tagName === 'CANVAS' || e.target.closest('canvas') || e.target.closest('.canvas-container')) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+            }
+        }, true);
+        
+        // Prevent iOS gesture-based selection (like pinch-to-select)
+        document.addEventListener('gesturestart', (e) => {
+            if (e.target.tagName === 'CANVAS' || e.target.closest('canvas') || e.target.closest('.canvas-container')) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        
+        document.addEventListener('gesturechange', (e) => {
+            if (e.target.tagName === 'CANVAS' || e.target.closest('canvas') || e.target.closest('.canvas-container')) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+        
+        document.addEventListener('gestureend', (e) => {
+            if (e.target.tagName === 'CANVAS' || e.target.closest('canvas') || e.target.closest('.canvas-container')) {
+                e.preventDefault();
+            }
+        }, { passive: false });
     </script>
 </body>
 </html>
