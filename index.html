@@ -47,6 +47,10 @@
             gap: 10px;
             align-items: center;
             border-bottom: 1px solid #3a3a3a;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
         }
 
         .tool-group {
@@ -71,10 +75,20 @@
             transition: background 0.2s;
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-touch-callout: none;
         }
 
         .btn-label {
             display: inline;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            pointer-events: none;
         }
 
         /* Apple Pencil / touch: instant feedback on all interactive elements */
@@ -1409,8 +1423,6 @@
                 this.hasStylusInput = false; // True once we detect real pen/stylus pressure
                 this.activePointerId = null; // Track which pointer is currently drawing
                 this.activeStylusPointerId = null; // Track the last stylus that was used
-                this.lastPointerUpTime = 0; // Track when pointer was released for fast tap detection
-                this.lastPointerType = null; // Track last pointer type for fast tap detection
                 
                 this.initializeFrame();
                 this.setupEventListeners();
@@ -1538,21 +1550,12 @@
                             this.activeStylusPointerId = e.pointerId;
                         }
                         
-                        // Single-touch enforcement for brush/eraser
+                        // Single-touch enforcement for brush/eraser - ONLY while actively drawing
                         if (this.tool === 'brush' || this.tool === 'eraser') {
-                            // If we already have an active pointer
-                            if (this.activePointerId !== null && this.activePointerId !== e.pointerId) {
-                                // For fast tapping: if the same pointer type comes in quickly after release,
-                                // allow it (this handles Safari's fast tap/dot issue)
-                                const isSameType = (this.lastPointerType === e.pointerType);
-                                const isQuickTap = (Date.now() - (this.lastPointerUpTime || 0)) < 100;
-                                
-                                if (!isSameType || !isQuickTap) {
-                                    // Different pointer type or not a quick tap - reject
-                                    return;
-                                }
-                                // If it's the same type and a quick tap, allow it by clearing the old ID
-                                this.activePointerId = null;
+                            // Only block if we're currently in the middle of a stroke
+                            if (this.isDrawing && this.activePointerId !== null && this.activePointerId !== e.pointerId) {
+                                // A different pointer is trying to draw while we're mid-stroke - reject it
+                                return;
                             }
                             
                             // Palm rejection: if stylus is active, block finger touches
@@ -1561,8 +1564,8 @@
                             }
                         }
                         
+                        // Set this as the active pointer
                         this.activePointerId = e.pointerId;
-                        this.lastPointerType = e.pointerType;
                         canvasEl.setPointerCapture(e.pointerId);
                         this.pointerType = e.pointerType;
                         if (e.pointerType === 'pen') this.hasStylusInput = true;
@@ -1601,45 +1604,31 @@
                         e.preventDefault();
                         e.stopPropagation();
                         
-                        // Track when pointer was released for fast tap detection
-                        this.lastPointerUpTime = Date.now();
-                        
-                        // Always clear active pointer for this canvas on pointerup
-                        // This ensures we're ready for the next stroke immediately
+                        // Immediately clear active pointer to allow next stroke
                         if (this.activePointerId === e.pointerId) {
                             this.activePointerId = null;
                         }
                         
-                        // Release capture synchronously before calling stopDrawing
+                        // Release pointer capture immediately
                         if (canvasEl.hasPointerCapture(e.pointerId)) {
-                            try {
-                                canvasEl.releasePointerCapture(e.pointerId);
-                            } catch (err) {
-                                // Ignore errors if capture was already released
-                            }
+                            canvasEl.releasePointerCapture(e.pointerId);
                         }
                         
+                        // Stop the drawing operation
                         this.stopDrawing();
                     });
                     canvasEl.addEventListener('pointercancel', (e) => {
                         e.preventDefault();
                         e.stopPropagation();
                         
-                        // Track when pointer was cancelled
-                        this.lastPointerUpTime = Date.now();
-                        
-                        // Always clear active pointer on cancel
+                        // Clear active pointer
                         if (this.activePointerId === e.pointerId) {
                             this.activePointerId = null;
                         }
                         
                         // Release capture
                         if (canvasEl.hasPointerCapture(e.pointerId)) {
-                            try {
-                                canvasEl.releasePointerCapture(e.pointerId);
-                            } catch (err) {
-                                // Ignore errors
-                            }
+                            canvasEl.releasePointerCapture(e.pointerId);
                         }
                         
                         this.stopDrawing();
@@ -4970,11 +4959,36 @@
                 return;
             }
             
-            // Also prevent if we're actively drawing (prevents selection bleed during fast strokes)
-            if (app.isDrawing) {
+            // Prevent selection globally when using brush/eraser tools (not just when drawing)
+            // This stops fast strokes from accidentally selecting UI text
+            if (app && (app.tool === 'brush' || app.tool === 'eraser')) {
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation();
+                return;
+            }
+            
+            // Also prevent if we're actively drawing (backup check)
+            if (app && app.isDrawing) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+            }
+        }, true);
+        
+        // Prevent drag gestures from interfering with drawing
+        document.addEventListener('dragstart', (e) => {
+            // Prevent drag on canvas
+            if (e.target.tagName === 'CANVAS' || e.target.closest('canvas') || e.target.closest('.canvas-container')) {
+                e.preventDefault();
+                e.stopPropagation();
+                return;
+            }
+            
+            // Prevent drag globally when using brush/eraser
+            if (app && (app.tool === 'brush' || app.tool === 'eraser')) {
+                e.preventDefault();
+                e.stopPropagation();
             }
         }, true);
         
