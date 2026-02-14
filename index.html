@@ -1409,6 +1409,8 @@
                 this.hasStylusInput = false; // True once we detect real pen/stylus pressure
                 this.activePointerId = null; // Track which pointer is currently drawing
                 this.activeStylusPointerId = null; // Track the last stylus that was used
+                this.lastPointerUpTime = 0; // Track when pointer was released for fast tap detection
+                this.lastPointerType = null; // Track last pointer type for fast tap detection
                 
                 this.initializeFrame();
                 this.setupEventListeners();
@@ -1538,9 +1540,19 @@
                         
                         // Single-touch enforcement for brush/eraser
                         if (this.tool === 'brush' || this.tool === 'eraser') {
-                            // If we already have an active pointer, reject this one
+                            // If we already have an active pointer
                             if (this.activePointerId !== null && this.activePointerId !== e.pointerId) {
-                                return;
+                                // For fast tapping: if the same pointer type comes in quickly after release,
+                                // allow it (this handles Safari's fast tap/dot issue)
+                                const isSameType = (this.lastPointerType === e.pointerType);
+                                const isQuickTap = (Date.now() - (this.lastPointerUpTime || 0)) < 100;
+                                
+                                if (!isSameType || !isQuickTap) {
+                                    // Different pointer type or not a quick tap - reject
+                                    return;
+                                }
+                                // If it's the same type and a quick tap, allow it by clearing the old ID
+                                this.activePointerId = null;
                             }
                             
                             // Palm rejection: if stylus is active, block finger touches
@@ -1550,6 +1562,7 @@
                         }
                         
                         this.activePointerId = e.pointerId;
+                        this.lastPointerType = e.pointerType;
                         canvasEl.setPointerCapture(e.pointerId);
                         this.pointerType = e.pointerType;
                         if (e.pointerType === 'pen') this.hasStylusInput = true;
@@ -1587,25 +1600,48 @@
                     canvasEl.addEventListener('pointerup', (e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        // Only process up events from the active pointer
+                        
+                        // Track when pointer was released for fast tap detection
+                        this.lastPointerUpTime = Date.now();
+                        
+                        // Always clear active pointer for this canvas on pointerup
+                        // This ensures we're ready for the next stroke immediately
                         if (this.activePointerId === e.pointerId) {
                             this.activePointerId = null;
                         }
+                        
+                        // Release capture synchronously before calling stopDrawing
                         if (canvasEl.hasPointerCapture(e.pointerId)) {
-                            canvasEl.releasePointerCapture(e.pointerId);
+                            try {
+                                canvasEl.releasePointerCapture(e.pointerId);
+                            } catch (err) {
+                                // Ignore errors if capture was already released
+                            }
                         }
+                        
                         this.stopDrawing();
                     });
                     canvasEl.addEventListener('pointercancel', (e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        // Only process cancel events from the active pointer
+                        
+                        // Track when pointer was cancelled
+                        this.lastPointerUpTime = Date.now();
+                        
+                        // Always clear active pointer on cancel
                         if (this.activePointerId === e.pointerId) {
                             this.activePointerId = null;
                         }
+                        
+                        // Release capture
                         if (canvasEl.hasPointerCapture(e.pointerId)) {
-                            canvasEl.releasePointerCapture(e.pointerId);
+                            try {
+                                canvasEl.releasePointerCapture(e.pointerId);
+                            } catch (err) {
+                                // Ignore errors
+                            }
                         }
+                        
                         this.stopDrawing();
                     });
                     canvasEl.addEventListener('pointerleave', (e) => {
@@ -1739,6 +1775,12 @@
                     });
                     
                     canvasEl.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    });
+                    
+                    // Prevent text selection that happens during fast drawing
+                    canvasEl.addEventListener('selectstart', (e) => {
                         e.preventDefault();
                         e.stopPropagation();
                     });
@@ -4911,6 +4953,25 @@
         
         document.addEventListener('contextmenu', (e) => {
             if (e.target.tagName === 'CANVAS' || e.target.closest('canvas') || e.target.closest('.canvas-container')) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+            }
+        }, true);
+        
+        // Prevent text selection globally when on canvas or when actively drawing
+        // This stops the Export button text from being selected during fast drawing
+        document.addEventListener('selectstart', (e) => {
+            // Always prevent selection on canvas
+            if (e.target.tagName === 'CANVAS' || e.target.closest('canvas') || e.target.closest('.canvas-container')) {
+                e.preventDefault();
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                return;
+            }
+            
+            // Also prevent if we're actively drawing (prevents selection bleed during fast strokes)
+            if (app.isDrawing) {
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation();
