@@ -1423,6 +1423,7 @@
                 this.hasStylusInput = false; // True once we detect real pen/stylus pressure (for pressure detection)
                 this.activePointerId = null; // Track which pointer is currently drawing
                 this.strokeStateSaved = false; // Track if we've saved undo state for current stroke
+                this.stateWatchdog = null; // Timer to auto-clear stuck state on iPad
                 
                 this.initializeFrame();
                 this.setupEventListeners();
@@ -1561,6 +1562,14 @@
                                     return;
                                 }
                             }
+                            
+                            // iPad Safari fix: Sometimes isDrawing gets stuck true
+                            // If we're not drawing but isDrawing is true, force clear it
+                            if (this.isDrawing && this.activePointerId === null) {
+                                console.warn('iPad fix: Clearing stuck isDrawing state');
+                                this.isDrawing = false;
+                                this.strokeStateSaved = false;
+                            }
                         }
                         
                         // Capture pointer FIRST for proper tracking
@@ -1574,6 +1583,21 @@
                         if (e.pointerType === 'pen') {
                             this.hasStylusInput = true;
                         }
+                        
+                        // Watchdog: Auto-clear state if we don't get pointerup within 5 seconds
+                        // This prevents stuck states on iPad Safari
+                        if (this.stateWatchdog) {
+                            clearTimeout(this.stateWatchdog);
+                        }
+                        this.stateWatchdog = setTimeout(() => {
+                            if (this.isDrawing || this.activePointerId !== null) {
+                                console.warn('Watchdog: Force clearing stuck state');
+                                this.isDrawing = false;
+                                this.activePointerId = null;
+                                this.strokeStateSaved = false;
+                                this.render();
+                            }
+                        }, 5000);
                         
                         // Read pressure and start drawing immediately
                         readPressure(e);
@@ -1611,27 +1635,37 @@
                         e.preventDefault();
                         e.stopPropagation();
                         
-                        // Clear state BEFORE calling stopDrawing for faster response
+                        // Clear watchdog timer
+                        if (this.stateWatchdog) {
+                            clearTimeout(this.stateWatchdog);
+                            this.stateWatchdog = null;
+                        }
+                        
+                        // CRITICAL for iPad: Clear state IMMEDIATELY for instant next-tap readiness
                         const wasActivePointer = (this.activePointerId === e.pointerId);
                         
                         if (wasActivePointer) {
-                            // Immediately clear for next stroke
+                            // Clear pointer tracking immediately
                             this.activePointerId = null;
-                        }
-                        
-                        // Release pointer capture immediately
-                        if (canvasEl.hasPointerCapture(e.pointerId)) {
-                            canvasEl.releasePointerCapture(e.pointerId);
-                        }
-                        
-                        // Stop the drawing operation (this will set isDrawing = false)
-                        if (wasActivePointer) {
+                            
+                            // Release pointer capture immediately
+                            if (canvasEl.hasPointerCapture(e.pointerId)) {
+                                canvasEl.releasePointerCapture(e.pointerId);
+                            }
+                            
+                            // Call stopDrawing to handle cleanup
                             this.stopDrawing();
                         }
                     });
                     canvasEl.addEventListener('pointercancel', (e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        
+                        // Clear watchdog timer
+                        if (this.stateWatchdog) {
+                            clearTimeout(this.stateWatchdog);
+                            this.stateWatchdog = null;
+                        }
                         
                         // Clear active pointer
                         if (this.activePointerId === e.pointerId) {
@@ -1644,6 +1678,16 @@
                         }
                         
                         this.stopDrawing();
+                    });
+                    
+                    // Ensure cursor is visible when entering canvas
+                    canvasEl.addEventListener('pointerenter', (e) => {
+                        if (this.tool === 'brush' || this.tool === 'eraser') {
+                            this.brushCursor.style.display = 'block';
+                            this.brushCursor.style.left = e.clientX + 'px';
+                            this.brushCursor.style.top = e.clientY + 'px';
+                            this.updateBrushCursor();
+                        }
                     });
                     canvasEl.addEventListener('pointerleave', (e) => {
                         // Don't stop if actively drawing — pointer capture keeps events flowing
@@ -1916,7 +1960,7 @@
                 document.getElementById('lassoTool').addEventListener('click', () => this.selectTool('lasso'));
                 document.getElementById('transformTool').addEventListener('click', () => this.selectTool('transform'));
                 
-                // Brush cursor tracking
+                // Brush cursor tracking on canvas container
                 const canvasContainer = document.getElementById('canvasContainer');
                 canvasContainer.addEventListener('pointermove', (e) => {
                     if (this.tool === 'brush' || this.tool === 'eraser') {
@@ -1929,6 +1973,18 @@
                 canvasContainer.addEventListener('pointerleave', () => {
                     this.brushCursor.style.display = 'none';
                 });
+                
+                // Also track cursor on canvas itself (for when pointer is captured)
+                const updateCursorPosition = (e) => {
+                    if (this.tool === 'brush' || this.tool === 'eraser') {
+                        this.brushCursor.style.display = 'block';
+                        this.brushCursor.style.left = e.clientX + 'px';
+                        this.brushCursor.style.top = e.clientY + 'px';
+                    }
+                };
+                
+                this.canvas.addEventListener('pointermove', updateCursorPosition, { passive: true });
+                this.selectionCanvas.addEventListener('pointermove', updateCursorPosition, { passive: true });
                 
                 // Shapes dropdown
                 const shapeButton = document.getElementById('shapeTool');
