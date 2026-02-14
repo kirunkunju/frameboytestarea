@@ -1420,9 +1420,8 @@
                 this.currentPressure = 0.5;
                 this.pointerType = 'mouse'; // 'pen', 'touch', 'mouse'
                 this.pressureEnabled = true;
-                this.hasStylusInput = false; // True once we detect real pen/stylus pressure
+                this.hasStylusInput = false; // True once we detect real pen/stylus pressure (for pressure detection)
                 this.activePointerId = null; // Track which pointer is currently drawing
-                this.activeStylusPointerId = null; // Track the last stylus that was used
                 
                 this.initializeFrame();
                 this.setupEventListeners();
@@ -1544,31 +1543,35 @@
                         e.preventDefault();
                         e.stopPropagation();
                         
-                        // Track stylus usage for palm rejection
-                        if (e.pointerType === 'pen') {
-                            this.hasStylusInput = true;
-                            this.activeStylusPointerId = e.pointerId;
-                        }
-                        
                         // Single-touch enforcement for brush/eraser - ONLY while actively drawing
                         if (this.tool === 'brush' || this.tool === 'eraser') {
-                            // Only block if we're currently in the middle of a stroke
-                            if (this.isDrawing && this.activePointerId !== null && this.activePointerId !== e.pointerId) {
-                                // A different pointer is trying to draw while we're mid-stroke - reject it
-                                return;
-                            }
-                            
-                            // Palm rejection: if stylus is active, block finger touches
-                            if (this.hasStylusInput && e.pointerType === 'touch') {
-                                return;
+                            // Palm rejection: if we're currently drawing with pencil, block finger touches
+                            // But allow switching between pencil and finger between strokes
+                            if (this.isDrawing && this.activePointerId !== null) {
+                                // We're in the middle of a stroke
+                                if (this.activePointerId !== e.pointerId) {
+                                    // Different pointer trying to draw - reject it
+                                    return;
+                                }
+                                
+                                // Also check if current stroke is with pencil and new touch is finger
+                                if (this.pointerType === 'pen' && e.pointerType === 'touch') {
+                                    // Pencil is actively drawing, block finger
+                                    return;
+                                }
                             }
                         }
                         
                         // Set this as the active pointer
                         this.activePointerId = e.pointerId;
-                        canvasEl.setPointerCapture(e.pointerId);
                         this.pointerType = e.pointerType;
-                        if (e.pointerType === 'pen') this.hasStylusInput = true;
+                        
+                        // Track if stylus is being used for better pressure detection
+                        if (e.pointerType === 'pen') {
+                            this.hasStylusInput = true;
+                        }
+                        
+                        canvasEl.setPointerCapture(e.pointerId);
                         readPressure(e);
                         this.startDrawing(e);
                     });
@@ -1604,8 +1607,11 @@
                         e.preventDefault();
                         e.stopPropagation();
                         
-                        // Immediately clear active pointer to allow next stroke
-                        if (this.activePointerId === e.pointerId) {
+                        // Clear state BEFORE calling stopDrawing for faster response
+                        const wasActivePointer = (this.activePointerId === e.pointerId);
+                        
+                        if (wasActivePointer) {
+                            // Immediately clear for next stroke
                             this.activePointerId = null;
                         }
                         
@@ -1614,8 +1620,10 @@
                             canvasEl.releasePointerCapture(e.pointerId);
                         }
                         
-                        // Stop the drawing operation
-                        this.stopDrawing();
+                        // Stop the drawing operation (this will set isDrawing = false)
+                        if (wasActivePointer) {
+                            this.stopDrawing();
+                        }
                     });
                     canvasEl.addEventListener('pointercancel', (e) => {
                         e.preventDefault();
@@ -1656,10 +1664,10 @@
                         }
                     }, { passive: true });
                     
-                    // Block multitouch gestures during brush/eraser use and improve palm rejection
+                    // Block multitouch gestures during brush/eraser use and palm rejection
                     canvasEl.addEventListener('touchmove', (e) => {
-                        // Aggressive palm rejection when stylus has been used
-                        if (this.hasStylusInput) {
+                        // Palm rejection: only block fingers if we're actively drawing with pencil
+                        if (this.isDrawing && this.pointerType === 'pen') {
                             // Check if any touch is NOT a stylus
                             let hasNonStylus = false;
                             for (const touch of e.touches) {
@@ -1696,12 +1704,12 @@
                         }
                     }, { passive: true });
                     
-                    // Palm rejection: when pen is active, block finger touches on canvas
+                    // Palm rejection: block finger touches ONLY during active pencil stroke
                     // Also block multitouch when using brush/eraser to prevent pinch/zoom
                     canvasEl.addEventListener('touchstart', (e) => {
-                        // Aggressive palm rejection when stylus has been used
-                        if (this.hasStylusInput) {
-                            // Check if any touch is NOT a stylus
+                        // Palm rejection: only block fingers if we're actively drawing with pencil
+                        if (this.isDrawing && this.pointerType === 'pen') {
+                            // We're currently drawing with a pencil - block all finger touches
                             let hasNonStylus = false;
                             for (const touch of e.touches) {
                                 if (touch.touchType !== 'stylus') {
@@ -1710,7 +1718,6 @@
                                 }
                             }
                             
-                            // If we found any non-stylus touch, block the entire event
                             if (hasNonStylus) {
                                 e.preventDefault();
                                 e.stopPropagation();
