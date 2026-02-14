@@ -1398,6 +1398,8 @@
                 this.pointerType = 'mouse'; // 'pen', 'touch', 'mouse'
                 this.pressureEnabled = true;
                 this.hasStylusInput = false; // True once we detect real pen/stylus pressure
+                this.activePointerId = null; // Track which pointer is currently drawing
+                this.activeStylusPointerId = null; // Track the last stylus that was used
                 
                 this.initializeFrame();
                 this.setupEventListeners();
@@ -1515,7 +1517,31 @@
                 // Unified Pointer Events - handles mouse, touch, AND Apple Pencil
                 const setupPointerEvents = (canvasEl) => {
                     canvasEl.addEventListener('pointerdown', (e) => {
+                        // Track stylus usage for palm rejection
+                        if (e.pointerType === 'pen') {
+                            this.hasStylusInput = true;
+                            this.activeStylusPointerId = e.pointerId;
+                        }
+                        
+                        // Single-touch enforcement for brush/eraser
+                        if (this.tool === 'brush' || this.tool === 'eraser') {
+                            // If we already have an active pointer, reject this one
+                            if (this.activePointerId !== null && this.activePointerId !== e.pointerId) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                return;
+                            }
+                            
+                            // Palm rejection: if stylus is active, block finger touches
+                            if (this.hasStylusInput && e.pointerType === 'touch') {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                return;
+                            }
+                        }
+                        
                         e.preventDefault();
+                        this.activePointerId = e.pointerId;
                         canvasEl.setPointerCapture(e.pointerId);
                         this.pointerType = e.pointerType;
                         if (e.pointerType === 'pen') this.hasStylusInput = true;
@@ -1523,6 +1549,13 @@
                         this.startDrawing(e);
                     });
                     canvasEl.addEventListener('pointermove', (e) => {
+                        // Only process moves from the active pointer
+                        if (this.activePointerId !== null && this.activePointerId !== e.pointerId) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            return;
+                        }
+                        
                         e.preventDefault();
                         readPressure(e);
                         
@@ -1544,10 +1577,24 @@
                     });
                     canvasEl.addEventListener('pointerup', (e) => {
                         e.preventDefault();
+                        // Only process up events from the active pointer
+                        if (this.activePointerId === e.pointerId) {
+                            this.activePointerId = null;
+                        }
+                        if (canvasEl.hasPointerCapture(e.pointerId)) {
+                            canvasEl.releasePointerCapture(e.pointerId);
+                        }
                         this.stopDrawing();
                     });
                     canvasEl.addEventListener('pointercancel', (e) => {
                         e.preventDefault();
+                        // Only process cancel events from the active pointer
+                        if (this.activePointerId === e.pointerId) {
+                            this.activePointerId = null;
+                        }
+                        if (canvasEl.hasPointerCapture(e.pointerId)) {
+                            canvasEl.releasePointerCapture(e.pointerId);
+                        }
                         this.stopDrawing();
                     });
                     canvasEl.addEventListener('pointerleave', (e) => {
@@ -1573,10 +1620,31 @@
                         }
                     }, { passive: true });
                     
-                    // Block multitouch gestures during brush/eraser use
+                    // Block multitouch gestures during brush/eraser use and improve palm rejection
                     canvasEl.addEventListener('touchmove', (e) => {
+                        // Aggressive palm rejection when stylus has been used
+                        if (this.hasStylusInput) {
+                            // Check if any touch is NOT a stylus
+                            let hasNonStylus = false;
+                            for (const touch of e.touches) {
+                                if (touch.touchType !== 'stylus') {
+                                    hasNonStylus = true;
+                                    break;
+                                }
+                            }
+                            
+                            // If we found any non-stylus touch, block the entire event
+                            if (hasNonStylus) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                return;
+                            }
+                        }
+                        
+                        // Block multitouch when using brush or eraser
                         if ((this.tool === 'brush' || this.tool === 'eraser') && e.touches.length > 1) {
                             e.preventDefault();
+                            e.stopPropagation();
                         }
                     }, { passive: false });
                     
@@ -1595,26 +1663,58 @@
                     // Palm rejection: when pen is active, block finger touches on canvas
                     // Also block multitouch when using brush/eraser to prevent pinch/zoom
                     canvasEl.addEventListener('touchstart', (e) => {
-                        // Block multitouch when using brush or eraser
-                        if (this.tool === 'brush' || this.tool === 'eraser') {
-                            if (e.touches.length > 1) {
+                        // Aggressive palm rejection when stylus has been used
+                        if (this.hasStylusInput) {
+                            // Check if any touch is NOT a stylus
+                            let hasNonStylus = false;
+                            for (const touch of e.touches) {
+                                if (touch.touchType !== 'stylus') {
+                                    hasNonStylus = true;
+                                    break;
+                                }
+                            }
+                            
+                            // If we found any non-stylus touch, block the entire event
+                            if (hasNonStylus) {
                                 e.preventDefault();
+                                e.stopPropagation();
                                 return;
                             }
                         }
                         
-                        if (this.hasStylusInput) {
-                            // Allow stylus touches through, block finger touches
-                            for (const touch of e.touches) {
-                                if (touch.touchType !== 'stylus' && touch.touchType !== 'direct') {
-                                    // It's a finger touch while stylus is known — block it
-                                }
-                            }
-                            if (e.touches.length > 0 && e.touches[0].touchType !== 'stylus') {
+                        // Block all multitouch when using brush or eraser (even with fingers)
+                        if (this.tool === 'brush' || this.tool === 'eraser') {
+                            // If we're already drawing, block any new touches
+                            if (this.isDrawing && e.touches.length > 1) {
                                 e.preventDefault();
+                                e.stopPropagation();
+                                return;
+                            }
+                            
+                            // Block multitouch from the start
+                            if (e.touches.length > 1) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                return;
                             }
                         }
                     }, { passive: false });
+                    
+                    // Cleanup on touch end
+                    canvasEl.addEventListener('touchend', (e) => {
+                        // If all touches are gone, we can allow fingers again after a delay
+                        if (e.touches.length === 0 && this.hasStylusInput) {
+                            // Keep stylus mode active for 500ms to prevent immediate palm touches
+                            // This will be reset if stylus is used again
+                        }
+                    }, { passive: true });
+                    
+                    canvasEl.addEventListener('touchcancel', (e) => {
+                        // Similar cleanup on touch cancel
+                        if (e.touches.length === 0 && this.hasStylusInput) {
+                            // Keep stylus mode active
+                        }
+                    }, { passive: true });
                 };
                 
                 setupPointerEvents(this.canvas);
@@ -4677,14 +4777,18 @@
         // Apple Pencil tap fix:
         // iPadOS Safari sometimes delays or fails to fire click events from stylus.
         // Solution: fire click on pointerdown for pen, then suppress the delayed native click.
-        const penTapState = { lastTarget: null, lastTime: 0 };
+        const penTapState = { lastTarget: null, lastTime: 0, isManualClick: false };
         
         document.addEventListener('pointerdown', (e) => {
             if (e.pointerType !== 'pen') return;
             const btn = e.target.closest('button, .shape-icon, .dropdown-item, .add-frame, .add-layer-btn-inline, .delete-layer-btn-inline, input[type="checkbox"]');
             if (btn && !e.target.closest('canvas')) {
+                // Mark that we're about to fire a manual click
+                penTapState.isManualClick = true;
                 // Fire the click synchronously first (handlers run immediately)
                 btn.click();
+                // Clear the flag after handlers complete
+                penTapState.isManualClick = false;
                 // THEN mark it so the delayed native click gets suppressed
                 penTapState.lastTarget = btn;
                 penTapState.lastTime = Date.now();
@@ -4693,6 +4797,9 @@
         
         // Capture-phase: suppress the delayed native click Safari sends ~300ms later
         document.addEventListener('click', (e) => {
+            // Don't suppress if this is our own manual click
+            if (penTapState.isManualClick) return;
+            
             if (!penTapState.lastTarget) return;
             if (Date.now() - penTapState.lastTime > 800) {
                 penTapState.lastTarget = null;
