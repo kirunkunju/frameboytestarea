@@ -1771,14 +1771,14 @@
                 preventIOSMenus(this.selectionCanvas);
                 
                 // Also prevent on canvas container
-                const canvasContainer = document.querySelector('.canvas-container');
-                if (canvasContainer) {
-                    canvasContainer.addEventListener('dblclick', (e) => {
+                const canvasArea = document.querySelector('.canvas-container');
+                if (canvasArea) {
+                    canvasArea.addEventListener('dblclick', (e) => {
                         e.preventDefault();
                         e.stopPropagation();
                     });
                     
-                    canvasContainer.addEventListener('contextmenu', (e) => {
+                    canvasArea.addEventListener('contextmenu', (e) => {
                         e.preventDefault();
                         e.stopPropagation();
                     });
