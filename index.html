@@ -250,21 +250,29 @@
             gap: 6px;
             font-size: 10px;
             padding-left: 22px;
+            padding-right: 8px;
             user-select: none;
             -webkit-user-select: none;
         }
         
+        .layer-opacity-control > span:first-child {
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+        
         .layer-opacity-control input[type="range"] {
-            width: 80px;
+            width: 70px;
             height: 3px;
+            flex-shrink: 0;
         }
         
         .layer-opacity-value {
-            min-width: 32px;
+            min-width: 35px;
             text-align: right;
             font-size: 10px;
             user-select: none;
             -webkit-user-select: none;
+            flex-shrink: 0;
         }
 
         /* Canvas area */
@@ -371,12 +379,47 @@
         }
         
         .timeline-layers-section {
-            width: 180px;
+            width: 220px;
+            min-width: 160px;
+            max-width: 400px;
             background: #252525;
             border-right: 1px solid #3a3a3a;
             display: flex;
             flex-direction: column;
             flex-shrink: 0;
+            position: relative;
+        }
+        
+        .layer-panel-resize-handle {
+            position: absolute;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            width: 8px;
+            cursor: col-resize;
+            z-index: 10;
+            background: transparent;
+            transition: background 0.2s;
+        }
+        
+        .layer-panel-resize-handle:hover {
+            background: rgba(0, 102, 204, 0.3);
+        }
+        
+        .layer-panel-resize-handle:active {
+            background: rgba(0, 102, 204, 0.5);
+        }
+        
+        .layer-panel-resize-handle::before {
+            content: '';
+            position: absolute;
+            right: 3px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 2px;
+            height: 30px;
+            background: #4a4a4a;
+            border-radius: 1px;
         }
         
         .layers-header {
@@ -1252,7 +1295,7 @@
                 </div>
             </div>
             <div class="timeline-body">
-                <div class="timeline-layers-section">
+                <div class="timeline-layers-section" id="layersSection">
                     <div class="layers-header">
                         <span>Layers</span>
                         <div class="layer-buttons">
@@ -1262,6 +1305,7 @@
                         </div>
                     </div>
                     <div class="layers-list" id="layersList"></div>
+                    <div class="layer-panel-resize-handle" id="layerPanelResizeHandle"></div>
                 </div>
                 <div class="timeline-frames-section">
                     <div class="frames-container" id="framesContainer"></div>
@@ -1370,6 +1414,44 @@
                     this.positionOnionCanvas();
                     this.render();
                 });
+                
+                // Layer panel resize handle
+                this.setupLayerPanelResize();
+            }
+            
+            setupLayerPanelResize() {
+                const resizeHandle = document.getElementById('layerPanelResizeHandle');
+                const layersSection = document.getElementById('layersSection');
+                let isResizing = false;
+                let startX = 0;
+                let startWidth = 0;
+                
+                const onPointerDown = (e) => {
+                    isResizing = true;
+                    startX = e.clientX;
+                    startWidth = layersSection.offsetWidth;
+                    e.preventDefault();
+                    resizeHandle.setPointerCapture(e.pointerId);
+                };
+                
+                const onPointerMove = (e) => {
+                    if (!isResizing) return;
+                    
+                    const deltaX = e.clientX - startX;
+                    const newWidth = Math.max(160, Math.min(400, startWidth + deltaX));
+                    layersSection.style.width = newWidth + 'px';
+                };
+                
+                const onPointerUp = (e) => {
+                    if (!isResizing) return;
+                    isResizing = false;
+                    resizeHandle.releasePointerCapture(e.pointerId);
+                };
+                
+                resizeHandle.addEventListener('pointerdown', onPointerDown);
+                resizeHandle.addEventListener('pointermove', onPointerMove);
+                resizeHandle.addEventListener('pointerup', onPointerUp);
+                resizeHandle.addEventListener('pointercancel', onPointerUp);
             }
             
             positionOnionCanvas() {
