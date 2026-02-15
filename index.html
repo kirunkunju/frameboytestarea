@@ -1441,6 +1441,7 @@
                 this.pointerType = 'mouse'; // 'pen', 'touch', 'mouse'
                 this.pressureEnabled = true;
                 this.hasStylusInput = false; // True once we detect real pen/stylus pressure (for pressure detection)
+                this.strokeStateSaved = false; // Track if we've saved undo state for current stroke
                 this.activePointerId = null; // Track which pointer is currently drawing
                 
                 this.initializeFrame();
@@ -1533,92 +1534,136 @@
             setupEventListeners() {
                 // Helper: read pressure from a pointer event safely
                 // Safari sometimes reports 0 on first event; don't overwrite good pressure with 0
-                const readPressure = (e) => {
-                    // Track pointer type from the actual event
-                    if (e.pointerType) {
-                        this.pointerType = e.pointerType;
-                    }
-                    if (e.pointerType === 'pen') {
-                        this.hasStylusInput = true;
-                    }
-                    
-                    const isPen = e.pointerType === 'pen' || 
-                        (e.pointerType === 'touch' && this.hasStylusInput && e.pressure > 0 && e.pressure !== 0.5);
-                    
-                    if (isPen) {
-                        this.pointerType = 'pen'; // Correct Safari mis-reporting
-                        if (e.pressure > 0) {
-                            this.currentPressure = e.pressure;
-                        }
-                        // If pressure is 0, keep last known good value (Safari first-event bug)
-                    } else {
-                        this.currentPressure = 0.5; // Mouse/finger: fixed size
-                    }
-                };
                 
-                // Unified Pointer Events - handles mouse, touch, AND Apple Pencil
-                // Pointer events for pressure support (Apple Pencil, Wacom, etc.)
-                this.canvas.addEventListener('pointerdown', (e) => {
-                    e.preventDefault();
-                    this.pointerType = e.pointerType;
-                    if (e.pointerType === 'pen') {
-                        this.hasStylusInput = true;
-                        this.currentPressure = e.pressure > 0 ? e.pressure : 0.5;
-                    } else {
-                        this.currentPressure = 0.5;
-                    }
+                // Mouse events for desktop
+                this.canvas.addEventListener('mousedown', (e) => {
+                    this.pointerType = 'mouse';
+                    this.currentPressure = 0.5;
                     this.startDrawing(e);
                 });
+                this.canvas.addEventListener('mousemove', (e) => this.draw(e));
+                this.canvas.addEventListener('mouseup', () => this.stopDrawing());
+                this.canvas.addEventListener('mouseout', () => this.stopDrawing());
                 
-                this.canvas.addEventListener('pointermove', (e) => {
+                // Touch events for iPad/mobile with pressure support
+                this.canvas.addEventListener('touchstart', (e) => {
                     e.preventDefault();
+                    const touch = e.touches[0];
+                    
+                    // Read pressure from touch.force for Apple Pencil
+                    if (touch.touchType === 'stylus' || touch.force > 0) {
+                        this.hasStylusInput = true;
+                        this.pointerType = 'pen';
+                        this.currentPressure = touch.force > 0 ? touch.force : 0.5;
+                    } else {
+                        this.pointerType = 'touch';
+                        this.currentPressure = 0.5;
+                    }
+                    
+                    const syntheticEvent = {
+                        clientX: touch.clientX,
+                        clientY: touch.clientY,
+                        target: e.currentTarget
+                    };
+                    
+                    this.startDrawing(syntheticEvent);
+                }, { passive: false });
+                
+                this.canvas.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    if (!this.isDrawing && !this.isTransforming) return;
+                    
+                    const touch = e.touches[0];
+                    
                     // Update pressure continuously
-                    if (e.pointerType === 'pen' && e.pressure > 0) {
-                        this.currentPressure = e.pressure;
+                    if (touch.touchType === 'stylus' || touch.force > 0) {
+                        if (touch.force > 0) {
+                            this.currentPressure = touch.force;
+                        }
                     }
-                    this.draw(e);
-                });
+                    
+                    const syntheticEvent = {
+                        clientX: touch.clientX,
+                        clientY: touch.clientY,
+                        target: e.currentTarget
+                    };
+                    
+                    this.draw(syntheticEvent);
+                }, { passive: false });
                 
-                this.canvas.addEventListener('pointerup', (e) => {
+                this.canvas.addEventListener('touchend', (e) => {
                     e.preventDefault();
                     this.stopDrawing();
-                });
+                }, { passive: false });
                 
-                this.canvas.addEventListener('pointercancel', (e) => {
+                this.canvas.addEventListener('touchcancel', (e) => {
                     e.preventDefault();
                     this.stopDrawing();
-                });
+                }, { passive: false });
                 
-                // Selection canvas pointer events
-                this.selectionCanvas.addEventListener('pointerdown', (e) => {
-                    e.preventDefault();
-                    this.pointerType = e.pointerType;
-                    if (e.pointerType === 'pen') {
-                        this.hasStylusInput = true;
-                        this.currentPressure = e.pressure > 0 ? e.pressure : 0.5;
-                    } else {
-                        this.currentPressure = 0.5;
-                    }
+                // Selection canvas mouse events
+                this.selectionCanvas.addEventListener('mousedown', (e) => {
+                    this.pointerType = 'mouse';
+                    this.currentPressure = 0.5;
                     this.startDrawing(e);
                 });
+                this.selectionCanvas.addEventListener('mousemove', (e) => this.draw(e));
+                this.selectionCanvas.addEventListener('mouseup', () => this.stopDrawing());
+                this.selectionCanvas.addEventListener('mouseout', () => this.stopDrawing());
                 
-                this.selectionCanvas.addEventListener('pointermove', (e) => {
+                // Selection canvas touch events
+                this.selectionCanvas.addEventListener('touchstart', (e) => {
                     e.preventDefault();
-                    if (e.pointerType === 'pen' && e.pressure > 0) {
-                        this.currentPressure = e.pressure;
+                    const touch = e.touches[0];
+                    
+                    if (touch.touchType === 'stylus' || touch.force > 0) {
+                        this.hasStylusInput = true;
+                        this.pointerType = 'pen';
+                        this.currentPressure = touch.force > 0 ? touch.force : 0.5;
+                    } else {
+                        this.pointerType = 'touch';
+                        this.currentPressure = 0.5;
                     }
-                    this.draw(e);
-                });
+                    
+                    const syntheticEvent = {
+                        clientX: touch.clientX,
+                        clientY: touch.clientY,
+                        target: e.currentTarget
+                    };
+                    
+                    this.startDrawing(syntheticEvent);
+                }, { passive: false });
                 
-                this.selectionCanvas.addEventListener('pointerup', (e) => {
+                this.selectionCanvas.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    if (!this.isDrawing && !this.isTransforming) return;
+                    
+                    const touch = e.touches[0];
+                    
+                    if (touch.touchType === 'stylus' || touch.force > 0) {
+                        if (touch.force > 0) {
+                            this.currentPressure = touch.force;
+                        }
+                    }
+                    
+                    const syntheticEvent = {
+                        clientX: touch.clientX,
+                        clientY: touch.clientY,
+                        target: e.currentTarget
+                    };
+                    
+                    this.draw(syntheticEvent);
+                }, { passive: false });
+                
+                this.selectionCanvas.addEventListener('touchend', (e) => {
                     e.preventDefault();
                     this.stopDrawing();
-                });
+                }, { passive: false });
                 
-                this.selectionCanvas.addEventListener('pointercancel', (e) => {
+                this.selectionCanvas.addEventListener('touchcancel', (e) => {
                     e.preventDefault();
                     this.stopDrawing();
-                });
+                }, { passive: false });
                 
                 // Prevent iOS double-tap text selection menu and context menu
                 const preventIOSMenus = (canvasEl) => {
@@ -1771,7 +1816,7 @@
                 
                 // Brush cursor tracking
                 const canvasContainer = document.getElementById('canvasContainer');
-                canvasContainer.addEventListener('pointermove', (e) => {
+                canvasContainer.addEventListener('mousemove', (e) => {
                     if (this.tool === 'brush' || this.tool === 'eraser') {
                         this.brushCursor.style.display = 'block';
                         this.brushCursor.style.left = e.clientX + 'px';
@@ -1779,7 +1824,7 @@
                         this.updateBrushCursor();
                     }
                 });
-                canvasContainer.addEventListener('pointerleave', () => {
+                canvasContainer.addEventListener('mouseleave', () => {
                     this.brushCursor.style.display = 'none';
                 });
                 
@@ -2332,6 +2377,7 @@
             startDrawing(e) {
                 // Handle fill tool
                 if (this.tool === 'fill') {
+                    this.saveState(); // Fill is instant, safe to save synchronously
                     const canvas = e.target === this.selectionCanvas ? this.selectionCanvas : this.canvas;
                     const rect = canvas.getBoundingClientRect();
                     const scaleX = canvas.width / rect.width;
@@ -2344,6 +2390,7 @@
                 
                 // Handle lasso tool differently
                 if (this.tool === 'lasso') {
+                    this.saveState(); // Save before starting lasso selection
                     this.lassoPath = [];
                     const canvas = e.target === this.selectionCanvas ? this.selectionCanvas : this.canvas;
                     const rect = canvas.getBoundingClientRect();
@@ -2414,9 +2461,7 @@
                     return;
                 }
                 
-                // Save state before starting to draw (original working pattern)
-                this.saveState();
-                
+                // Draw FIRST for instant visual feedback (critical for iPad)
                 this.isDrawing = true;
                 const rect = this.canvas.getBoundingClientRect();
                 const scaleX = this.canvas.width / rect.width;
@@ -2429,6 +2474,15 @@
                 
                 if (this.tool === 'brush' || this.tool === 'eraser') {
                     this.drawPoint(this.lastX, this.lastY);
+                }
+                
+                // THEN save state asynchronously (doesn't block drawing)
+                // This prevents the 20-50ms blocking that causes dropped strokes on iPad
+                if (!this.strokeStateSaved) {
+                    this.strokeStateSaved = true;
+                    setTimeout(() => {
+                        this.saveState();
+                    }, 0);
                 }
             }
             
@@ -2594,6 +2648,9 @@
             
             stopDrawing() {
                 if (!this.isDrawing && !this.isTransforming) return;
+                
+                // Reset stroke state flag for next stroke
+                this.strokeStateSaved = false;
                 
                 // Handle lasso completion
                 if (this.tool === 'lasso' && this.isDrawing) {
