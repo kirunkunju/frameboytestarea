@@ -1557,99 +1557,68 @@
                 };
                 
                 // Unified Pointer Events - handles mouse, touch, AND Apple Pencil
-                const setupPointerEvents = (canvasEl) => {
-                    canvasEl.addEventListener('pointerdown', (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        
-                        // Set pointer state for this stroke
-                        this.activePointerId = e.pointerId;
-                        this.pointerType = e.pointerType;
-                        
-                        // Track if stylus is being used
-                        if (e.pointerType === 'pen') {
-                            this.hasStylusInput = true;
-                        }
-                        
-                        // Read pressure and start drawing immediately
-                        readPressure(e);
-                        this.startDrawing(e);
-                    });
-                    canvasEl.addEventListener('pointermove', (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        
-                        readPressure(e);
-                        
-                        // Process coalesced events for high-frequency input (Chrome/Edge)
-                        // Safari doesn't support this — falls through to single event path
-                        if (this.isDrawing && (this.tool === 'brush' || this.tool === 'eraser') && typeof e.getCoalescedEvents === 'function') {
-                            try {
-                                const coalesced = e.getCoalescedEvents();
-                                if (coalesced && coalesced.length > 1) {
-                                    for (const ce of coalesced) {
-                                        readPressure(ce);
-                                        this.draw(ce);
-                                    }
-                                    return;
-                                }
-                            } catch(err) { /* Safari may throw; fall through */ }
-                        }
-                        this.draw(e);
-                    });
-                    canvasEl.addEventListener('pointerup', (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        this.stopDrawing();
-                    });
-                    canvasEl.addEventListener('pointercancel', (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        
-                        // Clear active pointer
-                        if (this.activePointerId === e.pointerId) {
-                            this.activePointerId = null;
-                        }
-                        
-                        this.stopDrawing();
-                    });
-                    
-                    // Ensure cursor is visible when entering canvas
-                    canvasEl.addEventListener('pointerenter', (e) => {
-                        if (this.tool === 'brush' || this.tool === 'eraser') {
-                            this.brushCursor.style.display = 'block';
-                            this.brushCursor.style.left = e.clientX + 'px';
-                            this.brushCursor.style.top = e.clientY + 'px';
-                            this.updateBrushCursor();
-                        }
-                    });
-                    canvasEl.addEventListener('pointerleave', (e) => {
-                        // Don't stop if actively drawing — pointer capture keeps events flowing
-                        if (e.pointerType === 'mouse' && !this.isDrawing && !this.isTransforming) {
-                            this.stopDrawing();
-                        }
-                    });
-                    
-                    // Safari Apple Pencil pressure fallback via Touch Events
-                    // Safari delivers more reliable pressure through touch.force + touchforcechange
-                    canvasEl.addEventListener('touchforcechange', (e) => {
-                        if (e.touches.length > 0) {
-                            const touch = e.touches[0];
-                            // touchType 'stylus' = Apple Pencil (Safari-specific)
-                            if (touch.touchType === 'stylus' || touch.force > 0) {
-                                this.hasStylusInput = true;
-                                this.pointerType = 'pen';
-                                if (touch.force > 0) {
-                                    this.currentPressure = touch.force;
-                                }
-                            }
-                        }
-                    }, { passive: true });
-                    
-                };
+                // Pointer events for pressure support (Apple Pencil, Wacom, etc.)
+                this.canvas.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    this.pointerType = e.pointerType;
+                    if (e.pointerType === 'pen') {
+                        this.hasStylusInput = true;
+                        this.currentPressure = e.pressure > 0 ? e.pressure : 0.5;
+                    } else {
+                        this.currentPressure = 0.5;
+                    }
+                    this.startDrawing(e);
+                });
                 
-                setupPointerEvents(this.canvas);
-                setupPointerEvents(this.selectionCanvas);
+                this.canvas.addEventListener('pointermove', (e) => {
+                    e.preventDefault();
+                    // Update pressure continuously
+                    if (e.pointerType === 'pen' && e.pressure > 0) {
+                        this.currentPressure = e.pressure;
+                    }
+                    this.draw(e);
+                });
+                
+                this.canvas.addEventListener('pointerup', (e) => {
+                    e.preventDefault();
+                    this.stopDrawing();
+                });
+                
+                this.canvas.addEventListener('pointercancel', (e) => {
+                    e.preventDefault();
+                    this.stopDrawing();
+                });
+                
+                // Selection canvas pointer events
+                this.selectionCanvas.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    this.pointerType = e.pointerType;
+                    if (e.pointerType === 'pen') {
+                        this.hasStylusInput = true;
+                        this.currentPressure = e.pressure > 0 ? e.pressure : 0.5;
+                    } else {
+                        this.currentPressure = 0.5;
+                    }
+                    this.startDrawing(e);
+                });
+                
+                this.selectionCanvas.addEventListener('pointermove', (e) => {
+                    e.preventDefault();
+                    if (e.pointerType === 'pen' && e.pressure > 0) {
+                        this.currentPressure = e.pressure;
+                    }
+                    this.draw(e);
+                });
+                
+                this.selectionCanvas.addEventListener('pointerup', (e) => {
+                    e.preventDefault();
+                    this.stopDrawing();
+                });
+                
+                this.selectionCanvas.addEventListener('pointercancel', (e) => {
+                    e.preventDefault();
+                    this.stopDrawing();
+                });
                 
                 // Prevent iOS double-tap text selection menu and context menu
                 const preventIOSMenus = (canvasEl) => {
@@ -1800,7 +1769,7 @@
                 document.getElementById('lassoTool').addEventListener('click', () => this.selectTool('lasso'));
                 document.getElementById('transformTool').addEventListener('click', () => this.selectTool('transform'));
                 
-                // Brush cursor tracking on canvas container
+                // Brush cursor tracking
                 const canvasContainer = document.getElementById('canvasContainer');
                 canvasContainer.addEventListener('pointermove', (e) => {
                     if (this.tool === 'brush' || this.tool === 'eraser') {
@@ -1813,18 +1782,6 @@
                 canvasContainer.addEventListener('pointerleave', () => {
                     this.brushCursor.style.display = 'none';
                 });
-                
-                // Also track cursor on canvas itself (for when pointer is captured)
-                const updateCursorPosition = (e) => {
-                    if (this.tool === 'brush' || this.tool === 'eraser') {
-                        this.brushCursor.style.display = 'block';
-                        this.brushCursor.style.left = e.clientX + 'px';
-                        this.brushCursor.style.top = e.clientY + 'px';
-                    }
-                };
-                
-                this.canvas.addEventListener('pointermove', updateCursorPosition, { passive: true });
-                this.selectionCanvas.addEventListener('pointermove', updateCursorPosition, { passive: true });
                 
                 // Shapes dropdown
                 const shapeButton = document.getElementById('shapeTool');
@@ -2484,6 +2441,7 @@
                 }
                 return this.brushSize;
             }
+            
             
             draw(e) {
                 // Handle hover detection for rotation mode (when not actively transforming)
