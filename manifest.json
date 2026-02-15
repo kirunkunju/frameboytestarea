@@ -1,0 +1,24 @@
+{
+  "name": "FrameBoy",
+  "short_name": "FrameBoy",
+  "description": "Frame-by-frame animation studio",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#1e1e1e",
+  "theme_color": "#1e1e1e",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231e1e1e'/><text x='50' y='68' text-anchor='middle' font-size='52'>🎬</text></svg>",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "./",
+      "accept": {
+        "application/x-frameboy": [".fby"]
+      }
+    }
+  ]
+}

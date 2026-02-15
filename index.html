@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="description" content="FrameBoy - Create frame-by-frame animations">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="FrameBoy">
+    <meta name="theme-color" content="#1e1e1e">
+    <link rel="manifest" href="manifest.json">
     <title>FrameBoy</title>
     <!-- Gifshot library for GIF export (more reliable than gif.js) -->
     <script src="https://cdn.jsdelivr.net/npm/gifshot@0.4.5/dist/gifshot.min.js"></script>
@@ -1224,9 +1228,42 @@
             }
         }
 
+        /* File drop zone overlay */
+        .drop-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 120, 255, 0.15);
+            border: 3px dashed #0078ff;
+            z-index: 9999;
+            pointer-events: none;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .drop-overlay.active {
+            display: flex;
+        }
+        
+        .drop-overlay-label {
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 20px 40px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
     </style>
 </head>
 <body>
+    <div class="drop-overlay" id="dropOverlay">
+        <div class="drop-overlay-label">💾 Drop .fby file to open</div>
+    </div>
     <div class="app-container">
         <!-- Toolbar -->
         <div class="toolbar">
@@ -5222,6 +5259,74 @@
                 e.preventDefault();
             }
         }, { passive: false });
+        
+        // === PWA: Service Worker + File Handling ===
+        
+        // Register service worker for PWA install (enables file_handlers in manifest)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(() => {
+                // SW not available (e.g. not served over HTTPS) — app still works fine
+            });
+        }
+        
+        // File Handling API: when .fby is opened via OS file association (PWA only)
+        if ('launchQueue' in window) {
+            window.launchQueue.setConsumer(async (launchParams) => {
+                if (launchParams.files && launchParams.files.length > 0) {
+                    const fileHandle = launchParams.files[0];
+                    const file = await fileHandle.getFile();
+                    if (file.name.endsWith('.fby')) {
+                        app.loadProject(file);
+                    }
+                }
+            });
+        }
+        
+        // === Drag-and-Drop .fby file loading ===
+        
+        const dropOverlay = document.getElementById('dropOverlay');
+        let dragCounter = 0; // Track nested enter/leave events
+        
+        document.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            dragCounter++;
+            // Only show overlay if dragging files (not canvas elements)
+            if (e.dataTransfer && e.dataTransfer.types.includes('Files')) {
+                dropOverlay.classList.add('active');
+            }
+        });
+        
+        document.addEventListener('dragover', (e) => {
+            e.preventDefault(); // Required to allow drop
+            if (e.dataTransfer) {
+                e.dataTransfer.dropEffect = 'copy';
+            }
+        });
+        
+        document.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dragCounter--;
+            if (dragCounter <= 0) {
+                dragCounter = 0;
+                dropOverlay.classList.remove('active');
+            }
+        });
+        
+        document.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dragCounter = 0;
+            dropOverlay.classList.remove('active');
+            
+            if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+                const file = e.dataTransfer.files[0];
+                if (file.name.endsWith('.fby')) {
+                    app.loadProject(file);
+                } else {
+                    alert('Please drop a .fby FrameBoy project file.');
+                }
+            }
+        });
     </script>
 </body>
 </html>
