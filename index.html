@@ -136,7 +136,9 @@
         }
         
         .dropdown-item {
-            display: block;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             width: 100%;
             padding: 8px 12px;
             background: #2a2a2a;
@@ -146,6 +148,61 @@
             cursor: pointer;
             border-radius: 0;
             font-size: 14px;
+        }
+        
+        .dropdown-item .shortcut {
+            font-size: 11px;
+            color: #888;
+            margin-left: 16px;
+        }
+        
+        .dropdown-divider {
+            height: 1px;
+            background: #444;
+            margin: 4px 0;
+        }
+        
+        .dropdown-submenu-container {
+            position: relative;
+        }
+        
+        .dropdown-submenu-container .submenu-trigger {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+        
+        .submenu-arrow {
+            font-size: 10px;
+            color: #888;
+            margin-left: 12px;
+        }
+        
+        .dropdown-submenu {
+            display: none;
+            position: absolute;
+            left: 100%;
+            top: 0;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 4px;
+            min-width: 180px;
+            z-index: 1001;
+            box-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+        }
+        
+        .dropdown-submenu-container:hover > .dropdown-submenu,
+        .dropdown-submenu-container.touch-open > .dropdown-submenu {
+            display: block;
+        }
+        
+        .dropdown-submenu .dropdown-item:first-child {
+            border-radius: 4px 4px 0 0;
+        }
+        
+        .dropdown-submenu .dropdown-item:last-child {
+            border-radius: 0 0 4px 4px;
         }
         
         .dropdown-item:hover {
@@ -1074,6 +1131,20 @@
                 min-height: 44px;
             }
             
+            /* Submenu: inline on mobile instead of fly-out */
+            .dropdown-submenu {
+                position: static !important;
+                border: none !important;
+                box-shadow: none !important;
+                border-radius: 0 !important;
+                min-width: 0 !important;
+                background: #333 !important;
+            }
+            
+            .dropdown-submenu .dropdown-item {
+                padding-left: 28px;
+            }
+            
             /* Canvas area */
             .canvas-container {
                 min-height: 140px;
@@ -1159,6 +1230,24 @@
     <div class="app-container">
         <!-- Toolbar -->
         <div class="toolbar">
+            <div class="tool-group">
+                <div class="dropdown-container">
+                    <button id="fileMenuBtn" title="File (Save/Load/Export)">💾 <span class="btn-label">File ▼</span></button>
+                    <div class="dropdown-menu" id="fileMenuDropdown">
+                        <button class="dropdown-item" id="saveProjectBtn">💾 Save Project (.fby) <span class="shortcut">⌘S</span></button>
+                        <button class="dropdown-item" id="loadProjectBtn">📂 Load Project (.fby) <span class="shortcut">⌘O</span></button>
+                        <div class="dropdown-divider"></div>
+                        <div class="dropdown-submenu-container">
+                            <button class="dropdown-item submenu-trigger">📦 Export <span class="submenu-arrow">▶</span></button>
+                            <div class="dropdown-submenu">
+                                <button class="dropdown-item" id="exportPngZip">📦 PNG Frames (ZIP)</button>
+                                <button class="dropdown-item" id="exportGifBtn">🎞️ GIF Animation</button>
+                                <button class="dropdown-item" id="exportMp4Btn">🎬 MP4 Video</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
             <div class="tool-group">
                 <div class="dropdown-container">
                     <button id="brushTool" class="active" title="Brush (B)">🖌️ <span class="btn-label">Brush ▼</span></button>
@@ -1294,16 +1383,6 @@
                 <button id="undoBtn" title="Undo (Ctrl+Z)">↶ <span class="btn-label">Undo</span></button>
                 <button id="redoBtn" title="Redo (Ctrl+Y)">↷ <span class="btn-label">Redo</span></button>
             </div>
-            <div class="tool-group">
-                <div class="dropdown-container">
-                    <button id="exportBtn" title="Export">📦 <span class="btn-label">Export ▼</span></button>
-                    <div class="dropdown-menu" id="exportDropdown">
-                        <button class="dropdown-item" id="exportPngZip">PNG Frames (ZIP)</button>
-                        <button class="dropdown-item" id="exportGifBtn">GIF Animation</button>
-                        <button class="dropdown-item" id="exportMp4Btn">MP4 Video</button>
-                    </div>
-                </div>
-            </div>
         </div>
 
         <!-- Main content -->
@@ -1358,6 +1437,7 @@
     </div>
 
     <!-- Frame context menu -->
+    <input type="file" id="loadProjectInput" accept=".fby" style="display: none;">
     <div class="frame-context-menu" id="frameContextMenu">
         <button class="frame-context-menu-item" id="ctxCopyFrame">📋 Copy Frame<span class="shortcut">Ctrl+C</span></button>
         <button class="frame-context-menu-item" id="ctxPasteFrame">📌 Paste Frame<span class="shortcut">Ctrl+V</span></button>
@@ -1712,7 +1792,7 @@
                     brushDropdown.classList.toggle('show');
                     eraserDropdown.classList.remove('show');
                     document.getElementById('shapeDropdown').classList.remove('show');
-                    document.getElementById('exportDropdown').classList.remove('show');
+                    document.getElementById('fileMenuDropdown').classList.remove('show');
                     document.getElementById('onionSkinDropdown').classList.remove('show');
                 });
                 
@@ -1722,7 +1802,7 @@
                     eraserDropdown.classList.toggle('show');
                     brushDropdown.classList.remove('show');
                     document.getElementById('shapeDropdown').classList.remove('show');
-                    document.getElementById('exportDropdown').classList.remove('show');
+                    document.getElementById('fileMenuDropdown').classList.remove('show');
                     document.getElementById('onionSkinDropdown').classList.remove('show');
                 });
                 
@@ -1819,8 +1899,7 @@
                     onionDropdown.classList.remove('show');
                     brushDropdown.classList.remove('show');
                     eraserDropdown.classList.remove('show');
-                    const ed = document.getElementById('exportDropdown');
-                    if (ed) ed.classList.remove('show');
+                    document.getElementById('fileMenuDropdown').classList.remove('show');
                 });
                 
                 // Shape selection
@@ -1920,7 +1999,13 @@
                 
                 // Keyboard shortcuts for undo/redo
                 document.addEventListener('keydown', (e) => {
-                    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+                    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                        e.preventDefault();
+                        this.saveProject();
+                    } else if ((e.ctrlKey || e.metaKey) && e.key === 'o') {
+                        e.preventDefault();
+                        document.getElementById('loadProjectInput').click();
+                    } else if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
                         e.preventDefault();
                         this.undo();
                     } else if ((e.ctrlKey || e.metaKey) && (e.key === 'y' || (e.key === 'z' && e.shiftKey))) {
@@ -2081,26 +2166,50 @@
                 document.getElementById('duplicateLayerBtn').addEventListener('click', () => this.duplicateLayer());
                 document.getElementById('deleteLayerBtn').addEventListener('click', () => this.deleteLayer());
                 
-                // Export
-                // Export dropdown
-                const exportBtn = document.getElementById('exportBtn');
-                const exportDropdown = document.getElementById('exportDropdown');
-                exportBtn.addEventListener('click', (e) => {
+                // File menu (Save, Load, Export)
+                const fileMenuBtn = document.getElementById('fileMenuBtn');
+                const fileMenuDropdown = document.getElementById('fileMenuDropdown');
+                fileMenuBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    exportDropdown.classList.toggle('show');
+                    fileMenuDropdown.classList.toggle('show');
+                });
+                document.getElementById('saveProjectBtn').addEventListener('click', () => {
+                    fileMenuDropdown.classList.remove('show');
+                    this.saveProject();
+                });
+                document.getElementById('loadProjectBtn').addEventListener('click', () => {
+                    fileMenuDropdown.classList.remove('show');
+                    document.getElementById('loadProjectInput').click();
+                });
+                document.getElementById('loadProjectInput').addEventListener('change', (e) => {
+                    if (e.target.files.length > 0) {
+                        this.loadProject(e.target.files[0]);
+                        e.target.value = ''; // Reset so same file can be loaded again
+                    }
                 });
                 document.getElementById('exportPngZip').addEventListener('click', () => {
-                    exportDropdown.classList.remove('show');
+                    fileMenuDropdown.classList.remove('show');
                     this.exportGif();
                 });
                 document.getElementById('exportGifBtn').addEventListener('click', () => {
-                    exportDropdown.classList.remove('show');
+                    fileMenuDropdown.classList.remove('show');
                     this.exportAsGif();
                 });
                 document.getElementById('exportMp4Btn').addEventListener('click', () => {
-                    exportDropdown.classList.remove('show');
+                    fileMenuDropdown.classList.remove('show');
                     this.exportAsMp4();
                 });
+                
+                // Touch support for Export submenu — toggle on tap since hover doesn't work on touch
+                const submenuTrigger = document.querySelector('.submenu-trigger');
+                if (submenuTrigger) {
+                    submenuTrigger.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        const container = submenuTrigger.closest('.dropdown-submenu-container');
+                        container.classList.toggle('touch-open');
+                    });
+                }
             }
             
             selectTool(tool) {
@@ -4339,6 +4448,166 @@
                 this.render();
             }
             
+            // === SAVE / LOAD (.fby FrameBoy format) ===
+            
+            async saveProject() {
+                const fileMenuBtn = document.getElementById('fileMenuBtn');
+                const originalText = fileMenuBtn.innerHTML;
+                fileMenuBtn.textContent = 'Saving...';
+                fileMenuBtn.disabled = true;
+                
+                try {
+                    // Serialize all layers and frames to base64 PNG
+                    const layerData = [];
+                    for (const layer of this.layers) {
+                        const frames = [];
+                        for (const frame of layer.frames) {
+                            if (frame) {
+                                // Convert canvas to base64 PNG (strip the data URL prefix)
+                                frames.push(frame.toDataURL('image/png'));
+                            } else {
+                                frames.push(null);
+                            }
+                        }
+                        layerData.push({
+                            id: layer.id,
+                            name: layer.name,
+                            visible: layer.visible,
+                            opacity: layer.opacity,
+                            frames: frames
+                        });
+                    }
+                    
+                    const project = {
+                        format: 'FrameBoy',
+                        version: 1,
+                        canvasWidth: this.canvas.width,
+                        canvasHeight: this.canvas.height,
+                        fps: this.fps,
+                        currentLayerId: this.currentLayerId,
+                        currentFrameIndex: this.currentFrameIndex,
+                        nextLayerId: this.nextLayerId,
+                        layers: layerData
+                    };
+                    
+                    const json = JSON.stringify(project);
+                    const blob = new Blob([json], { type: 'application/json' });
+                    this.downloadBlob(blob, `frameboy-project-${Date.now()}.fby`);
+                    
+                    fileMenuBtn.textContent = '✓ Saved!';
+                    setTimeout(() => {
+                        fileMenuBtn.innerHTML = originalText;
+                        fileMenuBtn.disabled = false;
+                    }, 1500);
+                } catch (err) {
+                    console.error('Save failed:', err);
+                    alert('Save failed: ' + err.message);
+                    fileMenuBtn.innerHTML = originalText;
+                    fileMenuBtn.disabled = false;
+                }
+            }
+            
+            async loadProject(file) {
+                const fileMenuBtn = document.getElementById('fileMenuBtn');
+                const originalText = fileMenuBtn.innerHTML;
+                fileMenuBtn.textContent = 'Loading...';
+                fileMenuBtn.disabled = true;
+                
+                try {
+                    const text = await file.text();
+                    const project = JSON.parse(text);
+                    
+                    // Validate format
+                    if (project.format !== 'FrameBoy' || !project.layers) {
+                        throw new Error('Not a valid FrameBoy project file.');
+                    }
+                    
+                    // Commit any active selection
+                    this.commitSelection();
+                    this.hideTransformHandles();
+                    
+                    // Restore canvas dimensions
+                    if (project.canvasWidth && project.canvasHeight) {
+                        this.canvas.width = project.canvasWidth;
+                        this.canvas.height = project.canvasHeight;
+                        this.onionCanvas.width = project.canvasWidth;
+                        this.onionCanvas.height = project.canvasHeight;
+                        this.selectionCanvas.width = project.canvasWidth;
+                        this.selectionCanvas.height = project.canvasHeight;
+                    }
+                    
+                    // Restore FPS
+                    if (project.fps) {
+                        this.fps = project.fps;
+                        document.getElementById('fpsInput').value = project.fps;
+                    }
+                    
+                    // Load layers and frames from base64
+                    const loadImage = (dataUrl) => {
+                        return new Promise((resolve, reject) => {
+                            const img = new Image();
+                            img.onload = () => {
+                                const c = document.createElement('canvas');
+                                c.width = this.canvas.width;
+                                c.height = this.canvas.height;
+                                c.getContext('2d').drawImage(img, 0, 0);
+                                resolve(c);
+                            };
+                            img.onerror = reject;
+                            img.src = dataUrl;
+                        });
+                    };
+                    
+                    const layers = [];
+                    for (const layerData of project.layers) {
+                        const frames = [];
+                        for (const frameData of layerData.frames) {
+                            if (frameData) {
+                                frames.push(await loadImage(frameData));
+                            } else {
+                                frames.push(null);
+                            }
+                        }
+                        layers.push({
+                            id: layerData.id,
+                            name: layerData.name,
+                            visible: layerData.visible,
+                            opacity: layerData.opacity,
+                            frames: frames
+                        });
+                    }
+                    
+                    // Apply loaded state
+                    this.layers = layers;
+                    this.currentLayerId = project.currentLayerId || layers[0].id;
+                    this.currentFrameIndex = project.currentFrameIndex || 0;
+                    this.nextLayerId = project.nextLayerId || (Math.max(...layers.map(l => l.id)) + 1);
+                    
+                    // Reset undo/redo
+                    this.undoStack = [];
+                    this.redoStack = [];
+                    this.selectionUndoStack = [];
+                    this.selectionRedoStack = [];
+                    this.updateUndoRedoButtons();
+                    
+                    // Render
+                    this.positionOnionCanvas();
+                    this.renderLayers();
+                    this.render();
+                    
+                    fileMenuBtn.textContent = '✓ Loaded!';
+                    setTimeout(() => {
+                        fileMenuBtn.innerHTML = originalText;
+                        fileMenuBtn.disabled = false;
+                    }, 1500);
+                } catch (err) {
+                    console.error('Load failed:', err);
+                    alert('Load failed: ' + err.message);
+                    fileMenuBtn.innerHTML = originalText;
+                    fileMenuBtn.disabled = false;
+                }
+            }
+            
             // Helper to trigger a file download from a blob
             downloadBlob(blob, filename) {
                 const url = URL.createObjectURL(blob);
@@ -4366,7 +4635,7 @@
             }
             
             async exportFramesAsPNG() {
-                const exportBtn = document.getElementById('exportBtn');
+                const exportBtn = document.getElementById('fileMenuBtn');
                 
                 if (!exportBtn) {
                     alert('Export button not found. Please refresh the page.');
@@ -4489,7 +4758,7 @@
             }
             
             async exportAsGif() {
-                const exportBtn = document.getElementById('exportBtn');
+                const exportBtn = document.getElementById('fileMenuBtn');
                 
                 if (!exportBtn) {
                     alert('Export button not found. Please refresh the page.');
@@ -4605,7 +4874,7 @@
             }
             
             async exportAsMp4() {
-                const exportBtn = document.getElementById('exportBtn');
+                const exportBtn = document.getElementById('fileMenuBtn');
                 const originalText = exportBtn.innerHTML;
                 
                 try {
