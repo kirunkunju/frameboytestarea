@@ -1435,6 +1435,7 @@
                 this.copiedFrame = null; // For frame copy/paste
                 this.contextMenuFrameIndex = null; // Track which frame was right-clicked
                 this.selectionUndoStack = []; // Transform-level undo within floating selection
+                this.selectionRedoStack = []; // Transform-level redo within floating selection
                 
                 // Apple Pencil / Pointer properties
                 this.currentPressure = 0.5;
@@ -2293,6 +2294,12 @@
             }
             
             redo() {
+                // If there's an active selection with redo history, redo the transform
+                if (this.selection && this.selectionRedoStack.length > 0) {
+                    this.redoSelectionState();
+                    return;
+                }
+                
                 if (this.redoStack.length === 0) return;
                 
                 // If there's an active selection, apply it before saving current state
@@ -2342,11 +2349,14 @@
                 const undoBtn = document.getElementById('undoBtn');
                 const redoBtn = document.getElementById('redoBtn');
                 
-                undoBtn.disabled = this.undoStack.length === 0;
-                redoBtn.disabled = this.redoStack.length === 0;
+                const canUndo = this.undoStack.length > 0 || (this.selection && this.selectionUndoStack.length > 0);
+                const canRedo = this.redoStack.length > 0 || (this.selection && this.selectionRedoStack.length > 0);
                 
-                undoBtn.style.opacity = this.undoStack.length === 0 ? '0.5' : '1';
-                redoBtn.style.opacity = this.redoStack.length === 0 ? '0.5' : '1';
+                undoBtn.disabled = !canUndo;
+                redoBtn.disabled = !canRedo;
+                
+                undoBtn.style.opacity = canUndo ? '1' : '0.5';
+                redoBtn.style.opacity = canRedo ? '1' : '0.5';
             }
             
             startDrawing(e) {
@@ -3421,7 +3431,9 @@
                 this.selection = null;
                 this.transformHandles = [];
                 this.selectionUndoStack = [];
+                this.selectionRedoStack = [];
                 this.selectionCtx.clearRect(0, 0, this.selectionCanvas.width, this.selectionCanvas.height);
+                this.updateUndoRedoButtons();
             }
             
             saveSelectionState() {
@@ -3433,10 +3445,21 @@
                     anchorX: this.selection.anchorX,
                     anchorY: this.selection.anchorY
                 });
+                // New transform action invalidates redo history
+                this.selectionRedoStack = [];
+                this.updateUndoRedoButtons();
             }
             
             restoreSelectionState() {
                 if (!this.selection || this.selectionUndoStack.length === 0) return false;
+                // Save current state to redo stack before restoring
+                this.selectionRedoStack.push({
+                    bounds: { ...this.selection.bounds },
+                    originalBounds: { ...this.selection.originalBounds },
+                    rotation: this.selection.rotation || 0,
+                    anchorX: this.selection.anchorX,
+                    anchorY: this.selection.anchorY
+                });
                 const state = this.selectionUndoStack.pop();
                 this.selection.bounds = { ...state.bounds };
                 this.selection.originalBounds = { ...state.originalBounds };
@@ -3445,6 +3468,29 @@
                 this.selection.anchorY = state.anchorY;
                 this.showTransformHandles();
                 this.render();
+                this.updateUndoRedoButtons();
+                return true;
+            }
+            
+            redoSelectionState() {
+                if (!this.selection || this.selectionRedoStack.length === 0) return false;
+                // Save current state to undo stack before redoing
+                this.selectionUndoStack.push({
+                    bounds: { ...this.selection.bounds },
+                    originalBounds: { ...this.selection.originalBounds },
+                    rotation: this.selection.rotation || 0,
+                    anchorX: this.selection.anchorX,
+                    anchorY: this.selection.anchorY
+                });
+                const state = this.selectionRedoStack.pop();
+                this.selection.bounds = { ...state.bounds };
+                this.selection.originalBounds = { ...state.originalBounds };
+                this.selection.rotation = state.rotation;
+                this.selection.anchorX = state.anchorX;
+                this.selection.anchorY = state.anchorY;
+                this.showTransformHandles();
+                this.render();
+                this.updateUndoRedoButtons();
                 return true;
             }
             
