@@ -3709,8 +3709,34 @@
                 this.render();
             }
             
-            snapshotState() {
+            // === UNDO SYSTEM: Two-tier snapshots ===
+            // saveState()     → fast, single-frame (brush, fill, eraser, clear, lasso, paste)
+            // saveFullState() → slow, all frames   (add/delete layer/frame, resize, import)
+            
+            snapshotFrame() {
+                // Fast: only copy current frame on current layer (1 getImageData call)
+                const layer = this.getCurrentLayer();
+                const frame = layer.frames[this.currentFrameIndex];
+                let frameData = null;
+                if (frame) {
+                    frameData = {
+                        width: frame.width,
+                        height: frame.height,
+                        imageData: frame.getContext('2d').getImageData(0, 0, frame.width, frame.height)
+                    };
+                }
                 return {
+                    type: 'frame',
+                    layerId: this.currentLayerId,
+                    frameIndex: this.currentFrameIndex,
+                    frameData: frameData
+                };
+            }
+            
+            snapshotState() {
+                // Full: copy ALL frames as ImageData (N getImageData calls)
+                return {
+                    type: 'full',
                     layers: this.layers.map(layer => ({
                         id: layer.id,
                         name: layer.name,
@@ -3718,13 +3744,10 @@
                         opacity: layer.opacity,
                         frames: layer.frames.map(frame => {
                             if (!frame) return null;
-                            // Store as ImageData (Uint8ClampedArray in JS heap)
-                            // NOT as canvas elements — Safari evicts off-screen canvas GPU memory
-                            const ctx = frame.getContext('2d');
                             return {
                                 width: frame.width,
                                 height: frame.height,
-                                imageData: ctx.getImageData(0, 0, frame.width, frame.height)
+                                imageData: frame.getContext('2d').getImageData(0, 0, frame.width, frame.height)
                             };
                         })
                     })),
@@ -3734,29 +3757,53 @@
                 };
             }
             
-            saveState() {
-                this.undoStack.push(this.snapshotState());
-                
-                // Limit history size
-                if (this.undoStack.length > this.maxHistorySize) {
-                    this.undoStack.shift();
-                }
-                
-                // Clear redo stack when new action is performed
+            _pushUndo(entry) {
+                this.undoStack.push(entry);
+                if (this.undoStack.length > this.maxHistorySize) this.undoStack.shift();
                 this.redoStack = [];
-                
                 this.updateUndoRedoButtons();
             }
             
+            saveState() {
+                // Fast path — single frame snapshot
+                this._pushUndo(this.snapshotFrame());
+            }
+            
+            saveFullState() {
+                // Slow path — full snapshot for structural changes
+                this._pushUndo(this.snapshotState());
+            }
+            
+            // Snapshot current state matching the type of entry about to be restored
+            _snapshotMatching(entry) {
+                if (entry.type === 'frame') {
+                    const layer = this.layers.find(l => l.id === entry.layerId);
+                    if (layer && layer.frames[entry.frameIndex]) {
+                        const frame = layer.frames[entry.frameIndex];
+                        return {
+                            type: 'frame',
+                            layerId: entry.layerId,
+                            frameIndex: entry.frameIndex,
+                            frameData: {
+                                width: frame.width,
+                                height: frame.height,
+                                imageData: frame.getContext('2d').getImageData(0, 0, frame.width, frame.height)
+                            }
+                        };
+                    }
+                    // Layer/frame gone — fall back to full
+                    return this.snapshotState();
+                }
+                return this.snapshotState();
+            }
+            
             undo() {
-                // Flush any pending async saveState to ensure undo history is complete
                 if (this._pendingSaveTimer) {
                     clearTimeout(this._pendingSaveTimer);
                     this._pendingSaveTimer = null;
                     this.saveState();
                 }
                 
-                // If there's an active selection with transform history, undo the transform first
                 if (this.selection && this.selectionUndoStack.length > 0) {
                     this.restoreSelectionState();
                     return;
@@ -3764,33 +3811,25 @@
                 
                 if (this.undoStack.length === 0) return;
                 
-                // If there's an active selection with no transform history,
-                // apply it before saving current state to redo
                 if (this.selection) {
                     this.applySelection();
                     this.clearSelection();
                     this.hideTransformHandles();
                 }
                 
-                // Save current state to redo stack before undoing
-                this.redoStack.push(this.snapshotState());
-                
-                // Restore previous state
-                const previousState = this.undoStack.pop();
-                this.restoreState(previousState);
-                
+                const prev = this.undoStack.pop();
+                this.redoStack.push(this._snapshotMatching(prev));
+                this.restoreState(prev);
                 this.updateUndoRedoButtons();
             }
             
             redo() {
-                // Flush any pending async saveState
                 if (this._pendingSaveTimer) {
                     clearTimeout(this._pendingSaveTimer);
                     this._pendingSaveTimer = null;
                     this.saveState();
                 }
                 
-                // If there's an active selection with redo history, redo the transform
                 if (this.selection && this.selectionRedoStack.length > 0) {
                     this.redoSelectionState();
                     return;
@@ -3798,25 +3837,33 @@
                 
                 if (this.redoStack.length === 0) return;
                 
-                // If there's an active selection, apply it before saving current state
                 if (this.selection) {
                     this.applySelection();
                     this.clearSelection();
                     this.hideTransformHandles();
                 }
                 
-                // Save current state to undo stack before redoing
-                this.undoStack.push(this.snapshotState());
-                
-                // Restore redo state
-                const redoState = this.redoStack.pop();
-                this.restoreState(redoState);
-                
+                const next = this.redoStack.pop();
+                this.undoStack.push(this._snapshotMatching(next));
+                this.restoreState(next);
                 this.updateUndoRedoButtons();
             }
             
             restoreState(state) {
-                // Restore layers — convert ImageData snapshots back to canvas elements
+                if (state.type === 'frame') {
+                    // Fast restore — overwrite just one frame's pixels
+                    const layer = this.layers.find(l => l.id === state.layerId);
+                    if (layer && layer.frames[state.frameIndex] && state.frameData) {
+                        const frame = layer.frames[state.frameIndex];
+                        const ctx = frame.getContext('2d');
+                        ctx.clearRect(0, 0, frame.width, frame.height);
+                        ctx.putImageData(state.frameData.imageData, 0, 0);
+                    }
+                    this.render();
+                    return;
+                }
+                
+                // Full restore — rebuild all layers
                 this.layers = state.layers.map(layer => ({
                     id: layer.id,
                     name: layer.name,
@@ -3824,15 +3871,14 @@
                     opacity: layer.opacity,
                     frames: layer.frames.map(snapshot => {
                         if (!snapshot) return null;
-                        const frameCopy = document.createElement('canvas');
-                        frameCopy.width = snapshot.width;
-                        frameCopy.height = snapshot.height;
-                        frameCopy.getContext('2d').putImageData(snapshot.imageData, 0, 0);
-                        return frameCopy;
+                        const c = document.createElement('canvas');
+                        c.width = snapshot.width;
+                        c.height = snapshot.height;
+                        c.getContext('2d').putImageData(snapshot.imageData, 0, 0);
+                        return c;
                     })
                 }));
                 
-                // Restore current state
                 this.currentLayerId = state.currentLayerId;
                 this.currentFrameIndex = state.currentFrameIndex;
                 this.nextLayerId = state.nextLayerId;
@@ -4458,7 +4504,7 @@
             
             addLayer() {
                 this.commitSelection();
-                this.saveState();
+                this.saveFullState();
                 
                 const newLayer = {
                     id: this.nextLayerId++,
@@ -4476,7 +4522,7 @@
             
             duplicateLayer() {
                 this.commitSelection();
-                this.saveState();
+                this.saveFullState();
                 
                 const currentLayer = this.getCurrentLayer();
                 const newLayer = {
@@ -4511,7 +4557,7 @@
                 }
                 
                 this.commitSelection();
-                this.saveState();
+                this.saveFullState();
                 
                 // Find index of current layer
                 const layerIndex = this.layers.findIndex(l => l.id === this.currentLayerId);
@@ -5184,7 +5230,7 @@
                 if (!this.copiedFrame) return;
                 
                 this.commitSelection();
-                this.saveState();
+                this.saveFullState();
                 
                 const layer = this.getCurrentLayer();
                 const idx = (afterIndex !== undefined) ? afterIndex : this.currentFrameIndex;
@@ -5211,7 +5257,7 @@
                 const sourceFrame = layer.frames[idx];
                 if (!sourceFrame) return;
                 
-                this.saveState();
+                this.saveFullState();
                 
                 // Deep copy the frame
                 const newFrame = document.createElement('canvas');
