@@ -1917,7 +1917,7 @@
                 // Undo/Redo stacks
                 this.undoStack = [];
                 this.redoStack = [];
-                this.maxHistorySize = 50;
+                this.maxHistorySize = 30;
                 
                 // Drag and drop properties
                 this.draggedFrameIndex = null;
@@ -3718,11 +3718,14 @@
                         opacity: layer.opacity,
                         frames: layer.frames.map(frame => {
                             if (!frame) return null;
-                            const frameCopy = document.createElement('canvas');
-                            frameCopy.width = frame.width;
-                            frameCopy.height = frame.height;
-                            frameCopy.getContext('2d').drawImage(frame, 0, 0);
-                            return frameCopy;
+                            // Store as ImageData (Uint8ClampedArray in JS heap)
+                            // NOT as canvas elements — Safari evicts off-screen canvas GPU memory
+                            const ctx = frame.getContext('2d');
+                            return {
+                                width: frame.width,
+                                height: frame.height,
+                                imageData: ctx.getImageData(0, 0, frame.width, frame.height)
+                            };
                         })
                     })),
                     currentLayerId: this.currentLayerId,
@@ -3813,18 +3816,18 @@
             }
             
             restoreState(state) {
-                // Restore layers (deep copy to avoid shared references)
+                // Restore layers — convert ImageData snapshots back to canvas elements
                 this.layers = state.layers.map(layer => ({
                     id: layer.id,
                     name: layer.name,
                     visible: layer.visible,
                     opacity: layer.opacity,
-                    frames: layer.frames.map(frame => {
-                        if (!frame) return null;
+                    frames: layer.frames.map(snapshot => {
+                        if (!snapshot) return null;
                         const frameCopy = document.createElement('canvas');
-                        frameCopy.width = frame.width;
-                        frameCopy.height = frame.height;
-                        frameCopy.getContext('2d').drawImage(frame, 0, 0);
+                        frameCopy.width = snapshot.width;
+                        frameCopy.height = snapshot.height;
+                        frameCopy.getContext('2d').putImageData(snapshot.imageData, 0, 0);
                         return frameCopy;
                     })
                 }));
