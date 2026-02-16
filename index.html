@@ -1419,6 +1419,7 @@
                 <button id="fillTool" title="Fill Bucket (F)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 11l4-8 4 8z"/><path d="M2.5 11h8"/><path d="M13 9c1 1.5 1 3 0 4s-1-2.5 0-4"/></svg> <span class="btn-label">Fill</span></button>
                 <button id="lassoTool" title="Lasso Selection (L)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3C9.5 1 5 1 3 4s-1 7 3 9"/><path d="M6 13l-1 2.5L3.5 12l3.5.5"/><circle cx="11" cy="8" r="2" stroke-dasharray="2 1.5"/></svg> <span class="btn-label">Lasso</span></button>
                 <button id="transformTool" title="Free Transform (V/T)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="2.5" width="11" height="11" rx="0.5" stroke-dasharray="2 2"/><circle cx="2.5" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="2.5" cy="13.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="13.5" r="1" fill="currentColor" stroke="none"/></svg> <span class="btn-label">Transform</span></button>
+                <button id="panTool" title="Pan / Hand (H, or hold Space)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 8V3.5a1 1 0 012 0V7"/><path d="M7.5 7V2.5a1 1 0 012 0V7"/><path d="M9.5 7V3.5a1 1 0 012 0V7"/><path d="M11.5 5.5a1 1 0 012 0V10c0 2.5-2 4.5-4.5 4.5h-1C6 14.5 4 12.5 4 10V8.5"/><path d="M5.5 8c0 0-2-1-2.5-2s0-2 1-1.5l1.5 1"/></svg> <span class="btn-label">Pan</span></button>
             </div>
             <div class="tool-group">
                 <label>Color:</label>
@@ -1585,6 +1586,14 @@
                 this.canvasContainer = document.getElementById('canvasContainer');
                 
                 this.shapeStart = null;
+                
+                // Panning state
+                this.isPanning = false;
+                this._spaceHeld = false;
+                this._panStart = null;
+                this._scrollStart = null;
+                this._toolBeforeSpace = null;
+                this._spaceDidPan = false;
                 
                 // Undo/Redo stacks
                 this.undoStack = [];
@@ -1796,6 +1805,45 @@
                 this.updateBrushCursor();
             }
             
+            // === PANNING ===
+            
+            startPan(clientX, clientY) {
+                this.isPanning = true;
+                this._panStart = { x: clientX, y: clientY };
+                this._scrollStart = {
+                    left: this.canvasContainer.scrollLeft,
+                    top: this.canvasContainer.scrollTop
+                };
+                this.canvas.style.cursor = 'grabbing';
+                this.selectionCanvas.style.cursor = 'grabbing';
+            }
+            
+            doPan(clientX, clientY) {
+                if (!this.isPanning || !this._panStart) return;
+                const dx = clientX - this._panStart.x;
+                const dy = clientY - this._panStart.y;
+                this.canvasContainer.scrollLeft = this._scrollStart.left - dx;
+                this.canvasContainer.scrollTop = this._scrollStart.top - dy;
+            }
+            
+            stopPan() {
+                this.isPanning = false;
+                this._panStart = null;
+                this._scrollStart = null;
+                // Restore cursor
+                if (this.tool === 'pan' || this._spaceHeld) {
+                    this.canvas.style.cursor = 'grab';
+                    this.selectionCanvas.style.cursor = 'grab';
+                } else {
+                    // Re-apply current tool cursor
+                    this.selectTool(this.tool);
+                }
+            }
+            
+            _isPanActive() {
+                return this.tool === 'pan' || this._spaceHeld;
+            }
+            
             initializeFrame() {
                 const layer = this.getCurrentLayer();
                 if (!layer.frames[this.currentFrameIndex]) {
@@ -1826,6 +1874,19 @@
                     // On iPad these get blocked by touch preventDefault()
                     
                     canvasEl.addEventListener('pointerdown', (e) => {
+                        // Middle mouse button always pans
+                        if (e.button === 1) {
+                            e.preventDefault();
+                            this.startPan(e.clientX, e.clientY);
+                            return;
+                        }
+                        // Pan tool or space held — pan instead of draw
+                        if (this._isPanActive()) {
+                            e.preventDefault();
+                            this.startPan(e.clientX, e.clientY);
+                            this._spaceDidPan = true;
+                            return;
+                        }
                         this.pointerType = e.pointerType;
                         if (e.pointerType === 'pen') {
                             this.hasStylusInput = true;
@@ -1837,6 +1898,11 @@
                     });
                     
                     canvasEl.addEventListener('pointermove', (e) => {
+                        if (this.isPanning) {
+                            e.preventDefault();
+                            this.doPan(e.clientX, e.clientY);
+                            return;
+                        }
                         if (e.pointerType === 'pen' && e.pressure > 0) {
                             this.currentPressure = e.pressure;
                         }
@@ -1844,10 +1910,18 @@
                     });
                     
                     canvasEl.addEventListener('pointerup', (e) => {
+                        if (this.isPanning) {
+                            this.stopPan();
+                            return;
+                        }
                         this.stopDrawing();
                     });
                     
                     canvasEl.addEventListener('pointercancel', (e) => {
+                        if (this.isPanning) {
+                            this.stopPan();
+                            return;
+                        }
                         this.stopDrawing();
                     });
                     
@@ -1857,8 +1931,27 @@
                     
                     canvasEl.addEventListener('touchstart', (e) => {
                         e.preventDefault(); // Block pointer events on iPad!
+                        
+                        // Two-finger touch = always pan
+                        if (e.touches.length === 2) {
+                            const mid = {
+                                x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+                                y: (e.touches[0].clientY + e.touches[1].clientY) / 2
+                            };
+                            this.startPan(mid.x, mid.y);
+                            this._touchPanFingers = 2;
+                            return;
+                        }
+                        
                         const touch = e.touches[0];
                         if (!touch) return;
+                        
+                        // Pan tool active — pan with single finger
+                        if (this._isPanActive()) {
+                            this.startPan(touch.clientX, touch.clientY);
+                            this._spaceDidPan = true;
+                            return;
+                        }
                         
                         if (touch.touchType === 'stylus' || (touch.force > 0 && touch.force !== 1)) {
                             this.hasStylusInput = true;
@@ -1878,6 +1971,24 @@
                     
                     canvasEl.addEventListener('touchmove', (e) => {
                         e.preventDefault();
+                        
+                        // Two-finger pan
+                        if (this.isPanning && e.touches.length >= 2) {
+                            const mid = {
+                                x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+                                y: (e.touches[0].clientY + e.touches[1].clientY) / 2
+                            };
+                            this.doPan(mid.x, mid.y);
+                            return;
+                        }
+                        
+                        // Single-finger pan (pan tool)
+                        if (this.isPanning) {
+                            const touch = e.touches[0];
+                            if (touch) this.doPan(touch.clientX, touch.clientY);
+                            return;
+                        }
+                        
                         if (!this.isDrawing && !this.isTransforming) return;
                         const touch = e.touches[0];
                         if (!touch) return;
@@ -1895,11 +2006,24 @@
                     
                     canvasEl.addEventListener('touchend', (e) => {
                         e.preventDefault();
+                        if (this.isPanning) {
+                            // If went from 2 fingers to 1, stay panning only if pan tool
+                            if (e.touches.length === 0 || !this._isPanActive()) {
+                                this.stopPan();
+                                this._touchPanFingers = 0;
+                            }
+                            return;
+                        }
                         this.stopDrawing();
                     }, { passive: false });
                     
                     canvasEl.addEventListener('touchcancel', (e) => {
                         e.preventDefault();
+                        if (this.isPanning) {
+                            this.stopPan();
+                            this._touchPanFingers = 0;
+                            return;
+                        }
                         this.stopDrawing();
                     }, { passive: false });
                 };
@@ -1910,22 +2034,26 @@
                 // Document-level fallbacks — catch stylus lift outside canvas
                 // Pointer path (desktop off-canvas lift)
                 document.addEventListener('pointerup', (e) => {
+                    if (this.isPanning) { this.stopPan(); return; }
                     if (this.isDrawing || this.isTransforming) {
                         this.stopDrawing();
                     }
                 });
                 document.addEventListener('pointercancel', (e) => {
+                    if (this.isPanning) { this.stopPan(); return; }
                     if (this.isDrawing || this.isTransforming) {
                         this.stopDrawing();
                     }
                 });
-                // Touch path (iPad off-canvas lift — fixes stroke continuing after pencil lift)
+                // Touch path (iPad off-canvas lift)
                 document.addEventListener('touchend', (e) => {
+                    if (this.isPanning) { this.stopPan(); this._touchPanFingers = 0; return; }
                     if (this.isDrawing || this.isTransforming) {
                         this.stopDrawing();
                     }
                 }, { passive: true });
                 document.addEventListener('touchcancel', (e) => {
+                    if (this.isPanning) { this.stopPan(); this._touchPanFingers = 0; return; }
                     if (this.isDrawing || this.isTransforming) {
                         this.stopDrawing();
                     }
@@ -2079,6 +2207,7 @@
                 document.getElementById('fillTool').addEventListener('click', () => this.selectTool('fill'));
                 document.getElementById('lassoTool').addEventListener('click', () => this.selectTool('lasso'));
                 document.getElementById('transformTool').addEventListener('click', () => this.selectTool('transform'));
+                document.getElementById('panTool').addEventListener('click', () => this.selectTool('pan'));
                 
                 // Brush cursor tracking
                 const canvasContainer = document.getElementById('canvasContainer');
@@ -2221,6 +2350,11 @@
                     }
                 }, { passive: false });
                 
+                // Prevent middle-click auto-scroll on container
+                this.canvasContainer.addEventListener('mousedown', (e) => {
+                    if (e.button === 1) e.preventDefault();
+                });
+                
                 // Keyboard shortcuts for undo/redo
                 document.addEventListener('keydown', (e) => {
                     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -2306,6 +2440,10 @@
                                 e.preventDefault();
                                 this.selectTool('transform');
                                 break;
+                            case 'h':
+                                e.preventDefault();
+                                this.selectTool('pan');
+                                break;
                             case '[':
                                 e.preventDefault();
                                 this.brushSize = Math.max(1, this.brushSize - 1);
@@ -2342,10 +2480,14 @@
                                 break;
                             case ' ':
                                 e.preventDefault();
-                                if (this.isPlaying) {
-                                    this.stop();
-                                } else {
-                                    this.play();
+                                // Space hold = temporary pan mode
+                                if (!this._spaceHeld) {
+                                    this._spaceHeld = true;
+                                    this._spaceDidPan = false;
+                                    this._toolBeforeSpace = this.tool;
+                                    this.canvas.style.cursor = 'grab';
+                                    this.selectionCanvas.style.cursor = 'grab';
+                                    this.brushCursor.style.display = 'none';
                                 }
                                 break;
                             case ',':
@@ -2377,6 +2519,33 @@
                                 this.zoomFit();
                                 break;
                         }
+                    }
+                });
+                
+                // Space keyup: if no drag happened, toggle play/stop. Restore previous tool.
+                document.addEventListener('keyup', (e) => {
+                    if (e.key === ' ' && this._spaceHeld) {
+                        e.preventDefault();
+                        this._spaceHeld = false;
+                        if (this.isPanning) {
+                            this.stopPan();
+                        }
+                        // If user didn't drag at all, treat as play/stop toggle
+                        if (!this._spaceDidPan) {
+                            if (this.isPlaying) {
+                                this.stop();
+                            } else {
+                                this.play();
+                            }
+                        }
+                        this._spaceDidPan = false;
+                        // Restore cursor to previous tool
+                        if (this._toolBeforeSpace && this.tool !== 'pan') {
+                            this.selectTool(this._toolBeforeSpace);
+                        } else if (this.tool !== 'pan') {
+                            this.selectTool(this.tool);
+                        }
+                        this._toolBeforeSpace = null;
                     }
                 });
                 
@@ -2471,8 +2640,8 @@
                 const toolButton = document.getElementById(tool + 'Tool');
                 if (toolButton) toolButton.classList.add('active');
                 
-                // Clear selection when switching away from transform
-                if (tool !== 'transform' && this.selection) {
+                // Clear selection when switching away from transform (but not for pan)
+                if (tool !== 'transform' && tool !== 'pan' && this.selection) {
                     this.applySelection();
                     this.clearSelection();
                 }
@@ -2494,6 +2663,10 @@
                 } else if (tool === 'fill' || tool === 'lasso') {
                     this.canvas.style.cursor = 'crosshair';
                     this.selectionCanvas.style.cursor = 'crosshair';
+                    this.brushCursor.style.display = 'none';
+                } else if (tool === 'pan') {
+                    this.canvas.style.cursor = 'grab';
+                    this.selectionCanvas.style.cursor = 'grab';
                     this.brushCursor.style.display = 'none';
                 } else {
                     this.canvas.style.cursor = 'default';
@@ -2726,6 +2899,9 @@
             }
             
             startDrawing(e) {
+                // Pan tool doesn't draw
+                if (this.tool === 'pan') return;
+                
                 // Handle fill tool
                 if (this.tool === 'fill') {
                     this.saveState(); // Fill is instant, safe to save synchronously
