@@ -1587,13 +1587,13 @@
                         </div>
                         <div class="brush-setting-row">
                             <label>Diameter:</label>
-                            <input type="range" id="brushDiameter" min="1" max="100" value="5">
-                            <span class="brush-setting-value" id="brushDiameterValue">5</span>
+                            <input type="range" id="brushDiameter" min="1" max="100" value="8">
+                            <span class="brush-setting-value" id="brushDiameterValue">8</span>
                         </div>
                         <div class="brush-setting-row">
                             <label>Smoothing:</label>
-                            <input type="range" id="brushSmoothing" min="0" max="100" value="0">
-                            <span class="brush-setting-value" id="brushSmoothingValue">0%</span>
+                            <input type="range" id="brushSmoothing" min="0" max="100" value="50">
+                            <span class="brush-setting-value" id="brushSmoothingValue">50%</span>
                         </div>
                     </div>
                 </div>
@@ -1623,8 +1623,8 @@
                         </div>
                         <div class="brush-setting-row">
                             <label>Diameter:</label>
-                            <input type="range" id="eraserDiameter" min="1" max="100" value="5">
-                            <span class="brush-setting-value" id="eraserDiameterValue">5</span>
+                            <input type="range" id="eraserDiameter" min="1" max="100" value="8">
+                            <span class="brush-setting-value" id="eraserDiameterValue">8</span>
                         </div>
                         <div class="brush-setting-row">
                             <label>Smoothing:</label>
@@ -1667,9 +1667,9 @@
                 <input type="color" id="colorPicker" value="#000000">
                 <label>Size:</label>
                 <button class="size-step-btn" id="brushSizeMinus" title="Decrease brush size ([)">−</button>
-                <input type="range" id="brushSize" min="1" max="100" value="5">
+                <input type="range" id="brushSize" min="1" max="100" value="8">
                 <button class="size-step-btn" id="brushSizePlus" title="Increase brush size (])">+</button>
-                <span id="sizeValue">5</span>
+                <span id="sizeValue">8</span>
             </div>
             <div class="tool-group">
                 <button id="copyBtn" title="Copy (Ctrl+C)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="1.5" width="9" height="11" rx="1"/><path d="M2 4.5v9a1 1 0 001 1h7"/></svg> <span class="btn-label">Copy</span></button>
@@ -1691,7 +1691,9 @@
                         <div class="onion-divider"></div>
                         <div class="onion-setting-row">
                             <label>Frames Before:</label>
+                            <button class="size-step-btn" id="onionBeforeMinus" title="Decrease">−</button>
                             <input type="number" id="onionFramesBefore" min="0" max="10" value="1">
+                            <button class="size-step-btn" id="onionBeforePlus" title="Increase">+</button>
                         </div>
                         <div class="onion-setting-row">
                             <label>Previous Color:</label>
@@ -1700,7 +1702,9 @@
                         <div class="onion-divider"></div>
                         <div class="onion-setting-row">
                             <label>Frames After:</label>
+                            <button class="size-step-btn" id="onionAfterMinus" title="Decrease">−</button>
                             <input type="number" id="onionFramesAfter" min="0" max="10" value="1">
+                            <button class="size-step-btn" id="onionAfterPlus" title="Increase">+</button>
                         </div>
                         <div class="onion-setting-row">
                             <label>Next Color:</label>
@@ -1873,10 +1877,10 @@
                 
                 this.tool = 'brush';
                 this.color = '#000000';
-                this.brushSize = 5;
+                this.brushSize = 8;
                 this.brushShape = 'round';    // 'round', 'square', 'oval-h', 'oval-v'
                 this.eraserShape = 'round';
-                this.brushSmoothing = 0;      // 0-100
+                this.brushSmoothing = 50;      // 0-100
                 this.eraserSmoothing = 0;
                 this.smoothPoints = [];       // Buffer for smoothing
                 this.isDrawing = false;
@@ -2616,6 +2620,9 @@
                             this.pointerType = 'pen';
                             this.currentPressure = touch.force > 0 ? touch.force : 0.5;
                         } else {
+                            // Palm rejection: once Apple Pencil is detected, ignore
+                            // finger/knuckle touches for drawing (still works for pan/zoom above)
+                            if (this.hasStylusInput) return;
                             this.pointerType = 'touch';
                             this.currentPressure = 0.5;
                         }
@@ -3044,8 +3051,32 @@
                     this.onionFramesBefore = parseInt(e.target.value);
                     this.render();
                 });
+                document.getElementById('onionBeforeMinus').addEventListener('click', () => {
+                    const input = document.getElementById('onionFramesBefore');
+                    input.value = Math.max(0, parseInt(input.value) - 1);
+                    this.onionFramesBefore = parseInt(input.value);
+                    this.render();
+                });
+                document.getElementById('onionBeforePlus').addEventListener('click', () => {
+                    const input = document.getElementById('onionFramesBefore');
+                    input.value = Math.min(10, parseInt(input.value) + 1);
+                    this.onionFramesBefore = parseInt(input.value);
+                    this.render();
+                });
                 document.getElementById('onionFramesAfter').addEventListener('change', (e) => {
                     this.onionFramesAfter = parseInt(e.target.value);
+                    this.render();
+                });
+                document.getElementById('onionAfterMinus').addEventListener('click', () => {
+                    const input = document.getElementById('onionFramesAfter');
+                    input.value = Math.max(0, parseInt(input.value) - 1);
+                    this.onionFramesAfter = parseInt(input.value);
+                    this.render();
+                });
+                document.getElementById('onionAfterPlus').addEventListener('click', () => {
+                    const input = document.getElementById('onionFramesAfter');
+                    input.value = Math.min(10, parseInt(input.value) + 1);
+                    this.onionFramesAfter = parseInt(input.value);
                     this.render();
                 });
                 document.getElementById('onionPrevColor').addEventListener('input', (e) => {
