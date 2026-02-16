@@ -3844,7 +3844,6 @@
                 
                 // Handle fill tool
                 if (this.tool === 'fill') {
-                    this.saveState(); // Fill is instant, safe to save synchronously
                     const canvas = e.target === this.selectionCanvas ? this.selectionCanvas : this.canvas;
                     const rect = canvas.getBoundingClientRect();
                     const scaleX = canvas.width / rect.width;
