@@ -1119,9 +1119,29 @@
             }
             #sizeValue {
                 font-size: 11px;
-                min-width: 16px;
+                min-width: 20px;
+                flex-shrink: 0;
+                text-align: center;
+            }
+            
+            .size-step-btn {
+                width: 22px;
+                height: 22px;
+                padding: 0;
+                border: 1px solid #555;
+                border-radius: 4px;
+                background: #2a2a2a;
+                color: #ccc;
+                font-size: 14px;
+                line-height: 1;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
                 flex-shrink: 0;
             }
+            .size-step-btn:hover { background: #3a3a3a; border-color: #777; }
+            .size-step-btn:active { background: #444; }
             
             /* Keep dropdown containers inline */
             .dropdown-container {
@@ -1523,6 +1543,8 @@
                 <div class="dropdown-container">
                     <button id="fileMenuBtn" title="File (Save/Load/Export)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 1.5h8l3 3V13a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 012 13V3a1.5 1.5 0 011-1.5z"/><path d="M5 1.5v4h6v-4"/><path d="M5 14.5v-4h6v4"/></svg> <span class="btn-label">File ▼</span></button>
                     <div class="dropdown-menu" id="fileMenuDropdown">
+                        <button class="dropdown-item" id="canvasSizeBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="1.5" y="1.5" width="13" height="13" rx="1" stroke-dasharray="2 2"/><path d="M10 6l3-3M13 6V3h-3"/><path d="M6 10l-3 3M3 10v3h3"/></svg> Canvas Size…</button>
+                        <div class="dropdown-divider"></div>
                         <button class="dropdown-item" id="saveProjectBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M3 1.5h8l3 3V13a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 012 13V3a1.5 1.5 0 011-1.5z"/><path d="M5 1.5v4h6v-4"/><path d="M5 14.5v-4h6v4"/></svg> Save Project (.fby) <span class="shortcut">⌘S</span></button>
                         <button class="dropdown-item" id="loadProjectBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M2 4v9a1 1 0 001 1h10a1 1 0 001-1V6a1 1 0 00-1-1H8L6.5 3H3a1 1 0 00-1 1z"/></svg> Load Project (.fby) <span class="shortcut">⌘O</span></button>
                         <button class="dropdown-item" id="importSequenceBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="1" y="3" width="8" height="8" rx="1"/><rect x="4" y="1.5" width="8" height="8" rx="1"/><path d="M13 6v5M10.5 8.5h5"/></svg> Import Image Sequence…</button>
@@ -1535,8 +1557,6 @@
                                 <button class="dropdown-item" id="exportMp4Btn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="1" y="3" width="14" height="10" rx="1"/><path d="M6 6.5v3.5l3.5-1.75z" fill="currentColor" stroke="none"/></svg> MP4 Video</button>
                             </div>
                         </div>
-                        <div class="dropdown-divider"></div>
-                        <button class="dropdown-item" id="canvasSizeBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="1.5" y="1.5" width="13" height="13" rx="1" stroke-dasharray="2 2"/><path d="M10 6l3-3M13 6V3h-3"/><path d="M6 10l-3 3M3 10v3h3"/></svg> Canvas Size…</button>
                     </div>
                 </div>
             </div>
@@ -1624,7 +1644,14 @@
                 </div>
                 <button id="fillTool" title="Paint Bucket (K / F)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2C8 2 3 7.5 3 10.5a5 5 0 0010 0C13 7.5 8 2 8 2z" fill="currentColor"/></svg> <span class="btn-label">Fill</span></button>
                 <button id="lassoTool" title="Lasso Selection (L)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="8" cy="7" rx="6" ry="4.5"/><path d="M12.5 10c0 1.5-1 3-2 3.5s-1.5.5-1.5 1.5"/></svg> <span class="btn-label">Lasso</span></button>
-                <button id="transformTool" title="Free Transform (V/T)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="2.5" width="11" height="11" rx="0.5" stroke-dasharray="2 2"/><circle cx="2.5" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="2.5" cy="13.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="13.5" r="1" fill="currentColor" stroke="none"/></svg> <span class="btn-label">Transform</span></button>
+                <div class="dropdown-container">
+                    <button id="transformTool" title="Free Transform (V/T)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="2.5" width="11" height="11" rx="0.5" stroke-dasharray="2 2"/><circle cx="2.5" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="2.5" cy="13.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="13.5" r="1" fill="currentColor" stroke="none"/></svg> <span class="btn-label">Transform ▼</span></button>
+                    <div class="dropdown-menu" id="transformToolDropdown">
+                        <button class="dropdown-item" data-xformtool="transform"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="2.5" y="2.5" width="11" height="11" rx="0.5" stroke-dasharray="2 2"/><circle cx="2.5" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="2.5" cy="13.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="13.5" r="1" fill="currentColor" stroke="none"/></svg> Free Transform <span class="shortcut">V</span></button>
+                        <button class="dropdown-item" data-xformtool="scale"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M10 2h4v4"/><path d="M14 2l-4.5 4.5"/><path d="M6 14H2v-4"/><path d="M2 14l4.5-4.5"/></svg> Scale <span class="shortcut">S</span></button>
+                        <button class="dropdown-item" data-xformtool="rotate"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M13.5 8A5.5 5.5 0 112.5 5.5"/><path d="M2.5 1.5v4h4"/></svg> Rotate <span class="shortcut">R</span></button>
+                    </div>
+                </div>
                 <div class="dropdown-container">
                     <button id="navTool" title="Magnifier (Z)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="7" r="5"/><path d="M7 5v4M5 7h4"/><path d="M11 11l3.5 3.5"/></svg> <span class="btn-label">Magnifier ▼</span></button>
                     <div class="dropdown-menu" id="navToolDropdown">
@@ -1639,7 +1666,9 @@
                 <label>Color:</label>
                 <input type="color" id="colorPicker" value="#000000">
                 <label>Size:</label>
+                <button class="size-step-btn" id="brushSizeMinus" title="Decrease brush size ([)">−</button>
                 <input type="range" id="brushSize" min="1" max="100" value="5">
+                <button class="size-step-btn" id="brushSizePlus" title="Increase brush size (])">+</button>
                 <span id="sizeValue">5</span>
             </div>
             <div class="tool-group">
@@ -1909,6 +1938,7 @@
                 this.transformHandles = [];
                 this.activeHandle = null;
                 this.transformStart = null;
+                this._activeTransformTool = 'transform'; // 'transform', 'scale', 'rotate'
                 
                 // Clipboard properties
                 this.copiedSelection = null; // For selection copy/paste
@@ -2510,6 +2540,14 @@
                         if (e.pointerType === 'pen' && e.pressure > 0) {
                             this.currentPressure = e.pressure;
                         }
+                        // Track when pointer leaves canvas bounds during a stroke
+                        if (this.isDrawing && (this.tool === 'brush' || this.tool === 'eraser')) {
+                            const cr = this.canvasWrapper.getBoundingClientRect();
+                            if (e.clientX < cr.left || e.clientX > cr.right || e.clientY < cr.top || e.clientY > cr.bottom) {
+                                this._pointerOffCanvas = true;
+                                return;
+                            }
+                        }
                         this.draw(e);
                     });
                     
@@ -2624,6 +2662,15 @@
                             this.currentPressure = touch.force;
                         }
                         
+                        // Track when touch leaves canvas bounds during a stroke
+                        if (this.isDrawing && (this.tool === 'brush' || this.tool === 'eraser')) {
+                            const cr = this.canvasWrapper.getBoundingClientRect();
+                            if (touch.clientX < cr.left || touch.clientX > cr.right || touch.clientY < cr.top || touch.clientY > cr.bottom) {
+                                this._pointerOffCanvas = true;
+                                return;
+                            }
+                        }
+                        
                         this.draw({
                             clientX: touch.clientX,
                             clientY: touch.clientY,
@@ -2664,6 +2711,15 @@
                 setupCanvasEvents(this.selectionCanvas);
                 
                 // Document-level fallbacks — catch stylus lift outside canvas
+                // Track pointer leaving canvas during active stroke
+                document.addEventListener('pointermove', (e) => {
+                    if (this.isDrawing && (this.tool === 'brush' || this.tool === 'eraser')) {
+                        const target = e.target;
+                        if (target !== this.canvas && target !== this.selectionCanvas) {
+                            this._pointerOffCanvas = true;
+                        }
+                    }
+                }, true);
                 // Pointer path (desktop off-canvas lift)
                 document.addEventListener('pointerup', (e) => {
                     if (this.isPanning) { this.stopPan(); return; }
@@ -2838,7 +2894,29 @@
 
                 document.getElementById('fillTool').addEventListener('click', () => this.selectTool('fill'));
                 document.getElementById('lassoTool').addEventListener('click', () => this.selectTool('lasso'));
-                document.getElementById('transformTool').addEventListener('click', () => this.selectTool('transform'));
+                // Transform tool dropdown
+                const xformButton = document.getElementById('transformTool');
+                const xformDropdown = document.getElementById('transformToolDropdown');
+                
+                xformButton.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (this.tool === 'transform' || this.tool === 'scale' || this.tool === 'rotate') {
+                        xformDropdown.classList.toggle('show');
+                    } else {
+                        this.selectTool(this._activeTransformTool);
+                    }
+                });
+                
+                xformDropdown.querySelectorAll('.dropdown-item').forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const xformtool = item.getAttribute('data-xformtool');
+                        this._activeTransformTool = xformtool;
+                        this.selectTool(xformtool);
+                        xformDropdown.classList.remove('show');
+                        this._updateTransformButton(xformtool);
+                    });
+                });
                 
                 // Navigation tool (Magnifier / Pan) dropdown
                 const navButton = document.getElementById('navTool');
@@ -2929,6 +3007,16 @@
                     this.syncBrushSizeUI();
                     this.updateBrushCursor();
                 });
+                
+                const stepBrushSize = (delta) => {
+                    this.brushSize = Math.max(1, Math.min(100, this.brushSize + delta));
+                    document.getElementById('brushSize').value = this.brushSize;
+                    document.getElementById('sizeValue').textContent = this.brushSize;
+                    this.syncBrushSizeUI();
+                    this.updateBrushCursor();
+                };
+                document.getElementById('brushSizeMinus').addEventListener('click', () => stepBrushSize(-1));
+                document.getElementById('brushSizePlus').addEventListener('click', () => stepBrushSize(1));
                 
                 // Frame controls
                 document.getElementById('clearFrame').addEventListener('click', () => this.clearCurrentFrame());
@@ -3109,7 +3197,21 @@
                             case 'v':
                             case 't':
                                 e.preventDefault();
+                                this._activeTransformTool = 'transform';
+                                this._updateTransformButton('transform');
                                 this.selectTool('transform');
+                                break;
+                            case 's':
+                                e.preventDefault();
+                                this._activeTransformTool = 'scale';
+                                this._updateTransformButton('scale');
+                                this.selectTool('scale');
+                                break;
+                            case 'r':
+                                e.preventDefault();
+                                this._activeTransformTool = 'rotate';
+                                this._updateTransformButton('rotate');
+                                this.selectTool('rotate');
                                 break;
                             case 'h':
                                 e.preventDefault();
@@ -3435,6 +3537,11 @@
                     document.getElementById('navTool').classList.add('active');
                 }
                 
+                // For transform sub-tools, highlight the transformTool dropdown button
+                if (tool === 'transform' || tool === 'scale' || tool === 'rotate') {
+                    document.getElementById('transformTool').classList.add('active');
+                }
+                
                 // Sync pill pan button
                 const pillPan = document.getElementById('pillPanBtn');
                 if (pillPan) {
@@ -3442,15 +3549,17 @@
                 }
                 
                 // Clear selection when switching away from transform (but not for pan/magnifier)
-                if (tool !== 'transform' && tool !== 'pan' && tool !== 'magnifier' && tool !== 'magnifier-out' && this.selection) {
+                const isTransformTool = tool === 'transform' || tool === 'scale' || tool === 'rotate';
+                const isNavTool = tool === 'pan' || tool === 'magnifier' || tool === 'magnifier-out';
+                if (!isTransformTool && !isNavTool && this.selection) {
                     this.applySelection();
                     this.clearSelection();
                 }
                 
-                // Show transform handles if tool is transform and selection exists
-                if (tool === 'transform' && this.selection) {
+                // Show transform handles if transform-family tool and selection exists
+                if (isTransformTool && this.selection) {
                     this.showTransformHandles();
-                } else if (tool === 'transform' && !this.selection) {
+                } else if (isTransformTool && !this.selection) {
                     // Auto-select all content in the current frame
                     this.selectAllInFrame();
                 } else {
@@ -3493,6 +3602,17 @@
                 };
                 const labels = { 'magnifier': 'Zoom In', 'magnifier-out': 'Zoom Out', 'pan': 'Pan' };
                 navButton.innerHTML = `${icons[navtool]} <span class="btn-label">${labels[navtool]} ▼</span>`;
+            }
+            
+            _updateTransformButton(xformtool) {
+                const btn = document.getElementById('transformTool');
+                const icons = {
+                    'transform': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="2.5" width="11" height="11" rx="0.5" stroke-dasharray="2 2"/><circle cx="2.5" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="2.5" cy="13.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="13.5" r="1" fill="currentColor" stroke="none"/></svg>',
+                    'scale': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2h4v4"/><path d="M14 2l-4.5 4.5"/><path d="M6 14H2v-4"/><path d="M2 14l4.5-4.5"/></svg>',
+                    'rotate': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 8A5.5 5.5 0 112.5 5.5"/><path d="M2.5 1.5v4h4"/></svg>'
+                };
+                const labels = { 'transform': 'Transform', 'scale': 'Scale', 'rotate': 'Rotate' };
+                btn.innerHTML = `${icons[xformtool]} <span class="btn-label">${labels[xformtool]} ▼</span>`;
             }
             
             updateBrushCursor() {
@@ -3751,7 +3871,7 @@
                 }
                 
                 // Handle transform tool
-                if (this.tool === 'transform') {
+                if (this.tool === 'transform' || this.tool === 'scale' || this.tool === 'rotate') {
                     // Check if clicking on a handle
                     const canvas = e.target === this.selectionCanvas ? this.selectionCanvas : this.canvas;
                     const rect = canvas.getBoundingClientRect();
@@ -3763,23 +3883,29 @@
                     for (let handle of this.transformHandles) {
                         const dist = Math.sqrt(Math.pow(x - handle.x, 2) + Math.pow(y - handle.y, 2));
                         if (dist < 20) { // Large hit area for Apple Pencil & touch
-                            // Check if we're in rotation mode and this is a corner
                             const isCorner = handle.type === 'nw' || handle.type === 'ne' || 
                                            handle.type === 'se' || handle.type === 'sw';
                             
-                            if (this.rotationMode && isCorner) {
-                                // Enter rotation mode
+                            // Rotate tool: corners always rotate
+                            // Scale tool: corners always resize (never rotate)
+                            // Free transform: hover-based rotation mode
+                            const shouldRotate = (this.tool === 'rotate' && isCorner) ||
+                                                 (this.tool === 'transform' && this.rotationMode && isCorner);
+                            
+                            if (shouldRotate) {
                                 this.activeHandle = {type: 'rotate', corner: handle.type};
                                 this.isRotating = true;
                                 this.initialRotation = this.selection.rotation || 0;
-                                // Calculate initial angle from anchor to click point
                                 const anchorX = this.selection.anchorX;
                                 const anchorY = this.selection.anchorY;
                                 this.startAngle = Math.atan2(y - anchorY, x - anchorX);
                                 this.updateRotationCursor(handle.type, true);
-                            } else {
-                                // Normal resize/transform mode
+                            } else if (this.tool !== 'rotate') {
+                                // Scale or free transform resize
                                 this.activeHandle = handle;
+                            } else {
+                                // Rotate tool on edge handles: allow move only
+                                continue;
                             }
                             
                             this.transformStart = {x, y};
@@ -3845,9 +3971,13 @@
             
             
             draw(e) {
-                // Handle hover detection for rotation mode (when not actively transforming)
+                // Handle hover detection for rotation mode (free transform only, not scale-only)
                 if (this.tool === 'transform' && this.selection && !this.isDrawing && !this.isTransforming) {
                     this.checkRotationHover(e);
+                }
+                // Rotate tool: always show rotation cursor near corners
+                if (this.tool === 'rotate' && this.selection && !this.isDrawing && !this.isTransforming) {
+                    this.checkRotateCursor(e);
                 }
                 
                 if (!this.isDrawing && !this.isTransforming) return;
@@ -3869,13 +3999,23 @@
                     return;
                 }
                 
-                // Handle transform
-                if (this.tool === 'transform' && this.isTransforming) {
-                    this.performTransform(x, y);
+                // Handle transform / scale / rotate
+                if (this.tool === 'transform' || this.tool === 'scale' || this.tool === 'rotate') {
+                    if (this.isTransforming) this.performTransform(x, y);
                     return;
                 }
                 
                 if (this.tool === 'brush' || this.tool === 'eraser') {
+                    // If pointer just re-entered canvas, jump to new position without connecting line
+                    if (this._pointerOffCanvas) {
+                        this._pointerOffCanvas = false;
+                        this.lastX = x;
+                        this.lastY = y;
+                        this.smoothX = x;
+                        this.smoothY = y;
+                        this.drawPoint(x, y);
+                        return;
+                    }
                     const smoothing = this.getSmoothing();
                     if (smoothing > 0) {
                         // Exponential smoothing: higher smoothing = slower catch-up
@@ -3890,8 +4030,8 @@
                         this.lastX = x;
                         this.lastY = y;
                     }
-                } else {
-                    // Preview shape
+                } else if (this.shapeStart) {
+                    // Preview shape (line, rect, circle, triangle)
                     this.drawShape(this.shapeStart.x, this.shapeStart.y, x, y, true, e.shiftKey, e.altKey);
                 }
             }
@@ -3946,6 +4086,36 @@
                     }
                     this.hoverHandle = null;
                     this.rotationMode = false;
+                    this.selectionCanvas.style.cursor = 'default';
+                }
+            }
+            
+            checkRotateCursor(e) {
+                const canvas = e.target === this.selectionCanvas ? this.selectionCanvas : this.canvas;
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                const x = (e.clientX - rect.left) * scaleX;
+                const y = (e.clientY - rect.top) * scaleY;
+                
+                let nearCorner = false;
+                let hoveredHandle = null;
+                
+                for (let handle of this.transformHandles) {
+                    if (handle.type === 'anchor') continue;
+                    const isCorner = handle.type === 'nw' || handle.type === 'ne' || 
+                                     handle.type === 'se' || handle.type === 'sw';
+                    const dist = Math.sqrt(Math.pow(x - handle.x, 2) + Math.pow(y - handle.y, 2));
+                    if (dist < 20 && isCorner) {
+                        nearCorner = true;
+                        hoveredHandle = handle;
+                        break;
+                    }
+                }
+                
+                if (nearCorner) {
+                    this.updateRotationCursor(hoveredHandle.type);
+                } else {
                     this.selectionCanvas.style.cursor = 'default';
                 }
             }
@@ -4007,13 +4177,12 @@
                 }
                 
                 // Handle transform completion
-                if (this.tool === 'transform' && this.isTransforming) {
+                if ((this.tool === 'transform' || this.tool === 'scale' || this.tool === 'rotate') && this.isTransforming) {
                     this.isTransforming = false;
                     this.isRotating = false;
-                    this.rotationMode = false; // Reset so next hover can activate
+                    if (this.tool === 'transform') this.rotationMode = false;
                     this.activeHandle = null;
                     this.transformStart = null;
-                    // Clear the timer too
                     if (this.hoverTimer) {
                         clearTimeout(this.hoverTimer);
                         this.hoverTimer = null;
@@ -4040,6 +4209,7 @@
                 
                 this.isDrawing = false;
                 this.shapeStart = null;
+                this._pointerOffCanvas = false;
                 this.render();
             }
             
