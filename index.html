@@ -84,6 +84,20 @@
             -ms-user-select: none;
             user-select: none;
             -webkit-touch-callout: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        button svg {
+            flex-shrink: 0;
+            vertical-align: middle;
+        }
+        
+        .dropdown-item svg {
+            flex-shrink: 0;
+            vertical-align: middle;
+            opacity: 0.85;
         }
 
         .btn-label {
@@ -1262,24 +1276,24 @@
 </head>
 <body>
     <div class="drop-overlay" id="dropOverlay">
-        <div class="drop-overlay-label">💾 Drop .fby file to open</div>
+        <div class="drop-overlay-label"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 1.5h8l3 3V13a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 012 13V3a1.5 1.5 0 011-1.5z"/><path d="M5 1.5v4h6v-4"/><path d="M5 14.5v-4h6v4"/></svg> Drop .fby file to open</div>
     </div>
     <div class="app-container">
         <!-- Toolbar -->
         <div class="toolbar">
             <div class="tool-group">
                 <div class="dropdown-container">
-                    <button id="fileMenuBtn" title="File (Save/Load/Export)">💾 <span class="btn-label">File ▼</span></button>
+                    <button id="fileMenuBtn" title="File (Save/Load/Export)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 1.5h8l3 3V13a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 012 13V3a1.5 1.5 0 011-1.5z"/><path d="M5 1.5v4h6v-4"/><path d="M5 14.5v-4h6v4"/></svg> <span class="btn-label">File ▼</span></button>
                     <div class="dropdown-menu" id="fileMenuDropdown">
-                        <button class="dropdown-item" id="saveProjectBtn">💾 Save Project (.fby) <span class="shortcut">⌘S</span></button>
-                        <button class="dropdown-item" id="loadProjectBtn">📂 Load Project (.fby) <span class="shortcut">⌘O</span></button>
+                        <button class="dropdown-item" id="saveProjectBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M3 1.5h8l3 3V13a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 012 13V3a1.5 1.5 0 011-1.5z"/><path d="M5 1.5v4h6v-4"/><path d="M5 14.5v-4h6v4"/></svg> Save Project (.fby) <span class="shortcut">⌘S</span></button>
+                        <button class="dropdown-item" id="loadProjectBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M2 4v9a1 1 0 001 1h10a1 1 0 001-1V6a1 1 0 00-1-1H8L6.5 3H3a1 1 0 00-1 1z"/></svg> Load Project (.fby) <span class="shortcut">⌘O</span></button>
                         <div class="dropdown-divider"></div>
                         <div class="dropdown-submenu-container">
-                            <button class="dropdown-item submenu-trigger">📦 Export <span class="submenu-arrow">▶</span></button>
+                            <button class="dropdown-item submenu-trigger"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="2" y="3" width="12" height="10" rx="1"/><path d="M8 1v5m-2-2l2 2 2-2"/></svg> Export <span class="submenu-arrow">▶</span></button>
                             <div class="dropdown-submenu">
-                                <button class="dropdown-item" id="exportPngZip">📦 PNG Frames (ZIP)</button>
-                                <button class="dropdown-item" id="exportGifBtn">🎞️ GIF Animation</button>
-                                <button class="dropdown-item" id="exportMp4Btn">🎬 MP4 Video</button>
+                                <button class="dropdown-item" id="exportPngZip"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="2" y="2" width="12" height="12" rx="1"/><circle cx="6" cy="7" r="1.5"/><path d="M2 11l3-3 2 2 3-3 4 4"/></svg> PNG Frames (ZIP)</button>
+                                <button class="dropdown-item" id="exportGifBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="4" y="1" width="8" height="14" rx="1"/><path d="M6 1v14M10 1v14M4 5h8M4 9h8M4 13h8"/></svg> GIF Animation</button>
+                                <button class="dropdown-item" id="exportMp4Btn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="1" y="3" width="14" height="10" rx="1"/><path d="M6 6.5v3.5l3.5-1.75z" fill="currentColor" stroke="none"/></svg> MP4 Video</button>
                             </div>
                         </div>
                     </div>
@@ -1287,7 +1301,7 @@
             </div>
             <div class="tool-group">
                 <div class="dropdown-container">
-                    <button id="brushTool" class="active" title="Brush (B)">🖌️ <span class="btn-label">Brush ▼</span></button>
+                    <button id="brushTool" class="active" title="Brush (B)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 1.5l4 4-8 8H2.5v-4z"/><path d="M8.5 3.5l4 4"/></svg> <span class="btn-label">Brush ▼</span></button>
                     <div class="brush-dropdown" id="brushDropdown">
                         <div class="brush-setting-row">
                             <label>Pressure:</label>
@@ -1323,7 +1337,7 @@
                     </div>
                 </div>
                 <div class="dropdown-container">
-                    <button id="eraserTool" title="Eraser (E)">🧹 <span class="btn-label">Eraser ▼</span></button>
+                    <button id="eraserTool" title="Eraser (E)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 14h8"/><path d="M3.5 10l6.5-6.5 3.5 3.5-5 5H5l-1.5-1.5z"/><path d="M10 3.5l3.5 3.5"/></svg> <span class="btn-label">Eraser ▼</span></button>
                     <div class="brush-dropdown" id="eraserDropdown">
                         <div class="brush-setting-row">
                             <label>Pressure:</label>
@@ -1359,17 +1373,17 @@
                     </div>
                 </div>
                 <div class="dropdown-container">
-                    <button id="shapeTool" title="Shapes">📐 <span class="btn-label">Shapes ▼</span></button>
+                    <button id="shapeTool" title="Shapes"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="1.5" width="6" height="6" rx="0.5"/><circle cx="11" cy="11" r="3.5"/></svg> <span class="btn-label">Shapes ▼</span></button>
                     <div class="dropdown-menu" id="shapeDropdown">
-                        <button class="dropdown-item" data-shape="line">📏 Line</button>
-                        <button class="dropdown-item" data-shape="rect">⬜ Rectangle</button>
-                        <button class="dropdown-item" data-shape="circle">⭕ Circle</button>
-                        <button class="dropdown-item" data-shape="triangle">🔺 Triangle</button>
+                        <button class="dropdown-item" data-shape="line"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M3 13L13 3"/></svg> Line</button>
+                        <button class="dropdown-item" data-shape="rect"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="2" y="3" width="10" height="8" rx="0.5"/></svg> Rectangle</button>
+                        <button class="dropdown-item" data-shape="circle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><circle cx="7" cy="7.5" r="5"/></svg> Circle</button>
+                        <button class="dropdown-item" data-shape="triangle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M7 2l6 11H1z"/></svg> Triangle</button>
                     </div>
                 </div>
-                <button id="fillTool" title="Fill Bucket (F)">🪣 <span class="btn-label">Fill</span></button>
-                <button id="lassoTool" title="Lasso Selection (L)">🎯 <span class="btn-label">Lasso</span></button>
-                <button id="transformTool" title="Free Transform (V/T)">🔄 <span class="btn-label">Transform</span></button>
+                <button id="fillTool" title="Fill Bucket (F)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 11l4-8 4 8z"/><path d="M2.5 11h8"/><path d="M13 9c1 1.5 1 3 0 4s-1-2.5 0-4"/></svg> <span class="btn-label">Fill</span></button>
+                <button id="lassoTool" title="Lasso Selection (L)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3C9.5 1 5 1 3 4s-1 7 3 9"/><path d="M6 13l-1 2.5L3.5 12l3.5.5"/><circle cx="11" cy="8" r="2" stroke-dasharray="2 1.5"/></svg> <span class="btn-label">Lasso</span></button>
+                <button id="transformTool" title="Free Transform (V/T)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="2.5" width="11" height="11" rx="0.5" stroke-dasharray="2 2"/><circle cx="2.5" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="2.5" cy="13.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="13.5" r="1" fill="currentColor" stroke="none"/></svg> <span class="btn-label">Transform</span></button>
             </div>
             <div class="tool-group">
                 <label>Color:</label>
@@ -1379,11 +1393,11 @@
                 <span id="sizeValue">5</span>
             </div>
             <div class="tool-group">
-                <button id="copyBtn" title="Copy (Ctrl+C)">📋 <span class="btn-label">Copy</span></button>
-                <button id="pasteBtn" title="Paste (Ctrl+V)">📌 <span class="btn-label">Paste</span></button>
-                <button id="pasteInPlaceBtn" title="Paste in Place (Ctrl+Shift+V)">📍 <span class="btn-label">Paste in Place</span></button>
+                <button id="copyBtn" title="Copy (Ctrl+C)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="1.5" width="9" height="11" rx="1"/><path d="M2 4.5v9a1 1 0 001 1h7"/></svg> <span class="btn-label">Copy</span></button>
+                <button id="pasteBtn" title="Paste (Ctrl+V)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3.5" width="10" height="11" rx="1"/><path d="M6 3.5V2.5a1 1 0 011-1h2a1 1 0 011 1v1"/></svg> <span class="btn-label">Paste</span></button>
+                <button id="pasteInPlaceBtn" title="Paste in Place (Ctrl+Shift+V)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3.5" width="10" height="11" rx="1"/><path d="M6 3.5V2.5a1 1 0 011-1h2a1 1 0 011 1v1"/><path d="M8 7v4m-2-2h4"/></svg> <span class="btn-label">Paste in Place</span></button>
                 <div class="dropdown-container">
-                    <button id="onionSkinToggle" title="Onion Skin">👁️ <span class="btn-label">Onion Skin ▼</span></button>
+                    <button id="onionSkinToggle" title="Onion Skin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 8s3-5 7-5 7 5 7 5-3 5-7 5S1 8 1 8z"/><circle cx="8" cy="8" r="2"/></svg> <span class="btn-label">Onion Skin ▼</span></button>
                     <div class="onion-skin-dropdown" id="onionSkinDropdown">
                         <div class="onion-setting-row">
                             <label>Enabled:</label>
@@ -1417,8 +1431,8 @@
                 </div>
             </div>
             <div class="tool-group">
-                <button id="undoBtn" title="Undo (Ctrl+Z)">↶ <span class="btn-label">Undo</span></button>
-                <button id="redoBtn" title="Redo (Ctrl+Y)">↷ <span class="btn-label">Redo</span></button>
+                <button id="undoBtn" title="Undo (Ctrl+Z)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l-3 3 3 3"/><path d="M1 9h9a4 4 0 010 8H6"/></svg> <span class="btn-label">Undo</span></button>
+                <button id="redoBtn" title="Redo (Ctrl+Y)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6l3 3-3 3"/><path d="M15 9H6a4 4 0 000 8h4"/></svg> <span class="btn-label">Redo</span></button>
             </div>
         </div>
 
@@ -1438,14 +1452,14 @@
             <div class="timeline-header">
                 <div class="timeline-controls">
                     <div class="playback-controls">
-                        <button id="playBtn" title="Play (Space)">▶️ <span class="btn-label">Play</span></button>
-                        <button id="stopBtn" title="Stop (Space)">⏹️ <span class="btn-label">Stop</span></button>
-                        <button id="prevFrame" title="Previous Frame (,)">◀️</button>
-                        <button id="nextFrame" title="Next Frame (.)">▶️</button>
-                        <button id="insertFrame" title="Insert Frame (F6)">➕ <span class="btn-label">Insert</span></button>
-                        <button id="duplicateFrame" title="Duplicate Frame (Ctrl+D)">⧉ <span class="btn-label">Duplicate</span></button>
-                        <button id="clearFrame" title="Clear Frame (Backspace)">🧽 <span class="btn-label">Clear</span></button>
-                        <button id="deleteFrame" title="Delete Frame (F7)">🗑️ <span class="btn-label">Delete</span></button>
+                        <button id="playBtn" title="Play (Space)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2.5v11l9-5.5z" fill="currentColor" stroke="none"/></svg> <span class="btn-label">Play</span></button>
+                        <button id="stopBtn" title="Stop (Space)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="10" height="10" rx="1" fill="currentColor" stroke="none"/></svg> <span class="btn-label">Stop</span></button>
+                        <button id="prevFrame" title="Previous Frame (,)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M10 3L5 8l5 5"/></svg></button>
+                        <button id="nextFrame" title="Next Frame (.)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M6 3l5 5-5 5"/></svg></button>
+                        <button id="insertFrame" title="Insert Frame (F6)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v10M3 8h10"/></svg> <span class="btn-label">Insert</span></button>
+                        <button id="duplicateFrame" title="Duplicate Frame (Ctrl+D)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="4" width="8" height="8" rx="1"/><rect x="5.5" y="1" width="8" height="8" rx="1"/></svg> <span class="btn-label">Duplicate</span></button>
+                        <button id="clearFrame" title="Clear Frame (Backspace)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 14h12"/><path d="M4.5 10.5L10 5l2.5 2.5-4 4H5.5l-1-.5z"/><path d="M10 5l2.5 2.5"/></svg> <span class="btn-label">Clear</span></button>
+                        <button id="deleteFrame" title="Delete Frame (F7)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h12M6 4V2.5h4V4M5 4v9h6V4"/><path d="M7 7v3M9 7v3"/></svg> <span class="btn-label">Delete</span></button>
                     </div>
                     <div class="fps-control">
                         <label>FPS:</label>
@@ -1459,7 +1473,7 @@
                         <span>Layers</span>
                         <div class="layer-buttons">
                             <button class="add-layer-btn-inline" id="addLayerBtn" title="Add Layer">+</button>
-                            <button class="add-layer-btn-inline" id="duplicateLayerBtn" title="Duplicate Layer">⧉</button>
+                            <button class="add-layer-btn-inline" id="duplicateLayerBtn" title="Duplicate Layer"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="1" y="4" width="7" height="7" rx="1"/><rect x="5" y="1" width="7" height="7" rx="1"/></svg></button>
                             <button class="delete-layer-btn-inline" id="deleteLayerBtn" title="Delete Layer">-</button>
                         </div>
                     </div>
@@ -1476,10 +1490,10 @@
     <!-- Frame context menu -->
     <input type="file" id="loadProjectInput" accept=".fby" style="display: none;">
     <div class="frame-context-menu" id="frameContextMenu">
-        <button class="frame-context-menu-item" id="ctxCopyFrame">📋 Copy Frame<span class="shortcut">Ctrl+C</span></button>
-        <button class="frame-context-menu-item" id="ctxPasteFrame">📌 Paste Frame<span class="shortcut">Ctrl+V</span></button>
+        <button class="frame-context-menu-item" id="ctxCopyFrame"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="5" y="1.5" width="8" height="10" rx="1"/><path d="M2 4v8a1 1 0 001 1h6"/></svg> Copy Frame<span class="shortcut">Ctrl+C</span></button>
+        <button class="frame-context-menu-item" id="ctxPasteFrame"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="3" y="3" width="9" height="10" rx="1"/><path d="M5.5 3V2a1 1 0 011-1h2a1 1 0 011 1v1"/></svg> Paste Frame<span class="shortcut">Ctrl+V</span></button>
         <div class="frame-context-menu-divider"></div>
-        <button class="frame-context-menu-item" id="ctxDuplicateFrame">✨ Duplicate Frame<span class="shortcut">Ctrl+D</span></button>
+        <button class="frame-context-menu-item" id="ctxDuplicateFrame"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="1" y="4" width="7" height="7" rx="1"/><rect x="5" y="1" width="7" height="7" rx="1"/></svg> Duplicate Frame<span class="shortcut">Ctrl+D</span></button>
     </div>
 
     <script>
@@ -1957,10 +1971,10 @@
                         
                         // Update button text to show selected shape
                         const icons = {
-                            'line': '📏',
-                            'rect': '⬜',
-                            'circle': '⭕',
-                            'triangle': '🔺'
+                            'line': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M3 13L13 3"/></svg>',
+                            'rect': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="2" y="3" width="10" height="8" rx="0.5"/></svg>',
+                            'circle': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><circle cx="7" cy="7.5" r="5"/></svg>',
+                            'triangle': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M7 2l6 11H1z"/></svg>'
                         };
                         shapeButton.innerHTML = `${icons[shape]} <span class="btn-label">${item.textContent.split(' ')[1]} ▼</span>`;
                     });
@@ -4507,14 +4521,7 @@
             // === SAVE / LOAD (.fby FrameBoy format) ===
             
             async saveProject() {
-                // Ask user for a filename
                 const defaultName = this._lastSaveName || 'my-animation';
-                const fileName = prompt('Name your project:', defaultName);
-                if (fileName === null) return; // User cancelled
-                
-                // Sanitize and store for next save
-                const safeName = fileName.trim().replace(/[^\w\s\-]/g, '').replace(/\s+/g, '-') || 'my-animation';
-                this._lastSaveName = safeName;
                 
                 const fileMenuBtn = document.getElementById('fileMenuBtn');
                 const originalText = fileMenuBtn.innerHTML;
@@ -4528,7 +4535,6 @@
                         const frames = [];
                         for (const frame of layer.frames) {
                             if (frame) {
-                                // Convert canvas to base64 PNG (strip the data URL prefix)
                                 frames.push(frame.toDataURL('image/png'));
                             } else {
                                 frames.push(null);
@@ -4557,6 +4563,49 @@
                     
                     const json = JSON.stringify(project);
                     const blob = new Blob([json], { type: 'application/json' });
+                    
+                    // Try native save picker (user chooses location + filename)
+                    if ('showSaveFilePicker' in window) {
+                        try {
+                            const handle = await window.showSaveFilePicker({
+                                suggestedName: `${defaultName}.fby`,
+                                types: [{
+                                    description: 'FrameBoy Project',
+                                    accept: { 'application/json': ['.fby'] }
+                                }]
+                            });
+                            const writable = await handle.createWritable();
+                            await writable.write(blob);
+                            await writable.close();
+                            // Remember name user chose for next save
+                            this._lastSaveName = handle.name.replace(/\.fby$/i, '');
+                            
+                            fileMenuBtn.textContent = '✓ Saved!';
+                            setTimeout(() => {
+                                fileMenuBtn.innerHTML = originalText;
+                                fileMenuBtn.disabled = false;
+                            }, 1500);
+                            return;
+                        } catch (err) {
+                            if (err.name === 'AbortError') {
+                                // User cancelled the picker
+                                fileMenuBtn.innerHTML = originalText;
+                                fileMenuBtn.disabled = false;
+                                return;
+                            }
+                            // API failed — fall through to prompt + download
+                        }
+                    }
+                    
+                    // Fallback: prompt for name then download (Safari, Firefox, iPad)
+                    const fileName = prompt('Name your project:', defaultName);
+                    if (fileName === null) {
+                        fileMenuBtn.innerHTML = originalText;
+                        fileMenuBtn.disabled = false;
+                        return;
+                    }
+                    const safeName = fileName.trim().replace(/[^\w\s\-]/g, '').replace(/\s+/g, '-') || 'my-animation';
+                    this._lastSaveName = safeName;
                     this.downloadBlob(blob, `${safeName}.fby`);
                     
                     fileMenuBtn.textContent = '✓ Saved!';
