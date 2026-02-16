@@ -1859,12 +1859,11 @@
         class FrameBoy {
             constructor() {
                 this.canvas = document.getElementById('mainCanvas');
-                // desynchronized reduces latency in Chrome/Edge; Safari ignores it safely
-                this.ctx = this.canvas.getContext('2d', { desynchronized: true }) || this.canvas.getContext('2d');
+                this.ctx = this.canvas.getContext('2d');
                 this.onionCanvas = document.getElementById('onionCanvas');
                 this.onionCtx = this.onionCanvas.getContext('2d');
                 this.selectionCanvas = document.getElementById('selectionCanvas');
-                this.selectionCtx = this.selectionCanvas.getContext('2d', { desynchronized: true }) || this.selectionCanvas.getContext('2d');
+                this.selectionCtx = this.selectionCanvas.getContext('2d');
                 this.brushCursor = document.getElementById('brushCursor');
                 
                 this.layers = [{ id: 1, name: 'Layer 1', visible: true, opacity: 1.0, frames: [] }];
@@ -1953,6 +1952,7 @@
                 this.pressureEnabled = true;
                 this.hasStylusInput = false; // True once we detect real pen/stylus pressure (for pressure detection)
                 this.strokeStateSaved = false; // Track if we've saved undo state for current stroke
+                this._pendingSaveTimer = null; // Track async saveState timer
                 this.activePointerId = null; // Track which pointer is currently drawing
                 
                 this.initializeFrame();
@@ -3746,6 +3746,13 @@
             }
             
             undo() {
+                // Flush any pending async saveState to ensure undo history is complete
+                if (this._pendingSaveTimer) {
+                    clearTimeout(this._pendingSaveTimer);
+                    this._pendingSaveTimer = null;
+                    this.saveState();
+                }
+                
                 // If there's an active selection with transform history, undo the transform first
                 if (this.selection && this.selectionUndoStack.length > 0) {
                     this.restoreSelectionState();
@@ -3773,6 +3780,13 @@
             }
             
             redo() {
+                // Flush any pending async saveState
+                if (this._pendingSaveTimer) {
+                    clearTimeout(this._pendingSaveTimer);
+                    this._pendingSaveTimer = null;
+                    this.saveState();
+                }
+                
                 // If there's an active selection with redo history, redo the transform
                 if (this.selection && this.selectionRedoStack.length > 0) {
                     this.redoSelectionState();
@@ -3952,7 +3966,8 @@
                 // This prevents the 20-50ms blocking that causes dropped strokes on iPad
                 if (!this.strokeStateSaved) {
                     this.strokeStateSaved = true;
-                    setTimeout(() => {
+                    this._pendingSaveTimer = setTimeout(() => {
+                        this._pendingSaveTimer = null;
                         this.saveState();
                     }, 0);
                 }
@@ -5212,6 +5227,14 @@
             
             // Flood Fill (Paint Bucket) Algorithm
             floodFill(startX, startY) {
+                // Flush any pending async saveState from a previous brush stroke
+                // to prevent it from firing after the fill and corrupting undo history
+                if (this._pendingSaveTimer) {
+                    clearTimeout(this._pendingSaveTimer);
+                    this._pendingSaveTimer = null;
+                    this.saveState(); // flush it now synchronously (pre-fill state)
+                }
+                
                 const layer = this.getCurrentLayer();
                 const frame = layer.frames[this.currentFrameIndex];
                 const ctx = frame.getContext('2d');
