@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="description" content="FrameBoy - Create frame-by-frame animations">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="FrameBoy">
+    <meta name="theme-color" content="#1e1e1e">
+    <link rel="manifest" href="manifest.json">
     <title>FrameBoy</title>
     <!-- Gifshot library for GIF export (more reliable than gif.js) -->
     <script src="https://cdn.jsdelivr.net/npm/gifshot@0.4.5/dist/gifshot.min.js"></script>
@@ -1224,9 +1228,42 @@
             }
         }
 
+        /* File drop zone overlay */
+        .drop-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 120, 255, 0.15);
+            border: 3px dashed #0078ff;
+            z-index: 9999;
+            pointer-events: none;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .drop-overlay.active {
+            display: flex;
+        }
+        
+        .drop-overlay-label {
+            background: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            padding: 20px 40px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
     </style>
 </head>
 <body>
+    <div class="drop-overlay" id="dropOverlay">
+        <div class="drop-overlay-label">💾 Drop .fby file to open</div>
+    </div>
     <div class="app-container">
         <!-- Toolbar -->
         <div class="toolbar">
@@ -1613,103 +1650,100 @@
             }
             
             setupEventListeners() {
-                // === UNIFIED POINTER EVENT SYSTEM ===
-                // Uses setPointerCapture so pointerup fires reliably even when
-                // the stylus lifts outside the canvas. One event path for all input types.
+                // === DUAL EVENT SYSTEM ===
+                // Desktop: Pointer events → e.pressure (Wacom, Surface Pen)
+                // iPad:    Touch events → touch.force (Apple Pencil, fast!)
+                // Touch preventDefault() on iPad blocks pointer events, preventing duplicates.
                 
-                const setupPointerEvents = (canvasEl) => {
+                const setupCanvasEvents = (canvasEl) => {
+                    
+                    // --- POINTER EVENTS (Desktop: Wacom, Surface Pen, Mouse) ---
+                    // On iPad these get blocked by touch preventDefault()
+                    
                     canvasEl.addEventListener('pointerdown', (e) => {
-                        e.preventDefault();
-                        // Capture this pointer — all future events route to this element
-                        // until pointerup, even if the pointer leaves the canvas
-                        canvasEl.setPointerCapture(e.pointerId);
-                        
                         this.pointerType = e.pointerType;
                         if (e.pointerType === 'pen') {
                             this.hasStylusInput = true;
                             this.currentPressure = e.pressure > 0 ? e.pressure : 0.5;
-                        } else if (e.pointerType === 'touch' && this._pendingTouchForce > 0) {
-                            // Safari may report Apple Pencil as 'touch'; use force from touch listener
-                            this.hasStylusInput = true;
-                            this.pointerType = 'pen';
-                            this.currentPressure = this._pendingTouchForce;
-                        } else {
+                        } else if (e.pointerType === 'mouse') {
                             this.currentPressure = 0.5;
                         }
                         this.startDrawing(e);
                     });
                     
                     canvasEl.addEventListener('pointermove', (e) => {
-                        e.preventDefault();
-                        // Update pressure for pen
                         if (e.pointerType === 'pen' && e.pressure > 0) {
                             this.currentPressure = e.pressure;
-                        } else if (this.hasStylusInput && this._pendingTouchForce > 0) {
-                            // Safari fallback: use force from touch event
-                            this.currentPressure = this._pendingTouchForce;
                         }
                         this.draw(e);
                     });
                     
                     canvasEl.addEventListener('pointerup', (e) => {
-                        e.preventDefault();
                         this.stopDrawing();
                     });
                     
                     canvasEl.addEventListener('pointercancel', (e) => {
-                        e.preventDefault();
                         this.stopDrawing();
                     });
                     
-                    // Backup: if pointer capture is released for any reason, stop drawing
-                    canvasEl.addEventListener('lostpointercapture', (e) => {
-                        if (this.isDrawing || this.isTransforming) {
-                            this.stopDrawing();
-                        }
-                    });
+                    // --- TOUCH EVENTS (iPad: Apple Pencil + Finger) ---
+                    // These fire FIRST on iPad. preventDefault() blocks pointer events.
+                    // Result: iPad uses fast touch path, desktop uses pointer path.
                     
-                    // === PASSIVE TOUCH LISTENERS (pressure only, do NOT drive drawing) ===
-                    // Safari delivers Apple Pencil force more reliably via touch.force
-                    // These listeners just update the pressure value; drawing is driven by pointer events
                     canvasEl.addEventListener('touchstart', (e) => {
+                        e.preventDefault(); // Block pointer events on iPad!
                         const touch = e.touches[0];
-                        if (touch && (touch.touchType === 'stylus' || (touch.force > 0 && touch.force !== 1))) {
+                        if (!touch) return;
+                        
+                        if (touch.touchType === 'stylus' || (touch.force > 0 && touch.force !== 1)) {
                             this.hasStylusInput = true;
-                            this._pendingTouchForce = touch.force > 0 ? touch.force : 0.5;
+                            this.pointerType = 'pen';
+                            this.currentPressure = touch.force > 0 ? touch.force : 0.5;
                         } else {
-                            this._pendingTouchForce = 0;
+                            this.pointerType = 'touch';
+                            this.currentPressure = 0.5;
                         }
-                        // Do NOT preventDefault — let pointer events fire naturally
-                        // Do NOT call startDrawing — pointer events handle that
-                    }, { passive: true });
+                        
+                        this.startDrawing({
+                            clientX: touch.clientX,
+                            clientY: touch.clientY,
+                            target: canvasEl
+                        });
+                    }, { passive: false });
                     
                     canvasEl.addEventListener('touchmove', (e) => {
+                        e.preventDefault();
+                        if (!this.isDrawing && !this.isTransforming) return;
                         const touch = e.touches[0];
-                        if (touch && (touch.touchType === 'stylus' || touch.force > 0)) {
-                            if (touch.force > 0) {
-                                this._pendingTouchForce = touch.force;
-                                this.currentPressure = touch.force;
-                            }
+                        if (!touch) return;
+                        
+                        if ((touch.touchType === 'stylus' || touch.force > 0) && touch.force > 0) {
+                            this.currentPressure = touch.force;
                         }
-                    }, { passive: true });
+                        
+                        this.draw({
+                            clientX: touch.clientX,
+                            clientY: touch.clientY,
+                            target: canvasEl
+                        });
+                    }, { passive: false });
                     
-                    canvasEl.addEventListener('touchforcechange', (e) => {
-                        const touch = e.touches[0];
-                        if (touch && touch.force > 0) {
-                            this._pendingTouchForce = touch.force;
-                            if (this.isDrawing) {
-                                this.currentPressure = touch.force;
-                            }
-                        }
-                    }, { passive: true });
+                    canvasEl.addEventListener('touchend', (e) => {
+                        e.preventDefault();
+                        this.stopDrawing();
+                    }, { passive: false });
+                    
+                    canvasEl.addEventListener('touchcancel', (e) => {
+                        e.preventDefault();
+                        this.stopDrawing();
+                    }, { passive: false });
                 };
                 
-                this._pendingTouchForce = 0;
-                setupPointerEvents(this.canvas);
-                setupPointerEvents(this.selectionCanvas);
+                setupCanvasEvents(this.canvas);
+                setupCanvasEvents(this.selectionCanvas);
                 
-                // Document-level fallback — catches any edge cases where
-                // pointer capture was somehow lost without lostpointercapture firing
+                // Document-level fallbacks — catch stylus lift outside canvas
+                // Pointer path (desktop off-canvas lift)
                 document.addEventListener('pointerup', (e) => {
                     if (this.isDrawing || this.isTransforming) {
                         this.stopDrawing();
@@ -1720,6 +1754,17 @@
                         this.stopDrawing();
                     }
                 });
+                // Touch path (iPad off-canvas lift — fixes stroke continuing after pencil lift)
+                document.addEventListener('touchend', (e) => {
+                    if (this.isDrawing || this.isTransforming) {
+                        this.stopDrawing();
+                    }
+                }, { passive: true });
+                document.addEventListener('touchcancel', (e) => {
+                    if (this.isDrawing || this.isTransforming) {
+                        this.stopDrawing();
+                    }
+                }, { passive: true });
 
                 // Prevent iOS double-tap text selection menu and context menu
                 const preventIOSMenus = (canvasEl) => {
@@ -2123,6 +2168,13 @@
                                 e.preventDefault();
                                 this.goToNextFrame();
                                 break;
+                            case 'o':
+                                e.preventDefault();
+                                this.onionSkinEnabled = !this.onionSkinEnabled;
+                                document.getElementById('onionEnabled').checked = this.onionSkinEnabled;
+                                document.getElementById('onionSkinToggle').style.opacity = this.onionSkinEnabled ? '1' : '0.5';
+                                this.render();
+                                break;
                         }
                     }
                 });
@@ -2238,8 +2290,12 @@
                 if (tool === 'brush' || tool === 'eraser') {
                     this.canvas.style.cursor = 'none';
                     this.selectionCanvas.style.cursor = 'none';
-                } else {
+                } else if (tool === 'fill' || tool === 'lasso') {
                     this.canvas.style.cursor = 'crosshair';
+                    this.selectionCanvas.style.cursor = 'crosshair';
+                    this.brushCursor.style.display = 'none';
+                } else {
+                    this.canvas.style.cursor = 'default';
                     this.selectionCanvas.style.cursor = 'default';
                     this.brushCursor.style.display = 'none';
                 }
@@ -4451,6 +4507,15 @@
             // === SAVE / LOAD (.fby FrameBoy format) ===
             
             async saveProject() {
+                // Ask user for a filename
+                const defaultName = this._lastSaveName || 'my-animation';
+                const fileName = prompt('Name your project:', defaultName);
+                if (fileName === null) return; // User cancelled
+                
+                // Sanitize and store for next save
+                const safeName = fileName.trim().replace(/[^\w\s\-]/g, '').replace(/\s+/g, '-') || 'my-animation';
+                this._lastSaveName = safeName;
+                
                 const fileMenuBtn = document.getElementById('fileMenuBtn');
                 const originalText = fileMenuBtn.innerHTML;
                 fileMenuBtn.textContent = 'Saving...';
@@ -4492,7 +4557,7 @@
                     
                     const json = JSON.stringify(project);
                     const blob = new Blob([json], { type: 'application/json' });
-                    this.downloadBlob(blob, `frameboy-project-${Date.now()}.fby`);
+                    this.downloadBlob(blob, `${safeName}.fby`);
                     
                     fileMenuBtn.textContent = '✓ Saved!';
                     setTimeout(() => {
@@ -4516,6 +4581,9 @@
                 try {
                     const text = await file.text();
                     const project = JSON.parse(text);
+                    
+                    // Extract project name from filename for re-saving
+                    this._lastSaveName = file.name.replace(/\.fby$/i, '') || 'my-animation';
                     
                     // Validate format
                     if (project.format !== 'FrameBoy' || !project.layers) {
@@ -5222,6 +5290,74 @@
                 e.preventDefault();
             }
         }, { passive: false });
+        
+        // === PWA: Service Worker + File Handling ===
+        
+        // Register service worker for PWA install (enables file_handlers in manifest)
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js').catch(() => {
+                // SW not available (e.g. not served over HTTPS) — app still works fine
+            });
+        }
+        
+        // File Handling API: when .fby is opened via OS file association (PWA only)
+        if ('launchQueue' in window) {
+            window.launchQueue.setConsumer(async (launchParams) => {
+                if (launchParams.files && launchParams.files.length > 0) {
+                    const fileHandle = launchParams.files[0];
+                    const file = await fileHandle.getFile();
+                    if (file.name.endsWith('.fby')) {
+                        app.loadProject(file);
+                    }
+                }
+            });
+        }
+        
+        // === Drag-and-Drop .fby file loading ===
+        
+        const dropOverlay = document.getElementById('dropOverlay');
+        let dragCounter = 0; // Track nested enter/leave events
+        
+        document.addEventListener('dragenter', (e) => {
+            e.preventDefault();
+            dragCounter++;
+            // Only show overlay if dragging files (not canvas elements)
+            if (e.dataTransfer && e.dataTransfer.types.includes('Files')) {
+                dropOverlay.classList.add('active');
+            }
+        });
+        
+        document.addEventListener('dragover', (e) => {
+            e.preventDefault(); // Required to allow drop
+            if (e.dataTransfer) {
+                e.dataTransfer.dropEffect = 'copy';
+            }
+        });
+        
+        document.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dragCounter--;
+            if (dragCounter <= 0) {
+                dragCounter = 0;
+                dropOverlay.classList.remove('active');
+            }
+        });
+        
+        document.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            dragCounter = 0;
+            dropOverlay.classList.remove('active');
+            
+            if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+                const file = e.dataTransfer.files[0];
+                if (file.name.endsWith('.fby')) {
+                    app.loadProject(file);
+                } else {
+                    alert('Please drop a .fby FrameBoy project file.');
+                }
+            }
+        });
     </script>
 </body>
 </html>
