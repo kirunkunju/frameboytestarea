@@ -372,9 +372,6 @@
         /* Canvas area */
         .canvas-container {
             flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             background: #333;
             position: relative;
             overflow: auto;
@@ -386,13 +383,17 @@
             -webkit-touch-callout: none;
             -webkit-tap-highlight-color: transparent;
         }
+        
+        .canvas-wrapper {
+            position: relative;
+            margin: auto;
+            /* Centering when wrapper is smaller than container */
+        }
 
         canvas {
             border: 1px solid #555;
             cursor: crosshair;
-            max-width: 95%;
-            max-height: 95%;
-            object-fit: contain;
+            display: block;
             touch-action: none;
             will-change: contents;
             -webkit-user-select: none;
@@ -401,6 +402,40 @@
             user-select: none;
             -webkit-touch-callout: none;
             -webkit-tap-highlight-color: transparent;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+        
+        .zoom-controls {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            background: rgba(30, 30, 30, 0.85);
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            padding: 4px 6px;
+            border-radius: 8px;
+            z-index: 10;
+            border: 1px solid #444;
+        }
+        
+        .zoom-controls button {
+            padding: 4px 6px;
+            font-size: 12px;
+            min-width: 28px;
+            min-height: 28px;
+            justify-content: center;
+        }
+        
+        .zoom-label {
+            color: #ccc;
+            font-size: 12px;
+            min-width: 42px;
+            text-align: center;
+            font-variant-numeric: tabular-nums;
         }
 
         #mainCanvas {
@@ -1440,10 +1475,18 @@
         <div class="main-content">
             <!-- Canvas area -->
             <div class="canvas-container" id="canvasContainer">
-                <canvas id="onionCanvas" width="960" height="540"></canvas>
-                <canvas id="mainCanvas" width="960" height="540"></canvas>
-                <canvas id="selectionCanvas" width="960" height="540"></canvas>
-                <div class="brush-cursor" id="brushCursor"></div>
+                <div class="canvas-wrapper" id="canvasWrapper">
+                    <canvas id="onionCanvas" width="960" height="540"></canvas>
+                    <canvas id="mainCanvas" width="960" height="540"></canvas>
+                    <canvas id="selectionCanvas" width="960" height="540"></canvas>
+                    <div class="brush-cursor" id="brushCursor"></div>
+                </div>
+                <div class="zoom-controls" id="zoomControls">
+                    <button id="zoomOutBtn" title="Zoom Out (−)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="7" r="5"/><path d="M5 7h4"/><path d="M11 11l3.5 3.5"/></svg></button>
+                    <span id="zoomLevel" class="zoom-label">100%</span>
+                    <button id="zoomInBtn" title="Zoom In (+)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="7" r="5"/><path d="M7 5v4M5 7h4"/><path d="M11 11l3.5 3.5"/></svg></button>
+                    <button id="zoomFitBtn" title="Fit to Screen (0)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg></button>
+                </div>
             </div>
         </div>
 
@@ -1535,6 +1578,12 @@
                 this.fps = 12;
                 this.playbackInterval = null;
                 
+                // Zoom state
+                this.zoomLevel = null; // null = fit-to-screen mode
+                this.zoomSteps = [0.125, 0.167, 0.25, 0.333, 0.5, 0.667, 1, 1.5, 2, 3, 4, 6, 8, 12, 16];
+                this.canvasWrapper = document.getElementById('canvasWrapper');
+                this.canvasContainer = document.getElementById('canvasContainer');
+                
                 this.shapeStart = null;
                 
                 // Undo/Redo stacks
@@ -1588,7 +1637,7 @@
                 
                 // Handle window resize
                 window.addEventListener('resize', () => {
-                    this.positionOnionCanvas();
+                    this.applyZoom();
                     this.render();
                 });
                 
@@ -1632,17 +1681,119 @@
             }
             
             positionOnionCanvas() {
-                // Position onion canvas and selection canvas to match main canvas
-                const mainRect = this.canvas.getBoundingClientRect();
-                const containerRect = document.getElementById('canvasContainer').getBoundingClientRect();
+                // Delegates to applyZoom which handles both sizing and positioning
+                this.applyZoom();
+            }
+            
+            getEffectiveZoom() {
+                if (this.zoomLevel !== null) return this.zoomLevel;
+                // Fit-to-screen: compute zoom that fits canvas in container with padding
+                const container = this.canvasContainer;
+                const padX = 20, padY = 20;
+                const availW = container.clientWidth - padX;
+                const availH = container.clientHeight - padY;
+                if (availW <= 0 || availH <= 0) return 1;
+                const scaleW = availW / this.canvas.width;
+                const scaleH = availH / this.canvas.height;
+                return Math.min(scaleW, scaleH, 1); // Don't upscale past 100% in fit mode
+            }
+            
+            applyZoom(centerOnPoint) {
+                const zoom = this.getEffectiveZoom();
+                const w = Math.round(this.canvas.width * zoom);
+                const h = Math.round(this.canvas.height * zoom);
+                const container = this.canvasContainer;
                 
-                const left = (mainRect.left - containerRect.left) + 'px';
-                const top = (mainRect.top - containerRect.top) + 'px';
+                // If zoomed content is smaller than container, center it with padding
+                const isFitting = w < container.clientWidth && h < container.clientHeight;
                 
-                this.onionCanvas.style.left = left;
-                this.onionCanvas.style.top = top;
-                this.selectionCanvas.style.left = left;
-                this.selectionCanvas.style.top = top;
+                // Set wrapper size
+                this.canvasWrapper.style.width = w + 'px';
+                this.canvasWrapper.style.height = h + 'px';
+                
+                if (isFitting) {
+                    // Center the wrapper using padding/margin
+                    const mx = Math.max(0, (container.clientWidth - w) / 2);
+                    const my = Math.max(0, (container.clientHeight - h) / 2);
+                    this.canvasWrapper.style.margin = my + 'px ' + mx + 'px';
+                } else {
+                    this.canvasWrapper.style.margin = '10px';
+                }
+                
+                // Size all canvases to wrapper
+                const canvases = [this.canvas, this.onionCanvas, this.selectionCanvas];
+                for (const c of canvases) {
+                    c.style.width = w + 'px';
+                    c.style.height = h + 'px';
+                }
+                
+                // Position overlay canvases at 0,0 within wrapper
+                this.onionCanvas.style.left = '0px';
+                this.onionCanvas.style.top = '0px';
+                this.selectionCanvas.style.left = '0px';
+                this.selectionCanvas.style.top = '0px';
+                
+                // Update zoom label
+                const pct = Math.round(zoom * 100);
+                document.getElementById('zoomLevel').textContent = pct + '%';
+            }
+            
+            setZoom(level, centerOnMouse) {
+                // Clamp to step range
+                const min = this.zoomSteps[0];
+                const max = this.zoomSteps[this.zoomSteps.length - 1];
+                this.zoomLevel = Math.max(min, Math.min(max, level));
+                
+                // Remember scroll center to preserve viewport focus
+                const container = this.canvasContainer;
+                const cx = (container.scrollLeft + container.clientWidth / 2);
+                const cy = (container.scrollTop + container.clientHeight / 2);
+                const oldZoom = this._prevZoom || this.getEffectiveZoom();
+                
+                this.applyZoom();
+                
+                // Adjust scroll to keep the same canvas point centered
+                const newZoom = this.getEffectiveZoom();
+                const ratio = newZoom / oldZoom;
+                container.scrollLeft = cx * ratio - container.clientWidth / 2;
+                container.scrollTop = cy * ratio - container.clientHeight / 2;
+                
+                this._prevZoom = newZoom;
+                this.updateBrushCursor();
+            }
+            
+            zoomIn() {
+                const current = this.getEffectiveZoom();
+                this._prevZoom = current;
+                // Find next step above current
+                for (const step of this.zoomSteps) {
+                    if (step > current + 0.001) {
+                        this.setZoom(step);
+                        return;
+                    }
+                }
+            }
+            
+            zoomOut() {
+                const current = this.getEffectiveZoom();
+                this._prevZoom = current;
+                // Find next step below current
+                for (let i = this.zoomSteps.length - 1; i >= 0; i--) {
+                    if (this.zoomSteps[i] < current - 0.001) {
+                        this.setZoom(this.zoomSteps[i]);
+                        return;
+                    }
+                }
+            }
+            
+            zoomFit() {
+                this.zoomLevel = null; // Back to fit-to-screen
+                this._prevZoom = null;
+                this.applyZoom();
+                // Reset scroll to top-left (centering is handled by margin)
+                this.canvasContainer.scrollLeft = 0;
+                this.canvasContainer.scrollTop = 0;
+                this.updateBrushCursor();
             }
             
             initializeFrame() {
@@ -2056,6 +2207,20 @@
                 document.getElementById('undoBtn').addEventListener('click', () => this.undo());
                 document.getElementById('redoBtn').addEventListener('click', () => this.redo());
                 
+                // Zoom controls
+                document.getElementById('zoomInBtn').addEventListener('click', () => this.zoomIn());
+                document.getElementById('zoomOutBtn').addEventListener('click', () => this.zoomOut());
+                document.getElementById('zoomFitBtn').addEventListener('click', () => this.zoomFit());
+                
+                // Ctrl/Cmd+Scroll wheel zoom (on canvas container only)
+                this.canvasContainer.addEventListener('wheel', (e) => {
+                    if (e.ctrlKey || e.metaKey) {
+                        e.preventDefault();
+                        if (e.deltaY < 0) this.zoomIn();
+                        else if (e.deltaY > 0) this.zoomOut();
+                    }
+                }, { passive: false });
+                
                 // Keyboard shortcuts for undo/redo
                 document.addEventListener('keydown', (e) => {
                     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -2092,6 +2257,15 @@
                     } else if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
                         e.preventDefault();
                         this.duplicateFrame();
+                    } else if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+')) {
+                        e.preventDefault();
+                        this.zoomIn();
+                    } else if ((e.ctrlKey || e.metaKey) && e.key === '-') {
+                        e.preventDefault();
+                        this.zoomOut();
+                    } else if ((e.ctrlKey || e.metaKey) && e.key === '0') {
+                        e.preventDefault();
+                        this.zoomFit();
                     } else if (e.key === 'Enter' && this.selection) {
                         e.preventDefault();
                         this.applySelection();
@@ -2188,6 +2362,19 @@
                                 document.getElementById('onionEnabled').checked = this.onionSkinEnabled;
                                 document.getElementById('onionSkinToggle').style.opacity = this.onionSkinEnabled ? '1' : '0.5';
                                 this.render();
+                                break;
+                            case '=':
+                            case '+':
+                                e.preventDefault();
+                                this.zoomIn();
+                                break;
+                            case '-':
+                                e.preventDefault();
+                                this.zoomOut();
+                                break;
+                            case '0':
+                                e.preventDefault();
+                                this.zoomFit();
                                 break;
                         }
                     }
