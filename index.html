@@ -545,6 +545,32 @@
         .transform-handle.rotate { cursor: grab; background: #0066cc; }
 
         /* Timeline */
+        .timeline-resize-handle {
+            height: 10px;
+            cursor: row-resize;
+            background: transparent;
+            position: relative;
+            flex-shrink: 0;
+            touch-action: none;
+        }
+        
+        .timeline-resize-handle::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 4px;
+            background: #4a4a4a;
+            border-radius: 2px;
+        }
+        
+        .timeline-resize-handle:hover::before,
+        .timeline-resize-handle:active::before {
+            background: #0066cc;
+        }
+        
         .timeline {
             min-height: 180px;
             max-height: 280px;
@@ -703,6 +729,7 @@
             flex: 1;
             overflow-y: auto;
             overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
         }
         
         .timeline-frames-section {
@@ -1770,7 +1797,8 @@
         </div>
 
         <!-- Combined Timeline & Layers Panel -->
-        <div class="timeline">
+        <div class="timeline" id="timelinePanel">
+            <div class="timeline-resize-handle" id="timelineResizeHandle"></div>
             <div class="timeline-header">
                 <div class="timeline-controls">
                     <div class="playback-controls">
@@ -2019,6 +2047,7 @@
                 
                 // Layer panel resize handle
                 this.setupLayerPanelResize();
+                this.setupTimelineResize();
             }
             
             setupLayerPanelResize() {
@@ -2054,6 +2083,40 @@
                 resizeHandle.addEventListener('pointermove', onPointerMove);
                 resizeHandle.addEventListener('pointerup', onPointerUp);
                 resizeHandle.addEventListener('pointercancel', onPointerUp);
+            }
+            
+            setupTimelineResize() {
+                const handle = document.getElementById('timelineResizeHandle');
+                const timeline = document.getElementById('timelinePanel');
+                let startY = 0;
+                let startH = 0;
+                
+                handle.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    handle.setPointerCapture(e.pointerId);
+                    startY = e.clientY;
+                    startH = timeline.offsetHeight;
+                });
+                
+                handle.addEventListener('pointermove', (e) => {
+                    if (!handle.hasPointerCapture(e.pointerId)) return;
+                    const delta = startY - e.clientY; // drag up = bigger
+                    const newH = Math.max(100, Math.min(window.innerHeight * 0.7, startH + delta));
+                    timeline.style.height = newH + 'px';
+                    timeline.style.minHeight = newH + 'px';
+                    timeline.style.maxHeight = newH + 'px';
+                });
+                
+                const onUp = (e) => {
+                    if (handle.hasPointerCapture(e.pointerId)) {
+                        handle.releasePointerCapture(e.pointerId);
+                        // Refresh canvas zoom after resize
+                        this.applyZoom();
+                        this.render();
+                    }
+                };
+                handle.addEventListener('pointerup', onUp);
+                handle.addEventListener('pointercancel', onUp);
             }
             
             positionOnionCanvas() {
