@@ -2460,6 +2460,8 @@
                         <button class="dropdown-item" data-xformtool="transform"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="2.5" y="2.5" width="11" height="11" rx="0.5" stroke-dasharray="2 2"/><circle cx="2.5" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="2.5" cy="13.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="13.5" r="1" fill="currentColor" stroke="none"/></svg> Free Transform <span class="shortcut">V</span></button>
                         <button class="dropdown-item" data-xformtool="scale"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M10 2h4v4"/><path d="M14 2l-4.5 4.5"/><path d="M6 14H2v-4"/><path d="M2 14l4.5-4.5"/></svg> Scale <span class="shortcut">S</span></button>
                         <button class="dropdown-item" data-xformtool="rotate"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M13.5 8A5.5 5.5 0 112.5 5.5"/><path d="M2.5 1.5v4h4"/></svg> Rotate <span class="shortcut">R</span></button>
+                        <button class="dropdown-item" data-xformtool="skew"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M4 2.5h9.5v11H2.5V6"/><circle cx="4" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="2.5" cy="13.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="13.5" r="1" fill="currentColor" stroke="none"/></svg> Skew</button>
+                        <button class="dropdown-item" data-xformtool="distort"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M4 1.5L13 3l1 11.5L2 13z"/><circle cx="4" cy="1.5" r="1" fill="currentColor" stroke="none"/><circle cx="13" cy="3" r="1" fill="currentColor" stroke="none"/><circle cx="3" cy="13" r="1" fill="currentColor" stroke="none"/><circle cx="14" cy="14.5" r="1" fill="currentColor" stroke="none"/></svg> Distort</button>
                     </div>
                 </div>
                 <div class="dropdown-container">
@@ -3841,7 +3843,7 @@
                 
                 xformButton.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    if (this.tool === 'transform' || this.tool === 'scale' || this.tool === 'rotate') {
+                    if (this.tool === 'transform' || this.tool === 'scale' || this.tool === 'rotate' || this.tool === 'skew' || this.tool === 'distort') {
                         xformDropdown.classList.toggle('show');
                     } else {
                         this.selectTool(this._activeTransformTool);
@@ -4618,7 +4620,7 @@
                 }
                 
                 // For transform sub-tools, highlight the transformTool dropdown button
-                if (tool === 'transform' || tool === 'scale' || tool === 'rotate') {
+                if (tool === 'transform' || tool === 'scale' || tool === 'rotate' || tool === 'skew' || tool === 'distort') {
                     document.getElementById('transformTool').classList.add('active');
                 }
                 
@@ -4629,7 +4631,7 @@
                 }
                 
                 // Clear selection when switching away from transform (but not for pan/magnifier)
-                const isTransformTool = tool === 'transform' || tool === 'scale' || tool === 'rotate';
+                const isTransformTool = tool === 'transform' || tool === 'scale' || tool === 'rotate' || tool === 'skew' || tool === 'distort';
                 const isNavTool = tool === 'pan' || tool === 'magnifier' || tool === 'magnifier-out';
                 if (!isTransformTool && !isNavTool && this.selection) {
                     this.applySelection();
@@ -4689,9 +4691,11 @@
                 const icons = {
                     'transform': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="2.5" width="11" height="11" rx="0.5" stroke-dasharray="2 2"/><circle cx="2.5" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="2.5" cy="13.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="13.5" r="1" fill="currentColor" stroke="none"/></svg>',
                     'scale': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2h4v4"/><path d="M14 2l-4.5 4.5"/><path d="M6 14H2v-4"/><path d="M2 14l4.5-4.5"/></svg>',
-                    'rotate': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 8A5.5 5.5 0 112.5 5.5"/><path d="M2.5 1.5v4h4"/></svg>'
+                    'rotate': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 8A5.5 5.5 0 112.5 5.5"/><path d="M2.5 1.5v4h4"/></svg>',
+                    'skew': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2.5h9.5v11H2.5V6"/><circle cx="4" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="2.5" cy="13.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="13.5" r="1" fill="currentColor" stroke="none"/></svg>',
+                    'distort': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 1.5L13 3l1 11.5L2 13z"/><circle cx="4" cy="1.5" r="1" fill="currentColor" stroke="none"/><circle cx="13" cy="3" r="1" fill="currentColor" stroke="none"/><circle cx="3" cy="13" r="1" fill="currentColor" stroke="none"/><circle cx="14" cy="14.5" r="1" fill="currentColor" stroke="none"/></svg>'
                 };
-                const labels = { 'transform': 'Transform', 'scale': 'Scale', 'rotate': 'Rotate' };
+                const labels = { 'transform': 'Transform', 'scale': 'Scale', 'rotate': 'Rotate', 'skew': 'Skew', 'distort': 'Distort' };
                 btn.innerHTML = `${icons[xformtool]} <span class="btn-label">${labels[xformtool]} ▼</span>`;
             }
             
@@ -5029,7 +5033,7 @@
                 }
                 
                 // Handle transform tool
-                if (this.tool === 'transform' || this.tool === 'scale' || this.tool === 'rotate') {
+                if (this.tool === 'transform' || this.tool === 'scale' || this.tool === 'rotate' || this.tool === 'skew' || this.tool === 'distort') {
                     // Check if clicking on a handle
                     const canvas = e.target === this.selectionCanvas ? this.selectionCanvas : this.canvas;
                     const rect = canvas.getBoundingClientRect();
@@ -5138,6 +5142,10 @@
                 if (this.tool === 'rotate' && this.selection && !this.isDrawing && !this.isTransforming) {
                     this.checkRotateCursor(e);
                 }
+                // Skew/Distort: show move cursor on handles
+                if ((this.tool === 'skew' || this.tool === 'distort') && this.selection && !this.isDrawing && !this.isTransforming) {
+                    this._checkSkewDistortCursor(e);
+                }
                 
                 if (!this.isDrawing && !this.isTransforming) return;
                 
@@ -5159,7 +5167,7 @@
                 }
                 
                 // Handle transform / scale / rotate
-                if (this.tool === 'transform' || this.tool === 'scale' || this.tool === 'rotate') {
+                if (this.tool === 'transform' || this.tool === 'scale' || this.tool === 'rotate' || this.tool === 'skew' || this.tool === 'distort') {
                     if (this.isTransforming) this.performTransform(x, y);
                     return;
                 }
@@ -5322,6 +5330,46 @@
                 this.selectionCanvas.style.cursor = `url('data:image/svg+xml;utf8,${encodedSvg}') 16 16, pointer`;
             }
             
+            _checkSkewDistortCursor(e) {
+                const canvas = e.target === this.selectionCanvas ? this.selectionCanvas : this.canvas;
+                const rect = canvas.getBoundingClientRect();
+                const scaleX = canvas.width / rect.width;
+                const scaleY = canvas.height / rect.height;
+                const x = (e.clientX - rect.left) * scaleX;
+                const y = (e.clientY - rect.top) * scaleY;
+                
+                for (const handle of this.transformHandles) {
+                    if (handle.type === 'anchor') continue;
+                    const dist = Math.hypot(x - handle.x, y - handle.y);
+                    if (dist < 20) {
+                        if (this.tool === 'skew') {
+                            const isEdge = handle.type === 'n' || handle.type === 's' || handle.type === 'e' || handle.type === 'w';
+                            if (isEdge) {
+                                this.selectionCanvas.style.cursor = (handle.type === 'n' || handle.type === 's') ? 'ew-resize' : 'ns-resize';
+                            } else {
+                                this.selectionCanvas.style.cursor = 'nwse-resize';
+                            }
+                        } else {
+                            this.selectionCanvas.style.cursor = 'move';
+                        }
+                        return;
+                    }
+                }
+                
+                // Inside selection = move
+                if (this.tool === 'distort' && this.selection.corners) {
+                    if (this._pointInPolygon(x, y, this.selection.corners)) {
+                        this.selectionCanvas.style.cursor = 'move';
+                        return;
+                    }
+                } else if (this.isPointInSelection(x, y)) {
+                    this.selectionCanvas.style.cursor = 'move';
+                    return;
+                }
+                
+                this.selectionCanvas.style.cursor = 'default';
+            }
+            
             stopDrawing() {
                 if (!this.isDrawing && !this.isTransforming) return;
                 
@@ -5336,7 +5384,7 @@
                 }
                 
                 // Handle transform completion
-                if ((this.tool === 'transform' || this.tool === 'scale' || this.tool === 'rotate') && this.isTransforming) {
+                if ((this.tool === 'transform' || this.tool === 'scale' || this.tool === 'rotate' || this.tool === 'skew' || this.tool === 'distort') && this.isTransforming) {
                     this.isTransforming = false;
                     this.isRotating = false;
                     if (this.tool === 'transform') this.rotationMode = false;
@@ -6544,8 +6592,26 @@
             // Transform Methods
             isPointInSelection(x, y) {
                 if (!this.selection) return false;
+                
+                // Distort mode: point-in-quad test
+                if (this.tool === 'distort' && this.selection.corners) {
+                    return this._pointInPolygon(x, y, this.selection.corners);
+                }
+                
                 const b = this.selection.bounds;
                 return x >= b.x && x <= b.x + b.width && y >= b.y && y <= b.y + b.height;
+            }
+            
+            _pointInPolygon(px, py, poly) {
+                let inside = false;
+                for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+                    const xi = poly[i].x, yi = poly[i].y;
+                    const xj = poly[j].x, yj = poly[j].y;
+                    if (((yi > py) !== (yj > py)) && (px < (xj - xi) * (py - yi) / (yj - yi) + xi)) {
+                        inside = !inside;
+                    }
+                }
+                return inside;
             }
             
             showTransformHandles() {
@@ -6564,42 +6630,71 @@
                     this.selection.rotation = 0;
                 }
                 
-                const rotation = this.selection.rotation;
-                const anchorX = this.selection.anchorX;
-                const anchorY = this.selection.anchorY;
+                // Initialize skew if not set
+                if (this.selection.skewX === undefined) this.selection.skewX = 0;
+                if (this.selection.skewY === undefined) this.selection.skewY = 0;
                 
-                // Helper function to rotate a point around anchor
-                const rotatePoint = (px, py) => {
-                    const cos = Math.cos(rotation);
-                    const sin = Math.sin(rotation);
-                    const dx = px - anchorX;
-                    const dy = py - anchorY;
-                    return {
-                        x: anchorX + dx * cos - dy * sin,
-                        y: anchorY + dx * sin + dy * cos
+                // Initialize distort corners if not set
+                if (!this.selection.corners) {
+                    this.selection.corners = [
+                        { x: b.x, y: b.y },                   // TL
+                        { x: b.x + b.width, y: b.y },         // TR
+                        { x: b.x + b.width, y: b.y + b.height }, // BR
+                        { x: b.x, y: b.y + b.height }          // BL
+                    ];
+                }
+                
+                if (this.tool === 'distort') {
+                    // Distort mode: handles at free corners
+                    const c = this.selection.corners;
+                    this.transformHandles = [
+                        { x: c[0].x, y: c[0].y, type: 'distort-tl', cornerIdx: 0 },
+                        { x: c[1].x, y: c[1].y, type: 'distort-tr', cornerIdx: 1 },
+                        { x: c[2].x, y: c[2].y, type: 'distort-br', cornerIdx: 2 },
+                        { x: c[3].x, y: c[3].y, type: 'distort-bl', cornerIdx: 3 },
+                    ];
+                    // Add move handle at centroid
+                    const cx = (c[0].x + c[1].x + c[2].x + c[3].x) / 4;
+                    const cy = (c[0].y + c[1].y + c[2].y + c[3].y) / 4;
+                    this.transformHandles.push({ x: cx, y: cy, type: 'anchor' });
+                } else {
+                    const rotation = this.selection.rotation;
+                    const anchorX = this.selection.anchorX;
+                    const anchorY = this.selection.anchorY;
+                    
+                    // Helper function to rotate a point around anchor
+                    const rotatePoint = (px, py) => {
+                        const cos = Math.cos(rotation);
+                        const sin = Math.sin(rotation);
+                        const dx = px - anchorX;
+                        const dy = py - anchorY;
+                        return {
+                            x: anchorX + dx * cos - dy * sin,
+                            y: anchorY + dx * sin + dy * cos
+                        };
                     };
-                };
-                
-                // Calculate handle positions in unrotated space, then rotate them
-                const unrotatedHandles = [
-                    { x: b.x, y: b.y, type: 'nw' },
-                    { x: b.x + b.width, y: b.y, type: 'ne' },
-                    { x: b.x + b.width, y: b.y + b.height, type: 'se' },
-                    { x: b.x, y: b.y + b.height, type: 'sw' },
-                    { x: b.x + b.width / 2, y: b.y, type: 'n' },
-                    { x: b.x + b.width, y: b.y + b.height / 2, type: 'e' },
-                    { x: b.x + b.width / 2, y: b.y + b.height, type: 's' },
-                    { x: b.x, y: b.y + b.height / 2, type: 'w' }
-                ];
-                
-                // Rotate all handle positions
-                this.transformHandles = unrotatedHandles.map(h => {
-                    const rotated = rotatePoint(h.x, h.y);
-                    return { x: rotated.x, y: rotated.y, type: h.type };
-                });
-                
-                // Add anchor point (not rotated)
-                this.transformHandles.push({ x: anchorX, y: anchorY, type: 'anchor' });
+                    
+                    // Calculate handle positions in unrotated space, then rotate them
+                    const unrotatedHandles = [
+                        { x: b.x, y: b.y, type: 'nw' },
+                        { x: b.x + b.width, y: b.y, type: 'ne' },
+                        { x: b.x + b.width, y: b.y + b.height, type: 'se' },
+                        { x: b.x, y: b.y + b.height, type: 'sw' },
+                        { x: b.x + b.width / 2, y: b.y, type: 'n' },
+                        { x: b.x + b.width, y: b.y + b.height / 2, type: 'e' },
+                        { x: b.x + b.width / 2, y: b.y + b.height, type: 's' },
+                        { x: b.x, y: b.y + b.height / 2, type: 'w' }
+                    ];
+                    
+                    // Rotate all handle positions
+                    this.transformHandles = unrotatedHandles.map(h => {
+                        const rotated = rotatePoint(h.x, h.y);
+                        return { x: rotated.x, y: rotated.y, type: h.type };
+                    });
+                    
+                    // Add anchor point (not rotated)
+                    this.transformHandles.push({ x: anchorX, y: anchorY, type: 'anchor' });
+                }
                 
                 this.drawTransformHandles();
             }
@@ -6619,55 +6714,99 @@
                 const anchorX = this.selection.anchorX || (b.x + b.width / 2);
                 const anchorY = this.selection.anchorY || (b.y + b.height / 2);
                 
-                // Save context and apply rotation for the bounding box
-                this.selectionCtx.save();
-                this.selectionCtx.translate(anchorX, anchorY);
-                this.selectionCtx.rotate(rotation);
-                this.selectionCtx.translate(-anchorX, -anchorY);
-                
-                // Draw selection box (rotated)
-                this.selectionCtx.strokeStyle = '#0066cc';
-                this.selectionCtx.lineWidth = 2;
-                this.selectionCtx.setLineDash([5, 5]);
-                this.selectionCtx.strokeRect(b.x, b.y, b.width, b.height);
-                this.selectionCtx.setLineDash([]);
-                
-                // Restore context before drawing handles
-                this.selectionCtx.restore();
-                
-                // Draw resize/rotate handles at their already-rotated positions
-                // (handles are already at correct positions from showTransformHandles)
-                for (let handle of this.transformHandles) {
-                    if (handle.type === 'anchor') continue;
-                    
-                    this.selectionCtx.fillStyle = 'white';
-                    this.selectionCtx.strokeStyle = '#0066cc';
+                if (this.tool === 'distort' && this.selection.corners) {
+                    // Draw distort quad outline
+                    const c = this.selection.corners;
+                    this.selectionCtx.strokeStyle = '#cc44ff';
                     this.selectionCtx.lineWidth = 2;
+                    this.selectionCtx.setLineDash([5, 5]);
                     this.selectionCtx.beginPath();
-                    this.selectionCtx.arc(handle.x, handle.y, 6, 0, Math.PI * 2);
-                    this.selectionCtx.fill();
+                    this.selectionCtx.moveTo(c[0].x, c[0].y);
+                    this.selectionCtx.lineTo(c[1].x, c[1].y);
+                    this.selectionCtx.lineTo(c[2].x, c[2].y);
+                    this.selectionCtx.lineTo(c[3].x, c[3].y);
+                    this.selectionCtx.closePath();
                     this.selectionCtx.stroke();
-                }
-                
-                // Draw anchor point crosshair (NOT rotated - stays fixed)
-                const anchorHandle = this.transformHandles.find(h => h.type === 'anchor');
-                if (anchorHandle) {
-                    this.selectionCtx.strokeStyle = '#ff6600';
-                    this.selectionCtx.lineWidth = 2;
-                    this.selectionCtx.beginPath();
-                    this.selectionCtx.moveTo(anchorHandle.x - 8, anchorHandle.y);
-                    this.selectionCtx.lineTo(anchorHandle.x + 8, anchorHandle.y);
-                    this.selectionCtx.moveTo(anchorHandle.x, anchorHandle.y - 8);
-                    this.selectionCtx.lineTo(anchorHandle.x, anchorHandle.y + 8);
-                    this.selectionCtx.stroke();
+                    this.selectionCtx.setLineDash([]);
                     
-                    // Draw circle around anchor
-                    this.selectionCtx.strokeStyle = '#ff6600';
-                    this.selectionCtx.fillStyle = 'white';
-                    this.selectionCtx.beginPath();
-                    this.selectionCtx.arc(anchorHandle.x, anchorHandle.y, 6, 0, Math.PI * 2);
-                    this.selectionCtx.fill();
-                    this.selectionCtx.stroke();
+                    // Draw corner handles
+                    for (const handle of this.transformHandles) {
+                        if (handle.type === 'anchor') continue;
+                        this.selectionCtx.fillStyle = '#cc44ff';
+                        this.selectionCtx.strokeStyle = '#fff';
+                        this.selectionCtx.lineWidth = 2;
+                        this.selectionCtx.beginPath();
+                        this.selectionCtx.arc(handle.x, handle.y, 6, 0, Math.PI * 2);
+                        this.selectionCtx.fill();
+                        this.selectionCtx.stroke();
+                    }
+                } else {
+                    // Standard bounding box (with rotation + skew)
+                    const skewX = this.selection.skewX || 0;
+                    const skewY = this.selection.skewY || 0;
+                    
+                    this.selectionCtx.save();
+                    this.selectionCtx.translate(anchorX, anchorY);
+                    this.selectionCtx.rotate(rotation);
+                    if (skewX || skewY) {
+                        this.selectionCtx.transform(1, skewY, skewX, 1, 0, 0);
+                    }
+                    this.selectionCtx.translate(-anchorX, -anchorY);
+                    
+                    const skewColor = (skewX || skewY) ? '#cc44ff' : '#0066cc';
+                    this.selectionCtx.strokeStyle = skewColor;
+                    this.selectionCtx.lineWidth = 2;
+                    this.selectionCtx.setLineDash([5, 5]);
+                    this.selectionCtx.strokeRect(b.x, b.y, b.width, b.height);
+                    this.selectionCtx.setLineDash([]);
+                    
+                    this.selectionCtx.restore();
+                    
+                    // Draw resize/rotate handles
+                    for (let handle of this.transformHandles) {
+                        if (handle.type === 'anchor') continue;
+                        
+                        const isEdge = handle.type === 'n' || handle.type === 's' || handle.type === 'e' || handle.type === 'w';
+                        const handleColor = (this.tool === 'skew' && isEdge) ? '#cc44ff' : 'white';
+                        
+                        this.selectionCtx.fillStyle = handleColor;
+                        this.selectionCtx.strokeStyle = '#0066cc';
+                        this.selectionCtx.lineWidth = 2;
+                        this.selectionCtx.beginPath();
+                        
+                        if (this.tool === 'skew' && isEdge) {
+                            // Diamond shape for skew edge handles
+                            this.selectionCtx.moveTo(handle.x, handle.y - 6);
+                            this.selectionCtx.lineTo(handle.x + 6, handle.y);
+                            this.selectionCtx.lineTo(handle.x, handle.y + 6);
+                            this.selectionCtx.lineTo(handle.x - 6, handle.y);
+                            this.selectionCtx.closePath();
+                        } else {
+                            this.selectionCtx.arc(handle.x, handle.y, 6, 0, Math.PI * 2);
+                        }
+                        this.selectionCtx.fill();
+                        this.selectionCtx.stroke();
+                    }
+                    
+                    // Draw anchor point crosshair
+                    const anchorHandle = this.transformHandles.find(h => h.type === 'anchor');
+                    if (anchorHandle) {
+                        this.selectionCtx.strokeStyle = '#ff6600';
+                        this.selectionCtx.lineWidth = 2;
+                        this.selectionCtx.beginPath();
+                        this.selectionCtx.moveTo(anchorHandle.x - 8, anchorHandle.y);
+                        this.selectionCtx.lineTo(anchorHandle.x + 8, anchorHandle.y);
+                        this.selectionCtx.moveTo(anchorHandle.x, anchorHandle.y - 8);
+                        this.selectionCtx.lineTo(anchorHandle.x, anchorHandle.y + 8);
+                        this.selectionCtx.stroke();
+                        
+                        this.selectionCtx.strokeStyle = '#ff6600';
+                        this.selectionCtx.fillStyle = 'white';
+                        this.selectionCtx.beginPath();
+                        this.selectionCtx.arc(anchorHandle.x, anchorHandle.y, 6, 0, Math.PI * 2);
+                        this.selectionCtx.fill();
+                        this.selectionCtx.stroke();
+                    }
                 }
             }
             
@@ -6683,59 +6822,128 @@
                     this.selection.bounds.y += dy;
                     this.selection.anchorX += dx;
                     this.selection.anchorY += dy;
+                    // Also move distort corners if they exist
+                    if (this.selection.corners) {
+                        for (const c of this.selection.corners) {
+                            c.x += dx;
+                            c.y += dy;
+                        }
+                    }
                     this.transformStart = { x, y };
                 } else if (this.activeHandle.type === 'anchor') {
                     // Move anchor point independently
                     this.selection.anchorX = x;
                     this.selection.anchorY = y;
+                } else if (this.activeHandle.type.startsWith('distort-')) {
+                    // Distort: move individual corner freely
+                    const idx = this.activeHandle.cornerIdx;
+                    this.selection.corners[idx].x += dx;
+                    this.selection.corners[idx].y += dy;
+                    this.transformStart = { x, y };
                 } else if (this.activeHandle.type === 'rotate' || this.isRotating) {
                     // Calculate rotation angle from anchor point
                     const anchorX = this.selection.anchorX;
                     const anchorY = this.selection.anchorY;
-                    
-                    // Calculate current angle from anchor to mouse position
                     const currentAngle = Math.atan2(y - anchorY, x - anchorX);
-                    
-                    // Calculate rotation delta from start
                     const angleDelta = currentAngle - this.startAngle;
-                    
-                    // Apply rotation
                     this.selection.rotation = this.initialRotation + angleDelta;
-                } else {
-                    // Resize selection
+                } else if (this.tool === 'skew') {
+                    // Skew: edge handles apply shear
                     const b = this.selection.bounds;
                     const type = this.activeHandle.type;
+                    const isEdge = type === 'n' || type === 's' || type === 'e' || type === 'w';
                     
-                    if (type.includes('n')) {
-                        const newY = b.y + dy;
-                        const newHeight = b.height - dy;
-                        if (newHeight > 10) {
-                            b.y = newY;
-                            b.height = newHeight;
+                    if (isEdge) {
+                        if (type === 'n' || type === 's') {
+                            // Horizontal skew
+                            this.selection.skewX = (this.selection.skewX || 0) + dx / b.height;
+                        } else {
+                            // Vertical skew
+                            this.selection.skewY = (this.selection.skewY || 0) + dy / b.width;
                         }
+                        this.transformStart = { x, y };
+                    } else {
+                        // Corner handles: resize as normal
+                        this._performResize(dx, dy);
                     }
-                    if (type.includes('s')) {
-                        b.height += dy;
-                        if (b.height < 10) b.height = 10;
-                    }
-                    if (type.includes('w')) {
-                        const newX = b.x + dx;
-                        const newWidth = b.width - dx;
-                        if (newWidth > 10) {
-                            b.x = newX;
-                            b.width = newWidth;
-                        }
-                    }
-                    if (type.includes('e')) {
-                        b.width += dx;
-                        if (b.width < 10) b.width = 10;
-                    }
-                    
-                    this.transformStart = { x, y };
+                } else {
+                    // Resize selection
+                    this._performResize(dx, dy);
                 }
                 
                 this.showTransformHandles();
                 this.render();
+            }
+            
+            _performResize(dx, dy) {
+                const b = this.selection.bounds;
+                const type = this.activeHandle.type;
+                
+                if (type.includes('n')) {
+                    const newY = b.y + dy;
+                    const newHeight = b.height - dy;
+                    if (newHeight > 10) {
+                        b.y = newY;
+                        b.height = newHeight;
+                    }
+                }
+                if (type.includes('s')) {
+                    b.height += dy;
+                    if (b.height < 10) b.height = 10;
+                }
+                if (type.includes('w')) {
+                    const newX = b.x + dx;
+                    const newWidth = b.width - dx;
+                    if (newWidth > 10) {
+                        b.x = newX;
+                        b.width = newWidth;
+                    }
+                }
+                if (type.includes('e')) {
+                    b.width += dx;
+                    if (b.width < 10) b.width = 10;
+                }
+                
+                // Update corners to match new bounds
+                if (this.selection.corners) {
+                    this.selection.corners = [
+                        { x: b.x, y: b.y },
+                        { x: b.x + b.width, y: b.y },
+                        { x: b.x + b.width, y: b.y + b.height },
+                        { x: b.x, y: b.y + b.height }
+                    ];
+                }
+                
+                this.transformStart = { x: this.transformStart.x + dx, y: this.transformStart.y + dy };
+            }
+            
+            // Shared selection preview: handles rotation, skew, and distort
+            _drawSelectionPreview(ctx) {
+                if (!this.selection) return;
+                
+                const b = this.selection.bounds;
+                const skewX = this.selection.skewX || 0;
+                const skewY = this.selection.skewY || 0;
+                
+                // Distort mode: draw image mapped to free quad
+                if (this.tool === 'distort' && this.selection.corners) {
+                    this._drawImageToQuad(ctx, this.selection.imageData, this.selection.corners);
+                    return;
+                }
+                
+                const rotation = this.selection.rotation || 0;
+                const anchorX = this.selection.anchorX || (b.x + b.width / 2);
+                const anchorY = this.selection.anchorY || (b.y + b.height / 2);
+                
+                ctx.save();
+                ctx.translate(anchorX, anchorY);
+                ctx.rotate(rotation);
+                if (skewX || skewY) {
+                    ctx.transform(1, skewY, skewX, 1, 0, 0);
+                }
+                ctx.translate(-anchorX, -anchorY);
+                ctx.drawImage(this.selection.imageData, b.x, b.y, b.width, b.height);
+                ctx.restore();
             }
             
             applySelection() {
@@ -6749,23 +6957,101 @@
                 const rotation = this.selection.rotation || 0;
                 const anchorX = this.selection.anchorX || (b.x + b.width / 2);
                 const anchorY = this.selection.anchorY || (b.y + b.height / 2);
+                const skewX = this.selection.skewX || 0;
+                const skewY = this.selection.skewY || 0;
                 
-                // Save context state
-                frameCtx.save();
+                if (this.selection.corners && this.tool === 'distort') {
+                    // Distort: map image to arbitrary quad using two triangles
+                    this._drawImageToQuad(frameCtx, this.selection.imageData, this.selection.corners);
+                } else {
+                    frameCtx.save();
+                    
+                    // Apply transform around anchor point
+                    frameCtx.translate(anchorX, anchorY);
+                    frameCtx.rotate(rotation);
+                    // Apply skew via transform matrix: [1, skewY, skewX, 1, 0, 0]
+                    if (skewX || skewY) {
+                        frameCtx.transform(1, skewY, skewX, 1, 0, 0);
+                    }
+                    frameCtx.translate(-anchorX, -anchorY);
+                    
+                    frameCtx.drawImage(
+                        this.selection.imageData,
+                        b.x, b.y, b.width, b.height
+                    );
+                    
+                    frameCtx.restore();
+                }
+            }
+            
+            // Draw an image mapped onto an arbitrary quadrilateral using triangle subdivision
+            _drawImageToQuad(ctx, img, corners) {
+                const sw = img.width;
+                const sh = img.height;
+                const c = corners; // TL, TR, BR, BL
                 
-                // Apply rotation around anchor point
-                frameCtx.translate(anchorX, anchorY);
-                frameCtx.rotate(rotation);
-                frameCtx.translate(-anchorX, -anchorY);
+                // Subdivide into grid for smoother mapping
+                const divisions = 8;
                 
-                // Draw the transformed selection onto the frame
-                frameCtx.drawImage(
-                    this.selection.imageData,
-                    b.x, b.y, b.width, b.height
-                );
+                ctx.save();
+                for (let gy = 0; gy < divisions; gy++) {
+                    for (let gx = 0; gx < divisions; gx++) {
+                        const u0 = gx / divisions, u1 = (gx + 1) / divisions;
+                        const v0 = gy / divisions, v1 = (gy + 1) / divisions;
+                        
+                        // Bilinear interpolation of corner positions
+                        const lerp2d = (u, v) => ({
+                            x: (1-u)*(1-v)*c[0].x + u*(1-v)*c[1].x + u*v*c[2].x + (1-u)*v*c[3].x,
+                            y: (1-u)*(1-v)*c[0].y + u*(1-v)*c[1].y + u*v*c[2].y + (1-u)*v*c[3].y
+                        });
+                        
+                        const p00 = lerp2d(u0, v0);
+                        const p10 = lerp2d(u1, v0);
+                        const p11 = lerp2d(u1, v1);
+                        const p01 = lerp2d(u0, v1);
+                        
+                        // Source rect in image
+                        const sx0 = u0 * sw, sx1 = u1 * sw;
+                        const sy0 = v0 * sh, sy1 = v1 * sh;
+                        const ssw = sx1 - sx0, ssh = sy1 - sy0;
+                        
+                        // Draw two triangles for this cell
+                        this._drawTriangle(ctx, img,
+                            sx0, sy0, ssw, ssh,
+                            p00.x, p00.y, p10.x, p10.y, p01.x, p01.y,
+                            0, 0, 1, 0, 0, 1);
+                        this._drawTriangle(ctx, img,
+                            sx0, sy0, ssw, ssh,
+                            p10.x, p10.y, p11.x, p11.y, p01.x, p01.y,
+                            1, 0, 1, 1, 0, 1);
+                    }
+                }
+                ctx.restore();
+            }
+            
+            _drawTriangle(ctx, img, sx, sy, sw, sh, x0, y0, x1, y1, x2, y2, u0, v0, u1, v1, u2, v2) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(x0, y0);
+                ctx.lineTo(x1, y1);
+                ctx.lineTo(x2, y2);
+                ctx.closePath();
+                ctx.clip();
                 
-                // Restore context state
-                frameCtx.restore();
+                // Affine transform from UV to destination
+                const denom = u0*(v1-v2) - u1*(v0-v2) + u2*(v0-v1);
+                if (Math.abs(denom) < 1e-10) { ctx.restore(); return; }
+                
+                const a = (x0*(v1-v2) - x1*(v0-v2) + x2*(v0-v1)) / denom;
+                const b = -(x0*(u1-u2) - x1*(u0-u2) + x2*(u0-u1)) / denom;
+                const c = (x0*(u1*v2-u2*v1) - x1*(u0*v2-u2*v0) + x2*(u0*v1-u1*v0)) / denom;
+                const d = (y0*(v1-v2) - y1*(v0-v2) + y2*(v0-v1)) / denom;
+                const e = -(y0*(u1-u2) - y1*(u0-u2) + y2*(u0-u1)) / denom;
+                const f = (y0*(u1*v2-u2*v1) - y1*(u0*v2-u2*v0) + y2*(u0*v1-u1*v0)) / denom;
+                
+                ctx.setTransform(a, d, b, e, c, f);
+                ctx.drawImage(img, sx, sy, sw, sh, 0, 0, 1, 1);
+                ctx.restore();
             }
             
             clearSelection() {
@@ -7586,29 +7872,9 @@
                 // Draw anchor point indicator
                 this.drawAnchorIndicator(this.ctx);
                 
-                // Draw selection if it exists (with rotation)
+                // Draw selection if it exists (with rotation, skew, distort)
                 if (this.selection) {
-                    const b = this.selection.bounds;
-                    const rotation = this.selection.rotation || 0;
-                    const anchorX = this.selection.anchorX || (b.x + b.width / 2);
-                    const anchorY = this.selection.anchorY || (b.y + b.height / 2);
-                    
-                    // Save context state
-                    this.ctx.save();
-                    
-                    // Apply rotation around anchor point
-                    this.ctx.translate(anchorX, anchorY);
-                    this.ctx.rotate(rotation);
-                    this.ctx.translate(-anchorX, -anchorY);
-                    
-                    // Draw the selection
-                    this.ctx.drawImage(
-                        this.selection.imageData,
-                        b.x, b.y, b.width, b.height
-                    );
-                    
-                    // Restore context state
-                    this.ctx.restore();
+                    this._drawSelectionPreview(this.ctx);
                 }
                 
                 this.renderTimeline();
@@ -7646,16 +7912,7 @@
                 this.drawAnchorIndicator(this.ctx);
                 
                 if (this.selection) {
-                    const b = this.selection.bounds;
-                    const rotation = this.selection.rotation || 0;
-                    const anchorX = this.selection.anchorX || (b.x + b.width / 2);
-                    const anchorY = this.selection.anchorY || (b.y + b.height / 2);
-                    this.ctx.save();
-                    this.ctx.translate(anchorX, anchorY);
-                    this.ctx.rotate(rotation);
-                    this.ctx.translate(-anchorX, -anchorY);
-                    this.ctx.drawImage(this.selection.imageData, b.x, b.y, b.width, b.height);
-                    this.ctx.restore();
+                    this._drawSelectionPreview(this.ctx);
                 }
             }
             
