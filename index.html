@@ -622,10 +622,126 @@
             user-select: none;
         }
         
+        .timeline-zoom-controls {
+            display: flex;
+            align-items: center;
+            gap: 2px;
+            margin-left: 8px;
+        }
+        
+        .timeline-zoom-controls button {
+            width: 24px;
+            height: 24px;
+            padding: 0;
+            border: 1px solid #444;
+            border-radius: 4px;
+            background: #2a2a2a;
+            color: #ccc;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .timeline-zoom-controls button:hover {
+            background: #3a3a3a;
+            border-color: #666;
+        }
+        
+        .timeline-zoom-controls button:active {
+            background: #0066cc;
+        }
+        
         .timeline-body {
             flex: 1;
             display: flex;
             overflow: hidden;
+            position: relative;
+        }
+        
+        /* Scrub ruler + playhead */
+        .timeline-right-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .scrub-ruler {
+            height: 20px;
+            background: #1a1a1a;
+            border-bottom: 1px solid #3a3a3a;
+            flex-shrink: 0;
+            overflow-x: auto;
+            overflow-y: hidden;
+            cursor: pointer;
+            position: relative;
+            touch-action: none;
+            scrollbar-width: none;
+        }
+        
+        .scrub-ruler::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .scrub-ruler-inner {
+            position: relative;
+            height: 100%;
+            min-width: 100%;
+        }
+        
+        .scrub-tick {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .scrub-tick-line {
+            width: 1px;
+            background: #444;
+            flex: 1;
+        }
+        
+        .scrub-tick-label {
+            font-size: 8px;
+            color: #888;
+            position: absolute;
+            top: 1px;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+        
+        .timeline-playhead {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #ff4444;
+            z-index: 20;
+            pointer-events: none;
+            display: none;
+        }
+        
+        .timeline-playhead.visible {
+            display: block;
+        }
+        
+        .playhead-handle {
+            position: absolute;
+            top: -1px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 8px solid #ff4444;
+            pointer-events: none;
         }
         
         .timeline-layers-section {
@@ -673,8 +789,8 @@
         }
         
         .layers-header {
-            padding: 8px 10px;
-            background: #1e1e1e;
+            padding: 0px 10px;
+            background: #1a1a1a;
             font-weight: bold;
             font-size: 11px;
             text-transform: uppercase;
@@ -684,6 +800,86 @@
             justify-content: space-between;
             user-select: none;
             -webkit-user-select: none;
+            height: 20px;
+            min-height: 20px;
+            box-sizing: border-box;
+        }
+        
+        .tl-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 0 8px;
+            border-bottom: 1px solid #333;
+            min-height: calc(var(--frame-w, 80px) + 13px);
+            box-sizing: border-box;
+            cursor: pointer;
+            font-size: 11px;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+            background: #252525;
+        }
+        
+        .tl-label.active-row {
+            background: #2a2a3a;
+        }
+        
+        .tl-label.inactive-row {
+            opacity: 0.65;
+        }
+        
+        .tl-label .layer-visibility {
+            cursor: pointer;
+            flex-shrink: 0;
+            font-size: 12px;
+        }
+        
+        .tl-label .layer-name {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            min-width: 0;
+        }
+        
+        .tl-label .layer-drag-handle {
+            cursor: grab;
+            color: #555;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            touch-action: none;
+        }
+        
+        .tl-label .layer-drag-handle:active {
+            cursor: grabbing;
+        }
+        
+        .tl-label.dragging {
+            opacity: 0.4;
+        }
+        
+        .tl-label.drop-before::before {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #00cc66;
+            z-index: 10;
+        }
+        
+        .tl-label.drop-after::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #00cc66;
+            z-index: 10;
         }
         
         .layer-buttons {
@@ -730,28 +926,210 @@
             overflow-y: auto;
             overflow-x: hidden;
             -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        
+        .timeline-layers-section .layers-list::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .layer-opacity-popup {
+            position: absolute;
+            left: 100%;
+            top: 0;
+            background: #2a2a2a;
+            border: 1px solid #555;
+            border-radius: 4px;
+            padding: 6px 8px;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10px;
+            white-space: nowrap;
+            box-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+        }
+        
+        .layer-opacity-popup input[type="range"] {
+            width: 60px;
+            height: 3px;
         }
         
         .timeline-frames-section {
             flex: 1;
             overflow-x: auto;
-            overflow-y: hidden;
+            overflow-y: auto;
             background: #2a2a2a;
+        }
+        
+        /* Audio Timeline */
+        .audio-timeline {
+            display: none;
+            border-top: 1px solid #3a3a3a;
+            height: 60px;
+            flex-shrink: 0;
+        }
+        
+        .audio-timeline.visible {
+            display: flex;
+        }
+        
+        .audio-timeline-label {
+            background: #1a1a2e;
+            border-right: 1px solid #3a3a3a;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 4px 8px;
+            gap: 4px;
+            flex-shrink: 0;
+            min-width: 0;
+        }
+        
+        .audio-track-header {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: #8888cc;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        
+        .audio-track-header svg {
+            flex-shrink: 0;
+        }
+        
+        .audio-track-name {
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .audio-controls {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        
+        .audio-controls button {
+            width: 18px;
+            height: 18px;
+            padding: 0;
+            border: 1px solid #444;
+            border-radius: 3px;
+            background: #2a2a3e;
+            color: #aaa;
+            font-size: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .audio-controls button:hover {
+            background: #3a3a4e;
+            border-color: #666;
+        }
+        
+        .audio-controls button.audio-remove-btn {
+            background: #4a2020;
+            border-color: #633;
+            color: #cc6666;
+            margin-left: 2px;
+        }
+        
+        .audio-controls button.audio-remove-btn:hover {
+            background: #6a3030;
+        }
+        
+        .audio-controls button.audio-mute-btn.muted {
+            background: #6a4000;
+            border-color: #885500;
+            color: #ffaa33;
+        }
+        
+        .layer-item.audio-layer-item {
+            background: #1a1a2e;
+            border-bottom: none;
+            border-top: 1px solid #3a3a3a;
+        }
+        
+        .layer-item.audio-layer-item .layer-name {
+            color: #8888cc;
+        }
+        
+        .layer-item.audio-layer-item.active {
+            background: #252540;
+        }
+        
+        .audio-vol-display {
+            font-size: 9px;
+            color: #999;
+            min-width: 28px;
+            text-align: center;
+        }
+        
+        .audio-timeline-waveform {
+            flex: 1;
+            overflow-x: auto;
+            overflow-y: hidden;
+            position: relative;
+            background: #1a1a2e;
+            scrollbar-width: none;
+        }
+        
+        .audio-timeline-waveform::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .audio-waveform-canvas {
+            display: block;
+            height: 100%;
+        }
+        
+        .audio-playhead {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #ff4444;
+            pointer-events: none;
+            z-index: 5;
+            display: none;
         }
 
         .frames-container {
             display: flex;
-            padding: 10px;
-            gap: 5px;
-            min-width: 100%;
+            flex-direction: column;
+            min-width: fit-content;
             user-select: none;
             -webkit-user-select: none;
             position: relative;
         }
+        
+        .layer-frames-row {
+            display: flex;
+            padding: 6px 10px;
+            gap: 5px;
+            border-bottom: 1px solid #333;
+            align-items: center;
+            min-height: calc(var(--frame-w, 80px) + 13px);
+        }
+        
+        .layer-frames-row.inactive-row {
+            opacity: 0.55;
+        }
+        
+        .layer-frames-row.active-row {
+            background: rgba(0, 102, 204, 0.08);
+        }
 
         .frame {
-            width: 80px;
-            height: 80px;
+            width: var(--frame-w, 80px);
+            height: var(--frame-w, 80px);
             border: 2px solid #3a3a3a;
             border-radius: 4px;
             cursor: grab;
@@ -762,6 +1140,7 @@
             user-select: none;
             -webkit-user-select: none;
             touch-action: none;
+            overflow: hidden;
         }
         
         .frame:active {
@@ -793,7 +1172,7 @@
         .frame-drop-indicator {
             position: absolute;
             width: 3px;
-            height: 80px;
+            height: var(--frame-w, 80px);
             background: #4a9eff;
             border-radius: 2px;
             z-index: 10;
@@ -808,6 +1187,30 @@
 
         .frame.active {
             border-color: #0066cc;
+        }
+        
+        .frame.hold-frame {
+            border-color: #111;
+            border-style: solid;
+        }
+        
+        .frame.hold-frame.active {
+            border-color: #0066cc;
+        }
+        
+        .hold-badge {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #999;
+            font-size: 7px;
+            font-weight: bold;
+            padding: 1px 3px;
+            border-radius: 2px;
+            pointer-events: none;
+            z-index: 2;
+            letter-spacing: 0.5px;
         }
 
         .frame canvas {
@@ -830,8 +1233,8 @@
         }
 
         .add-frame {
-            width: 80px;
-            height: 80px;
+            width: var(--frame-w, 80px);
+            height: var(--frame-w, 80px);
             border: 2px dashed #3a3a3a;
             border-radius: 4px;
             cursor: pointer;
@@ -1096,14 +1499,9 @@
                 width: 140px;
             }
             
-            .frame {
-                width: 60px;
-                height: 60px;
-            }
-            
             .add-frame {
-                width: 60px;
-                height: 60px;
+                width: var(--frame-w, 80px);
+                height: var(--frame-w, 80px);
             }
         }
 
@@ -1250,14 +1648,9 @@
                 width: 40px;
             }
             
-            .frame {
-                width: 48px;
-                height: 48px;
-            }
-            
             .add-frame {
-                width: 48px;
-                height: 48px;
+                width: var(--frame-w, 80px);
+                height: var(--frame-w, 80px);
             }
             
             .layer-name {
@@ -1357,14 +1750,9 @@
                 font-size: 12px;
             }
             
-            .frame {
-                width: 38px;
-                height: 38px;
-            }
-            
             .add-frame {
-                width: 38px;
-                height: 38px;
+                width: var(--frame-w, 80px);
+                height: var(--frame-w, 80px);
                 font-size: 16px;
             }
             
@@ -1603,6 +1991,7 @@
                         <button class="dropdown-item" id="saveProjectBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M3 1.5h8l3 3V13a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 012 13V3a1.5 1.5 0 011-1.5z"/><path d="M5 1.5v4h6v-4"/><path d="M5 14.5v-4h6v4"/></svg> Save Project (.fby) <span class="shortcut">⌘S</span></button>
                         <button class="dropdown-item" id="loadProjectBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M2 4v9a1 1 0 001 1h10a1 1 0 001-1V6a1 1 0 00-1-1H8L6.5 3H3a1 1 0 00-1 1z"/></svg> Load Project (.fby) <span class="shortcut">⌘O</span></button>
                         <button class="dropdown-item" id="importSequenceBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="1" y="3" width="8" height="8" rx="1"/><rect x="4" y="1.5" width="8" height="8" rx="1"/><path d="M13 6v5M10.5 8.5h5"/></svg> Import Image Sequence…</button>
+                        <button class="dropdown-item" id="importAudioBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M8 2v9"/><circle cx="5.5" cy="11" r="2.5" fill="none"/><path d="M1 7v2c0 1 .5 1.5 1.5 1.5M15 7v2c0 1-.5 1.5-1.5 1.5"/><path d="M3 5v4M5 3.5v7M13 5v4M11 3.5v7"/></svg> Import Audio…</button>
                         <div class="dropdown-divider"></div>
                         <div class="dropdown-submenu-container">
                             <button class="dropdown-item submenu-trigger"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="2" y="3" width="12" height="10" rx="1"/><path d="M8 1v5m-2-2l2 2 2-2"/></svg> Export <span class="submenu-arrow">▶</span></button>
@@ -1807,6 +2196,7 @@
                         <button id="prevFrame" title="Previous Frame (,)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M10 3L5 8l5 5"/></svg></button>
                         <button id="nextFrame" title="Next Frame (.)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M6 3l5 5-5 5"/></svg></button>
                         <button id="insertFrame" title="Insert Frame (F6)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v10M3 8h10"/></svg> <span class="btn-label">Insert</span></button>
+                        <button id="holdFrame" title="Hold Frame (F5)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="5" height="5" rx="0.5"/><rect x="10" y="4" width="5" height="5" rx="0.5"/><path d="M6 6.5h4"/></svg> <span class="btn-label">Hold</span></button>
                         <button id="duplicateFrame" title="Duplicate Frame (Ctrl+D)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="4" width="8" height="8" rx="1"/><rect x="5.5" y="1" width="8" height="8" rx="1"/></svg> <span class="btn-label">Duplicate</span></button>
                         <button id="clearFrame" title="Clear Frame (Backspace)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M5.5 5.5l5 5M10.5 5.5l-5 5"/></svg> <span class="btn-label">Clear</span></button>
                         <button id="deleteFrame" title="Delete Frame (F7)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h12M6 4V2.5h4V4M5 4v9h6V4"/><path d="M7 7v3M9 7v3"/></svg> <span class="btn-label">Delete</span></button>
@@ -1814,6 +2204,11 @@
                     <div class="fps-control">
                         <label>FPS:</label>
                         <input type="number" id="fpsInput" min="1" max="60" value="12" style="width: 50px;">
+                    </div>
+                    <div class="timeline-zoom-controls">
+                        <button id="tlZoomOut" title="Timeline Zoom Out"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" width="9" height="9"><path d="M7 1L12 5.5V12H2V5.5Z" fill="currentColor"/></svg></button>
+                        <button id="tlZoomFit" title="Fit All Frames"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 5V1.5H5M9 1.5h3.5V5M12.5 9v3.5H9M5 12.5H1.5V9"/></svg></button>
+                        <button id="tlZoomIn" title="Timeline Zoom In"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" width="14" height="14"><path d="M7 1L12 5.5V12H2V5.5Z" fill="currentColor"/></svg></button>
                     </div>
                 </div>
             </div>
@@ -1830,8 +2225,34 @@
                     <div class="layers-list" id="layersList"></div>
                     <div class="layer-panel-resize-handle" id="layerPanelResizeHandle"></div>
                 </div>
-                <div class="timeline-frames-section">
-                    <div class="frames-container" id="framesContainer"></div>
+                <div class="timeline-right-column">
+                    <div class="scrub-ruler" id="scrubRuler">
+                        <div class="scrub-ruler-inner" id="scrubRulerInner"></div>
+                    </div>
+                    <div class="timeline-frames-section" id="timelineFramesSection">
+                        <div class="frames-container" id="framesContainer"></div>
+                    </div>
+                    <div class="timeline-playhead" id="timelinePlayhead">
+                        <div class="playhead-handle"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="audio-timeline" id="audioTimeline">
+                <div class="audio-timeline-label" id="audioTimelineLabel">
+                    <div class="audio-track-header">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4v6M5 2.5v9M7 4.5v5M9 3v8M11 5v4"/></svg>
+                        <span class="audio-track-name" id="audioTrackName">Audio</span>
+                    </div>
+                    <div class="audio-controls">
+                        <button id="audioVolDown" title="Decrease volume">−</button>
+                        <span class="audio-vol-display" id="audioVolDisplay">100%</span>
+                        <button id="audioVolUp" title="Increase volume">+</button>
+                        <button id="audioMuteBtn" class="audio-mute-btn" title="Mute/Unmute"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5h2l3-3v10L4 9H2a1 1 0 01-1-1V6a1 1 0 011-1z"/><path d="M10 4.5c.7.7 1 1.6 1 2.5s-.3 1.8-1 2.5"/></svg></button>
+                    </div>
+                </div>
+                <div class="audio-timeline-waveform" id="audioWaveformContainer">
+                    <canvas id="audioWaveformCanvas"></canvas>
+                    <div class="audio-playhead" id="audioPlayhead"></div>
                 </div>
             </div>
         </div>
@@ -1840,11 +2261,15 @@
     <!-- Frame context menu -->
     <input type="file" id="loadProjectInput" accept=".fby" style="display: none;">
     <input type="file" id="importSequenceInput" accept="image/png,image/jpeg,image/gif,image/webp,image/bmp,image/tiff" multiple style="display: none;">
+    <input type="file" id="importAudioInput" accept="audio/*" style="display: none;">
     <div class="frame-context-menu" id="frameContextMenu">
         <button class="frame-context-menu-item" id="ctxCopyFrame"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="5" y="1.5" width="8" height="10" rx="1"/><path d="M2 4v8a1 1 0 001 1h6"/></svg> Copy Frame<span class="shortcut">Ctrl+C</span></button>
         <button class="frame-context-menu-item" id="ctxPasteFrame"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="3" y="3" width="9" height="10" rx="1"/><path d="M5.5 3V2a1 1 0 011-1h2a1 1 0 011 1v1"/></svg> Paste Frame<span class="shortcut">Ctrl+V</span></button>
         <div class="frame-context-menu-divider"></div>
         <button class="frame-context-menu-item" id="ctxDuplicateFrame"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="1" y="4" width="7" height="7" rx="1"/><rect x="5" y="1" width="7" height="7" rx="1"/></svg> Duplicate Frame<span class="shortcut">Ctrl+D</span></button>
+        <button class="frame-context-menu-item" id="ctxHoldFrame"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="1" y="4" width="5" height="5" rx="0.5"/><rect x="10" y="4" width="5" height="5" rx="0.5"/><path d="M6 6.5h4"/></svg> Hold Frame</button>
+        <div class="frame-context-menu-divider"></div>
+        <button class="frame-context-menu-item" id="ctxReleaseHold"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="1" y="4" width="5" height="5" rx="0.5"/><rect x="10" y="4" width="5" height="5" rx="0.5"/><path d="M6 6.5h4" stroke-dasharray="2 2"/></svg> Release Hold</button>
     </div>
 
     <!-- Canvas Size Modal -->
@@ -2017,6 +2442,17 @@
                 this._pendingSaveTimer = null; // Track async saveState timer
                 this.activePointerId = null; // Track which pointer is currently drawing
                 
+                // Audio system
+                this.audioContext = null;
+                this.audioTrack = null;  // { name, audioBuffer, base64, volume, waveformPeaks }
+                this.audioSourceNode = null;
+                this.audioGainNode = null;
+                this._scrubSource = null;
+                this._scrubGain = null;
+                this.audioMuted = false;
+                this.audioLayerSelected = false;
+                this.timelineScale = 1.0;
+                
                 this.initializeFrame();
                 this.setupEventListeners();
                 this.updateUndoRedoButtons();
@@ -2071,6 +2507,7 @@
                     const deltaX = e.clientX - startX;
                     const newWidth = Math.max(160, Math.min(400, startWidth + deltaX));
                     layersSection.style.width = newWidth + 'px';
+                    if (this.audioTrack) this.syncAudioLabelWidth();
                 };
                 
                 const onPointerUp = (e) => {
@@ -2536,11 +2973,18 @@
                 this.commitSelection();
                 this.hideTransformHandles();
                 
-                // Resize every frame in every layer
+                // Resize every frame in every layer (preserving hold frame relationships)
                 for (const layer of this.layers) {
+                    const resizedMap = new Map(); // old canvas -> new canvas for hold frames
                     for (let i = 0; i < layer.frames.length; i++) {
                         const oldFrame = layer.frames[i];
                         if (!oldFrame) continue;
+                        
+                        // If this canvas was already resized (hold frame), reuse the new one
+                        if (resizedMap.has(oldFrame)) {
+                            layer.frames[i] = resizedMap.get(oldFrame);
+                            continue;
+                        }
                         
                         const newFrame = document.createElement('canvas');
                         newFrame.width = newW;
@@ -2560,6 +3004,7 @@
                             ctx.drawImage(oldFrame, 0, 0);
                         }
                         
+                        resizedMap.set(oldFrame, newFrame);
                         layer.frames[i] = newFrame;
                     }
                 }
@@ -3379,7 +3824,7 @@
                                 break;
                             case 'F5':
                                 e.preventDefault();
-                                this.duplicateFrame();
+                                this.holdFrame();
                                 break;
                             case 'F6':
                                 e.preventDefault();
@@ -3488,11 +3933,18 @@
                 document.getElementById('prevFrame').addEventListener('click', () => this.previousFrame());
                 document.getElementById('nextFrame').addEventListener('click', () => this.nextFrame());
                 document.getElementById('insertFrame').addEventListener('click', () => this.insertFrameAfterCurrent());
+                document.getElementById('holdFrame').addEventListener('click', () => this.holdFrame());
                 document.getElementById('duplicateFrame').addEventListener('click', () => this.duplicateFrame());
                 document.getElementById('deleteFrame').addEventListener('click', () => this.deleteCurrentFrame());
                 document.getElementById('fpsInput').addEventListener('change', (e) => {
                     this.fps = parseInt(e.target.value);
+                    if (this.audioTrack) this.renderAudioWaveform();
                 });
+                
+                // Timeline zoom controls
+                document.getElementById('tlZoomIn').addEventListener('click', () => this.timelineZoomIn());
+                document.getElementById('tlZoomOut').addEventListener('click', () => this.timelineZoomOut());
+                document.getElementById('tlZoomFit').addEventListener('click', () => this.timelineZoomFit());
                 
                 // Frame context menu
                 const ctxMenu = document.getElementById('frameContextMenu');
@@ -3508,6 +3960,18 @@
                 });
                 document.getElementById('ctxDuplicateFrame').addEventListener('click', () => {
                     this.duplicateFrame(this.contextMenuFrameIndex);
+                    ctxMenu.classList.remove('show');
+                });
+                document.getElementById('ctxHoldFrame').addEventListener('click', () => {
+                    // Navigate to context menu frame first, then hold
+                    this.currentFrameIndex = this.contextMenuFrameIndex;
+                    this.holdFrame();
+                    ctxMenu.classList.remove('show');
+                });
+                document.getElementById('ctxReleaseHold').addEventListener('click', () => {
+                    this.currentFrameIndex = this.contextMenuFrameIndex;
+                    this.initializeFrame();
+                    this.releaseHoldFrame();
                     ctxMenu.classList.remove('show');
                 });
                 
@@ -3551,6 +4015,102 @@
                         this.importImageSequence(Array.from(e.target.files));
                         e.target.value = '';
                     }
+                });
+                
+                // Audio import
+                document.getElementById('importAudioBtn').addEventListener('click', () => {
+                    fileMenuDropdown.classList.remove('show');
+                    document.getElementById('importAudioInput').click();
+                });
+                document.getElementById('importAudioInput').addEventListener('change', (e) => {
+                    if (e.target.files.length > 0) {
+                        this.importAudio(e.target.files[0]);
+                        e.target.value = '';
+                    }
+                });
+                document.getElementById('audioVolDown').addEventListener('click', () => {
+                    if (!this.audioTrack) return;
+                    this.audioTrack.volume = Math.max(0, this.audioTrack.volume - 0.1);
+                    this.updateAudioUI();
+                });
+                document.getElementById('audioVolUp').addEventListener('click', () => {
+                    if (!this.audioTrack) return;
+                    this.audioTrack.volume = Math.min(1.5, this.audioTrack.volume + 0.1);
+                    this.updateAudioUI();
+                });
+                document.getElementById('audioMuteBtn').addEventListener('click', () => {
+                    this.audioMuted = !this.audioMuted;
+                    const btn = document.getElementById('audioMuteBtn');
+                    btn.classList.toggle('muted', this.audioMuted);
+                    btn.innerHTML = this.audioMuted
+                        ? '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5h2l3-3v10L4 9H2a1 1 0 01-1-1V6a1 1 0 011-1z"/><path d="M10 4.5l3 5M13 4.5l-3 5"/></svg>'
+                        : '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5h2l3-3v10L4 9H2a1 1 0 01-1-1V6a1 1 0 011-1z"/><path d="M10 4.5c.7.7 1 1.6 1 2.5s-.3 1.8-1 2.5"/></svg>';
+                    // Update live gain if playing
+                    if (this.audioGainNode) {
+                        this.audioGainNode.gain.value = this.audioMuted ? 0 : this.audioTrack.volume;
+                    }
+                    // Dim waveform visually
+                    document.getElementById('audioWaveformCanvas').style.opacity = this.audioMuted ? '0.3' : '1';
+                });
+                
+                // Sync scroll: frames ↔ audio waveform ↔ scrub ruler
+                const framesSection = document.getElementById('timelineFramesSection');
+                const waveformContainer = document.getElementById('audioWaveformContainer');
+                const scrubRuler = document.getElementById('scrubRuler');
+                let _syncingScroll = false;
+                
+                const syncScroll = (source) => {
+                    if (_syncingScroll) return;
+                    _syncingScroll = true;
+                    const sl = source.scrollLeft;
+                    if (source !== framesSection) framesSection.scrollLeft = sl;
+                    if (source !== waveformContainer) waveformContainer.scrollLeft = sl;
+                    if (source !== scrubRuler) scrubRuler.scrollLeft = sl;
+                    this.updatePlayheadPosition();
+                    _syncingScroll = false;
+                };
+                
+                framesSection.addEventListener('scroll', () => syncScroll(framesSection));
+                waveformContainer.addEventListener('scroll', () => syncScroll(waveformContainer));
+                scrubRuler.addEventListener('scroll', () => syncScroll(scrubRuler));
+                
+                // Scrub ruler interaction: click/drag to scrub through frames
+                const scrubToX = (clientX) => {
+                    if (this.isPlaying) this.stop();
+                    const rect = scrubRuler.getBoundingClientRect();
+                    const x = clientX - rect.left + scrubRuler.scrollLeft;
+                    const { cellW, padding } = this.getTimelineMetrics();
+                    const idx = Math.floor((x - padding + cellW / 2) / cellW);
+                    const layer = this.getCurrentLayer();
+                    const maxFrame = layer.frames.length - 1;
+                    const newIdx = Math.max(0, Math.min(maxFrame, idx));
+                    if (newIdx !== this.currentFrameIndex) {
+                        this.currentFrameIndex = newIdx;
+                        this.render();
+                        this.scrubAudio(newIdx);
+                    }
+                };
+                
+                scrubRuler.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    scrubRuler.setPointerCapture(e.pointerId);
+                    this._isScrubbing = true;
+                    scrubToX(e.clientX);
+                });
+                scrubRuler.addEventListener('pointermove', (e) => {
+                    if (!this._isScrubbing) return;
+                    scrubToX(e.clientX);
+                });
+                scrubRuler.addEventListener('pointerup', (e) => {
+                    this._isScrubbing = false;
+                    this.stopScrubAudio();
+                    if (scrubRuler.hasPointerCapture(e.pointerId)) {
+                        scrubRuler.releasePointerCapture(e.pointerId);
+                    }
+                });
+                scrubRuler.addEventListener('pointercancel', (e) => {
+                    this._isScrubbing = false;
+                    this.stopScrubAudio();
                 });
                 document.getElementById('exportPngZip').addEventListener('click', () => {
                     fileMenuDropdown.classList.remove('show');
@@ -3871,22 +4431,30 @@
             
             snapshotState() {
                 // Full: copy ALL frames as ImageData (N getImageData calls)
+                // Track hold frame relationships (shared canvases)
                 return {
                     type: 'full',
-                    layers: this.layers.map(layer => ({
-                        id: layer.id,
-                        name: layer.name,
-                        visible: layer.visible,
-                        opacity: layer.opacity,
-                        frames: layer.frames.map(frame => {
-                            if (!frame) return null;
-                            return {
-                                width: frame.width,
-                                height: frame.height,
-                                imageData: frame.getContext('2d').getImageData(0, 0, frame.width, frame.height)
-                            };
-                        })
-                    })),
+                    layers: this.layers.map(layer => {
+                        const canvasIdMap = new Map();
+                        return {
+                            id: layer.id,
+                            name: layer.name,
+                            visible: layer.visible,
+                            opacity: layer.opacity,
+                            frames: layer.frames.map((frame, fi) => {
+                                if (!frame) return null;
+                                if (canvasIdMap.has(frame)) {
+                                    return { holdRef: canvasIdMap.get(frame) };
+                                }
+                                canvasIdMap.set(frame, fi);
+                                return {
+                                    width: frame.width,
+                                    height: frame.height,
+                                    imageData: frame.getContext('2d').getImageData(0, 0, frame.width, frame.height)
+                                };
+                            })
+                        };
+                    }),
                     currentLayerId: this.currentLayerId,
                     currentFrameIndex: this.currentFrameIndex,
                     nextLayerId: this.nextLayerId
@@ -3999,27 +4567,33 @@
                     return;
                 }
                 
-                // Full restore — rebuild all layers
+                // Full restore — rebuild all layers (preserving hold frame relationships)
                 this.layers = state.layers.map(layer => ({
                     id: layer.id,
                     name: layer.name,
                     visible: layer.visible,
                     opacity: layer.opacity,
-                    frames: layer.frames.map(snapshot => {
-                        if (!snapshot) return null;
-                        const c = document.createElement('canvas');
-                        c.width = snapshot.width;
-                        c.height = snapshot.height;
-                        c.getContext('2d').putImageData(snapshot.imageData, 0, 0);
-                        return c;
-                    })
+                    frames: (() => {
+                        const canvasMap = new Map(); // index -> canvas for hold lookups
+                        return layer.frames.map((snapshot, fi) => {
+                            if (!snapshot) return null;
+                            if (snapshot.holdRef !== undefined) {
+                                return canvasMap.get(snapshot.holdRef) || null;
+                            }
+                            const c = document.createElement('canvas');
+                            c.width = snapshot.width;
+                            c.height = snapshot.height;
+                            c.getContext('2d').putImageData(snapshot.imageData, 0, 0);
+                            canvasMap.set(fi, c);
+                            return c;
+                        });
+                    })()
                 }));
                 
                 this.currentLayerId = state.currentLayerId;
                 this.currentFrameIndex = state.currentFrameIndex;
                 this.nextLayerId = state.nextLayerId;
                 
-                this.renderLayers();
                 this.render();
             }
             
@@ -4606,9 +5180,15 @@
             }
             
             clearCurrentFrame() {
-                this.saveState();
                 const layer = this.getCurrentLayer();
+                // If this is a hold frame, clearing breaks the link — need full state save
+                if (this.isHoldFrame(layer, this.currentFrameIndex)) {
+                    this.saveFullState();
+                } else {
+                    this.saveState();
+                }
                 layer.frames[this.currentFrameIndex] = this.createEmptyFrame();
+                this.initializeFrame();
                 this.render();
             }
             
@@ -4651,7 +5231,6 @@
                 };
                 this.layers.push(newLayer);
                 this.currentLayerId = newLayer.id;
-                this.renderLayers();
                 this.initializeFrame();
                 this.render();
             }
@@ -4680,12 +5259,19 @@
                 const idx = this.layers.findIndex(l => l.id === this.currentLayerId);
                 this.layers.splice(idx + 1, 0, newLayer);
                 this.currentLayerId = newLayer.id;
-                this.renderLayers();
                 this.initializeFrame();
                 this.render();
             }
             
             deleteLayer() {
+                // If audio layer is selected, remove the audio track
+                if (this.audioLayerSelected && this.audioTrack) {
+                    this.removeAudio();
+                    this.audioLayerSelected = false;
+                    this.render();
+                    return;
+                }
+                
                 // Don't delete if it's the only layer
                 if (this.layers.length <= 1) {
                     alert('Cannot delete the only layer. Create another layer first.');
@@ -4710,7 +5296,6 @@
                     this.currentLayerId = this.layers[layerIndex].id;
                 }
                 
-                this.renderLayers();
                 this.initializeFrame();
                 this.render();
             }
@@ -4721,6 +5306,7 @@
                     this.currentFrameIndex--;
                     this.initializeFrame();
                     this.render();
+                    this.scrubAudio(this.currentFrameIndex);
                 }
             }
             
@@ -4731,31 +5317,92 @@
                     this.currentFrameIndex++;
                     this.initializeFrame();
                     this.render();
+                    this.scrubAudio(this.currentFrameIndex);
                 }
             }
             
             nextFrame() {
                 this.commitSelection();
                 const layer = this.getCurrentLayer();
-                
-                // Insert new blank frame after the current frame
-                const newFrameIndex = this.currentFrameIndex + 1;
-                
-                // Create a new blank frame
-                const newFrame = this.createEmptyFrame();
-                
-                // Insert the new frame at the position after current frame
-                layer.frames.splice(newFrameIndex, 0, newFrame);
-                
-                // Move to the new frame
-                this.currentFrameIndex = newFrameIndex;
-                
-                this.render();
+                if (this.currentFrameIndex < layer.frames.length - 1) {
+                    this.currentFrameIndex++;
+                    this.initializeFrame();
+                    this.render();
+                    this.scrubAudio(this.currentFrameIndex);
+                }
             }
             
             insertFrameAfterCurrent() {
-                // Same as nextFrame - inserts blank frame after current
-                this.nextFrame();
+                this.commitSelection();
+                const layer = this.getCurrentLayer();
+                const newFrame = this.createEmptyFrame();
+                const newFrameIndex = this.currentFrameIndex + 1;
+                layer.frames.splice(newFrameIndex, 0, newFrame);
+                this.currentFrameIndex = newFrameIndex;
+                this.render();
+            }
+            
+            holdFrame() {
+                this.commitSelection();
+                const layer = this.getCurrentLayer();
+                const currentCanvas = layer.frames[this.currentFrameIndex];
+                if (!currentCanvas) return;
+                
+                this.saveFullState();
+                
+                // Insert the SAME canvas reference — they share pixel data
+                const newIndex = this.currentFrameIndex + 1;
+                layer.frames.splice(newIndex, 0, currentCanvas);
+                this.currentFrameIndex = newIndex;
+                this.render();
+            }
+            
+            getHoldGroups(layer) {
+                // Returns a Map: canvas -> Set of frame indices sharing that canvas
+                const canvasToIndices = new Map();
+                for (let i = 0; i < layer.frames.length; i++) {
+                    const c = layer.frames[i];
+                    if (!c) continue;
+                    if (!canvasToIndices.has(c)) {
+                        canvasToIndices.set(c, new Set());
+                    }
+                    canvasToIndices.get(c).add(i);
+                }
+                // Only return groups with 2+ frames
+                const groups = new Map();
+                for (const [canvas, indices] of canvasToIndices) {
+                    if (indices.size > 1) {
+                        groups.set(canvas, indices);
+                    }
+                }
+                return groups;
+            }
+            
+            isHoldFrame(layer, frameIndex) {
+                const canvas = layer.frames[frameIndex];
+                if (!canvas) return false;
+                for (let i = 0; i < layer.frames.length; i++) {
+                    if (i !== frameIndex && layer.frames[i] === canvas) return true;
+                }
+                return false;
+            }
+            
+            releaseHoldFrame() {
+                // Break current frame out of its hold group by making an independent copy
+                this.commitSelection();
+                const layer = this.getCurrentLayer();
+                const canvas = layer.frames[this.currentFrameIndex];
+                if (!canvas || !this.isHoldFrame(layer, this.currentFrameIndex)) return;
+                
+                this.saveFullState();
+                
+                const copy = document.createElement('canvas');
+                copy.width = canvas.width;
+                copy.height = canvas.height;
+                copy.getContext('2d').drawImage(canvas, 0, 0);
+                layer.frames[this.currentFrameIndex] = copy;
+                this.initializeFrame();
+                this.render();
             }
             
             deleteCurrentFrame() {
@@ -4767,6 +5414,8 @@
                     alert('Cannot delete the only frame. Create another frame first.');
                     return;
                 }
+                
+                this.saveFullState();
                 
                 // Remove the current frame
                 layer.frames.splice(this.currentFrameIndex, 1);
@@ -5595,6 +6244,10 @@
                 let frameIndex = 0;
                 let lastFrameTime = performance.now();
                 const frameDelay = 1000 / this.fps;
+                this._playStartTime = performance.now();
+                
+                // Start audio playback
+                this.startAudioPlayback();
                 
                 const playbackLoop = (currentTime) => {
                     if (!this.isPlaying) return;
@@ -5604,8 +6257,16 @@
                     if (elapsed >= frameDelay) {
                         this.currentFrameIndex = frameIndex;
                         this.render();
+                        this.updateAudioPlayhead(frameIndex, maxFrames);
+                        this.scrollPlayheadIntoView();
                         frameIndex = (frameIndex + 1) % maxFrames;
                         lastFrameTime = currentTime - (elapsed % frameDelay);
+                        
+                        // Loop audio when animation loops
+                        if (frameIndex === 0 && this.audioTrack) {
+                            this.stopAudioPlayback();
+                            this.startAudioPlayback();
+                        }
                     }
                     
                     this.playbackAnimationFrame = requestAnimationFrame(playbackLoop);
@@ -5623,6 +6284,292 @@
                 if (this.playbackAnimationFrame) {
                     cancelAnimationFrame(this.playbackAnimationFrame);
                     this.playbackAnimationFrame = null;
+                }
+                this.stopAudioPlayback();
+                this.hideAudioPlayhead();
+            }
+            
+            // === Audio System ===
+            
+            getAudioContext() {
+                if (!this.audioContext) {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                // Resume if suspended (iOS requires user gesture)
+                if (this.audioContext.state === 'suspended') {
+                    this.audioContext.resume();
+                }
+                return this.audioContext;
+            }
+            
+            async importAudio(file) {
+                try {
+                    const ctx = this.getAudioContext();
+                    const arrayBuffer = await file.arrayBuffer();
+                    
+                    // Keep a copy for save/load
+                    const base64 = await this._arrayBufferToBase64(arrayBuffer);
+                    
+                    const audioBuffer = await ctx.decodeAudioData(arrayBuffer.slice(0));
+                    
+                    // Generate waveform peaks
+                    const waveformPeaks = this._generateWaveformPeaks(audioBuffer, 2000);
+                    
+                    this.audioTrack = {
+                        name: file.name,
+                        audioBuffer: audioBuffer,
+                        base64: base64,
+                        mimeType: file.type || 'audio/mpeg',
+                        volume: 1.0,
+                        waveformPeaks: waveformPeaks
+                    };
+                    
+                    this.showAudioTimeline();
+                    this.renderAudioWaveform();
+                    this.syncAudioLabelWidth();
+                    this.renderLayers();
+                } catch (err) {
+                    console.error('Audio import failed:', err);
+                    alert('Could not import audio: ' + err.message);
+                }
+            }
+            
+            _arrayBufferToBase64(buffer) {
+                return new Promise((resolve) => {
+                    const blob = new Blob([buffer]);
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        resolve(reader.result.split(',')[1]);
+                    };
+                    reader.readAsDataURL(blob);
+                });
+            }
+            
+            _base64ToArrayBuffer(base64) {
+                const binary = atob(base64);
+                const bytes = new Uint8Array(binary.length);
+                for (let i = 0; i < binary.length; i++) {
+                    bytes[i] = binary.charCodeAt(i);
+                }
+                return bytes.buffer;
+            }
+            
+            _generateWaveformPeaks(audioBuffer, numPeaks) {
+                const channel = audioBuffer.getChannelData(0);
+                const samplesPerPeak = Math.floor(channel.length / numPeaks);
+                const peaks = [];
+                
+                for (let i = 0; i < numPeaks; i++) {
+                    let max = 0;
+                    const start = i * samplesPerPeak;
+                    const end = Math.min(start + samplesPerPeak, channel.length);
+                    for (let j = start; j < end; j++) {
+                        const abs = Math.abs(channel[j]);
+                        if (abs > max) max = abs;
+                    }
+                    peaks.push(max);
+                }
+                return peaks;
+            }
+            
+            removeAudio() {
+                this.stopAudioPlayback();
+                this.audioTrack = null;
+                this.audioMuted = false;
+                this.hideAudioTimeline();
+            }
+            
+            showAudioTimeline() {
+                document.getElementById('audioTimeline').classList.add('visible');
+                if (this.audioTrack) {
+                    // Truncate filename for display
+                    let name = this.audioTrack.name;
+                    if (name.length > 18) name = name.substring(0, 15) + '…';
+                    document.getElementById('audioTrackName').textContent = name;
+                    document.getElementById('audioVolDisplay').textContent = Math.round(this.audioTrack.volume * 100) + '%';
+                }
+            }
+            
+            hideAudioTimeline() {
+                document.getElementById('audioTimeline').classList.remove('visible');
+            }
+            
+            syncAudioLabelWidth() {
+                const layersSection = document.getElementById('layersSection');
+                const audioLabel = document.getElementById('audioTimelineLabel');
+                audioLabel.style.width = layersSection.offsetWidth + 'px';
+            }
+            
+            updateAudioUI() {
+                if (!this.audioTrack) return;
+                document.getElementById('audioVolDisplay').textContent = Math.round(this.audioTrack.volume * 100) + '%';
+                if (this.audioGainNode) {
+                    this.audioGainNode.gain.value = this.audioMuted ? 0 : this.audioTrack.volume;
+                }
+            }
+            
+            renderAudioWaveform() {
+                if (!this.audioTrack) return;
+                
+                const container = document.getElementById('audioWaveformContainer');
+                const canvas = document.getElementById('audioWaveformCanvas');
+                const peaks = this.audioTrack.waveformPeaks;
+                
+                // Calculate width to match frames grid
+                const numFrames = this._maxFrameCount || Math.max(...this.layers.map(l => l.frames.length), this.currentFrameIndex + 1);
+                const { cellW: frameCellWidth, padding } = this.getTimelineMetrics();
+                const framesWidth = padding + numFrames * frameCellWidth + 40; // extra for add button
+                
+                // Calculate how much of the waveform fits the animation duration
+                const animDuration = numFrames / this.fps;
+                const audioDuration = this.audioTrack.audioBuffer.duration;
+                const audioFraction = Math.min(1, audioDuration / animDuration);
+                const totalWidth = Math.max(framesWidth, (framesWidth / animDuration) * audioDuration);
+                
+                const height = container.clientHeight || 58;
+                const dpr = window.devicePixelRatio || 1;
+                
+                canvas.width = totalWidth * dpr;
+                canvas.height = height * dpr;
+                canvas.style.width = totalWidth + 'px';
+                canvas.style.height = height + 'px';
+                
+                const ctx = canvas.getContext('2d');
+                ctx.scale(dpr, dpr);
+                ctx.clearRect(0, 0, totalWidth, height);
+                
+                // Draw frame grid lines
+                ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+                ctx.lineWidth = 1;
+                for (let i = 0; i <= numFrames; i++) {
+                    const x = padding + i * frameCellWidth;
+                    ctx.beginPath();
+                    ctx.moveTo(x, 0);
+                    ctx.lineTo(x, height);
+                    ctx.stroke();
+                }
+                
+                // Draw waveform
+                const waveWidth = (audioDuration / Math.max(animDuration, audioDuration)) * totalWidth;
+                const mid = height / 2;
+                const amp = (height / 2) - 4;
+                
+                ctx.fillStyle = 'rgba(100, 120, 220, 0.6)';
+                ctx.beginPath();
+                
+                const peaksPerPixel = peaks.length / waveWidth;
+                
+                for (let x = 0; x < waveWidth; x++) {
+                    const peakIdx = Math.floor(x * peaksPerPixel);
+                    const peak = peaks[Math.min(peakIdx, peaks.length - 1)];
+                    const barH = peak * amp;
+                    
+                    ctx.rect(padding + x, mid - barH, 1, barH * 2);
+                }
+                ctx.fill();
+                
+                // Draw centerline
+                ctx.strokeStyle = 'rgba(100, 120, 220, 0.3)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(padding, mid);
+                ctx.lineTo(padding + waveWidth, mid);
+                ctx.stroke();
+                
+                // Shade area beyond animation duration
+                if (audioDuration > animDuration) {
+                    const animWidth = (animDuration / audioDuration) * waveWidth;
+                    ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                    ctx.fillRect(padding + animWidth, 0, waveWidth - animWidth, height);
+                }
+            }
+            
+            startAudioPlayback() {
+                if (!this.audioTrack) return;
+                const ctx = this.getAudioContext();
+                
+                const source = ctx.createBufferSource();
+                source.buffer = this.audioTrack.audioBuffer;
+                
+                const gain = ctx.createGain();
+                gain.gain.value = this.audioMuted ? 0 : this.audioTrack.volume;
+                
+                source.connect(gain);
+                gain.connect(ctx.destination);
+                source.start(0);
+                
+                this.audioSourceNode = source;
+                this.audioGainNode = gain;
+            }
+            
+            stopAudioPlayback() {
+                if (this.audioSourceNode) {
+                    try { this.audioSourceNode.stop(); } catch (e) {}
+                    this.audioSourceNode.disconnect();
+                    this.audioSourceNode = null;
+                }
+                if (this.audioGainNode) {
+                    this.audioGainNode.disconnect();
+                    this.audioGainNode = null;
+                }
+            }
+            
+            updateAudioPlayhead(frameIndex, totalFrames) {
+                if (!this.audioTrack) return;
+                const playhead = document.getElementById('audioPlayhead');
+                const container = document.getElementById('audioWaveformContainer');
+                
+                const { cellW: frameCellWidth, padding } = this.getTimelineMetrics();
+                const x = padding + frameIndex * frameCellWidth + frameCellWidth / 2;
+                
+                playhead.style.display = 'block';
+                playhead.style.left = (x - container.scrollLeft) + 'px';
+            }
+            
+            hideAudioPlayhead() {
+                document.getElementById('audioPlayhead').style.display = 'none';
+            }
+            
+            scrubAudio(frameIndex) {
+                if (!this.audioTrack || this.audioMuted) return;
+                
+                // Stop previous scrub snippet
+                this.stopScrubAudio();
+                
+                const ctx = this.getAudioContext();
+                const timeOffset = frameIndex / this.fps;
+                
+                // Don't play if past end of audio
+                if (timeOffset >= this.audioTrack.audioBuffer.duration) return;
+                
+                // Play a short snippet (~80ms) from the frame's time position
+                const snippetDuration = 0.08;
+                const source = ctx.createBufferSource();
+                source.buffer = this.audioTrack.audioBuffer;
+                
+                const gain = ctx.createGain();
+                gain.gain.value = this.audioTrack.volume;
+                // Quick fade out to avoid click at end of snippet
+                gain.gain.setValueAtTime(this.audioTrack.volume, ctx.currentTime + snippetDuration * 0.7);
+                gain.gain.linearRampToValueAtTime(0, ctx.currentTime + snippetDuration);
+                
+                source.connect(gain);
+                gain.connect(ctx.destination);
+                source.start(0, timeOffset, snippetDuration);
+                
+                this._scrubSource = source;
+                this._scrubGain = gain;
+            }
+            
+            stopScrubAudio() {
+                if (this._scrubSource) {
+                    try { this._scrubSource.stop(); } catch (e) {}
+                    this._scrubSource.disconnect();
+                    this._scrubSource = null;
+                }
+                if (this._scrubGain) {
+                    this._scrubGain.disconnect();
+                    this._scrubGain = null;
                 }
             }
             
@@ -5702,107 +6649,142 @@
                 }
                 
                 this.renderTimeline();
-                this.renderLayers();
             }
             
             renderLayers() {
+                // Shim — renderTimeline builds both labels and frames
+                this.renderTimeline();
+            }
+            
+            _reorderLayer(dragId, targetId, position) {
+                // The UI is reversed: top of list = top layer = end of array
+                const dragIdx = this.layers.findIndex(l => l.id === dragId);
+                const targetIdx = this.layers.findIndex(l => l.id === targetId);
+                if (dragIdx === -1 || targetIdx === -1 || dragIdx === targetIdx) return;
+                
+                this.saveFullState();
+                
+                const [draggedLayer] = this.layers.splice(dragIdx, 1);
+                
+                // Recalculate target index after removal
+                let newIdx = this.layers.findIndex(l => l.id === targetId);
+                
+                // UI is reversed: "before" in UI (above) = higher in stack = higher array index
+                if (position === 'before') {
+                    newIdx += 1; // Insert after in array = above in UI
+                }
+                
+                this.layers.splice(newIdx, 0, draggedLayer);
+                this.render();
+            }
+            
+            renderTimeline() {
+                const container = document.getElementById('framesContainer');
                 const layersList = document.getElementById('layersList');
+                container.innerHTML = '';
                 layersList.innerHTML = '';
                 
-                [...this.layers].reverse().forEach((layer) => {
+                // Re-append the drop indicator if it exists
+                if (this._dropIndicator) {
+                    this._dropIndicator.style.display = 'none';
+                }
+                
+                // Find max frame count across all layers (for ruler width)
+                const maxFrameCount = Math.max(...this.layers.map(l => l.frames.length), this.currentFrameIndex + 1);
+                
+                // Build each layer row (reversed: top layer = top of list)
+                const reversedLayers = [...this.layers].reverse();
+                
+                reversedLayers.forEach((layer) => {
+                    const isActive = layer.id === this.currentLayerId && !this.audioLayerSelected;
+                    const rowCls = isActive ? 'active-row' : 'inactive-row';
                     
-                    const div = document.createElement('div');
-                    div.className = 'layer-item' + (layer.id === this.currentLayerId ? ' active' : '');
-                    div.dataset.layerId = layer.id;
+                    // === LEFT LABEL ===
+                    const label = document.createElement('div');
+                    label.className = 'tl-label ' + rowCls;
+                    label.dataset.layerId = layer.id;
+                    label.style.position = 'relative';
                     
-                    const headerDiv = document.createElement('div');
-                    headerDiv.className = 'layer-header';
-                    
-                    // Drag handle (grip icon)
                     const dragHandle = document.createElement('span');
                     dragHandle.className = 'layer-drag-handle';
-                    dragHandle.innerHTML = '<svg width="10" height="14" viewBox="0 0 10 14" fill="currentColor"><circle cx="3" cy="2" r="1.5"/><circle cx="7" cy="2" r="1.5"/><circle cx="3" cy="7" r="1.5"/><circle cx="7" cy="7" r="1.5"/><circle cx="3" cy="12" r="1.5"/><circle cx="7" cy="12" r="1.5"/></svg>';
+                    dragHandle.innerHTML = '<svg width="8" height="12" viewBox="0 0 10 14" fill="currentColor"><circle cx="3" cy="2" r="1.3"/><circle cx="7" cy="2" r="1.3"/><circle cx="3" cy="7" r="1.3"/><circle cx="7" cy="7" r="1.3"/><circle cx="3" cy="12" r="1.3"/><circle cx="7" cy="12" r="1.3"/></svg>';
                     
-                    const visibilitySpan = document.createElement('span');
-                    visibilitySpan.className = 'layer-visibility';
-                    visibilitySpan.textContent = layer.visible ? '👁️' : '🚫';
-                    
-                    const nameSpan = document.createElement('span');
-                    nameSpan.className = 'layer-name';
-                    nameSpan.textContent = layer.name;
-                    
-                    headerDiv.appendChild(dragHandle);
-                    headerDiv.appendChild(visibilitySpan);
-                    headerDiv.appendChild(nameSpan);
-                    
-                    // Opacity control
-                    const opacityDiv = document.createElement('div');
-                    opacityDiv.className = 'layer-opacity-control';
-                    
-                    const opacityLabel = document.createElement('span');
-                    opacityLabel.textContent = 'Opacity:';
-                    
-                    const opacitySlider = document.createElement('input');
-                    opacitySlider.type = 'range';
-                    opacitySlider.min = '0';
-                    opacitySlider.max = '100';
-                    opacitySlider.value = Math.round((layer.opacity || 1.0) * 100);
-                    
-                    const opacityValue = document.createElement('span');
-                    opacityValue.className = 'layer-opacity-value';
-                    opacityValue.textContent = Math.round((layer.opacity || 1.0) * 100) + '%';
-                    
-                    opacitySlider.addEventListener('input', (e) => {
+                    const vis = document.createElement('span');
+                    vis.className = 'layer-visibility';
+                    vis.textContent = layer.visible ? '👁️' : '🚫';
+                    vis.addEventListener('click', (e) => {
                         e.stopPropagation();
-                        const newOpacity = parseInt(e.target.value) / 100;
-                        layer.opacity = newOpacity;
-                        opacityValue.textContent = Math.round(newOpacity * 100) + '%';
+                        layer.visible = !layer.visible;
                         this.render();
                     });
                     
-                    opacityDiv.appendChild(opacityLabel);
-                    opacityDiv.appendChild(opacitySlider);
-                    opacityDiv.appendChild(opacityValue);
+                    const name = document.createElement('span');
+                    name.className = 'layer-name';
+                    name.textContent = layer.name;
                     
-                    div.appendChild(headerDiv);
-                    div.appendChild(opacityDiv);
+                    label.appendChild(dragHandle);
+                    label.appendChild(vis);
+                    label.appendChild(name);
                     
-                    // Click handlers
-                    headerDiv.addEventListener('click', (e) => {
-                        if (this._layerDragDidMove) return; // Ignore click after drag
-                        if (e.target.classList.contains('layer-visibility')) {
-                            layer.visible = !layer.visible;
-                            this.render();
-                        } else if (!e.target.closest('.layer-drag-handle')) {
-                            this.commitSelection();
-                            this.currentLayerId = layer.id;
-                            this.initializeFrame();
-                            this.render();
-                        }
+                    // Click label to select layer
+                    label.addEventListener('click', (e) => {
+                        if (this._layerDragDidMove) return;
+                        if (e.target.classList.contains('layer-visibility')) return;
+                        if (e.target.closest('.layer-drag-handle')) return;
+                        this.commitSelection();
+                        this.currentLayerId = layer.id;
+                        this.audioLayerSelected = false;
+                        this.initializeFrame();
+                        this.render();
                     });
                     
-                    // Pointer-based drag reordering (works on iPad + desktop)
-                    const startDrag = (startY) => {
-                        this._layerDragId = layer.id;
-                        this._layerDragDidMove = false;
-                        this._layerDragStartY = startY;
-                        div.classList.add('dragging');
-                    };
+                    // Right-click for opacity control
+                    label.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        // Remove any existing popup
+                        document.querySelectorAll('.layer-opacity-popup').forEach(p => p.remove());
+                        
+                        const popup = document.createElement('div');
+                        popup.className = 'layer-opacity-popup';
+                        popup.innerHTML = `<span>Opacity:</span><input type="range" min="0" max="100" value="${Math.round((layer.opacity || 1.0) * 100)}"><span class="opval">${Math.round((layer.opacity || 1.0) * 100)}%</span>`;
+                        
+                        const slider = popup.querySelector('input');
+                        const valSpan = popup.querySelector('.opval');
+                        slider.addEventListener('input', (se) => {
+                            se.stopPropagation();
+                            layer.opacity = parseInt(se.target.value) / 100;
+                            valSpan.textContent = Math.round(layer.opacity * 100) + '%';
+                            this.render();
+                        });
+                        slider.addEventListener('pointerdown', (se) => se.stopPropagation());
+                        
+                        label.appendChild(popup);
+                        
+                        const closePopup = (ce) => {
+                            if (!popup.contains(ce.target)) {
+                                popup.remove();
+                                document.removeEventListener('pointerdown', closePopup);
+                            }
+                        };
+                        setTimeout(() => document.addEventListener('pointerdown', closePopup), 0);
+                    });
                     
+                    // Layer drag reorder
                     dragHandle.addEventListener('pointerdown', (e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        startDrag(e.clientY);
+                        this._layerDragId = layer.id;
+                        this._layerDragDidMove = false;
+                        this._layerDragStartY = e.clientY;
+                        label.classList.add('dragging');
                         
                         const onMove = (me) => {
                             if (this._layerDragId === null) return;
-                            if (Math.abs(me.clientY - this._layerDragStartY) > 3) {
-                                this._layerDragDidMove = true;
-                            }
+                            if (Math.abs(me.clientY - this._layerDragStartY) > 3) this._layerDragDidMove = true;
                             if (!this._layerDragDidMove) return;
                             
-                            // Find which layer item we're over
-                            const items = layersList.querySelectorAll('.layer-item');
+                            const items = layersList.querySelectorAll('.tl-label');
                             items.forEach(item => item.classList.remove('drop-before', 'drop-after'));
                             
                             for (const item of items) {
@@ -5828,20 +6810,16 @@
                             document.removeEventListener('pointermove', onMove);
                             document.removeEventListener('pointerup', onUp);
                             document.removeEventListener('pointercancel', onUp);
-                            
-                            div.classList.remove('dragging');
-                            layersList.querySelectorAll('.layer-item').forEach(item => {
+                            label.classList.remove('dragging');
+                            layersList.querySelectorAll('.tl-label').forEach(item => {
                                 item.classList.remove('drop-before', 'drop-after');
                             });
-                            
                             if (this._layerDragDidMove && this._layerDropTarget != null) {
                                 this._reorderLayer(this._layerDragId, this._layerDropTarget, this._layerDropPos);
                             }
-                            
                             this._layerDragId = null;
                             this._layerDropTarget = null;
                             this._layerDropPos = null;
-                            // Delay clearing flag so click handler can check it
                             setTimeout(() => { this._layerDragDidMove = false; }, 0);
                         };
                         
@@ -5850,118 +6828,172 @@
                         document.addEventListener('pointercancel', onUp);
                     });
                     
-                    layersList.appendChild(div);
-                });
-            }
-            
-            _reorderLayer(dragId, targetId, position) {
-                // The UI is reversed: top of list = top layer = end of array
-                const dragIdx = this.layers.findIndex(l => l.id === dragId);
-                const targetIdx = this.layers.findIndex(l => l.id === targetId);
-                if (dragIdx === -1 || targetIdx === -1 || dragIdx === targetIdx) return;
-                
-                this.saveFullState();
-                
-                const [draggedLayer] = this.layers.splice(dragIdx, 1);
-                
-                // Recalculate target index after removal
-                let newIdx = this.layers.findIndex(l => l.id === targetId);
-                
-                // UI is reversed: "before" in UI (above) = higher in stack = higher array index
-                if (position === 'before') {
-                    newIdx += 1; // Insert after in array = above in UI
-                }
-                
-                this.layers.splice(newIdx, 0, draggedLayer);
-                this.renderLayers();
-                this.render();
-            }
-            
-            renderTimeline() {
-                const container = document.getElementById('framesContainer');
-                container.innerHTML = '';
-                
-                // Re-append the drop indicator if it exists
-                if (this._dropIndicator) {
-                    this._dropIndicator.style.display = 'none';
-                    container.appendChild(this._dropIndicator);
-                }
-                
-                const layer = this.getCurrentLayer();
-                const maxFrames = Math.max(layer.frames.length, this.currentFrameIndex + 1);
-                
-                for (let i = 0; i < maxFrames; i++) {
-                    const frameDiv = document.createElement('div');
-                    frameDiv.className = 'frame' + (i === this.currentFrameIndex ? ' active' : '');
-                    frameDiv.dataset.frameIndex = i;
+                    layersList.appendChild(label);
                     
-                    if (layer.frames[i]) {
-                        const thumbnail = document.createElement('canvas');
-                        thumbnail.width = 80;
-                        thumbnail.height = 60;
-                        const thumbCtx = thumbnail.getContext('2d');
-                        thumbCtx.drawImage(layer.frames[i], 0, 0, 80, 60);
-                        frameDiv.appendChild(thumbnail);
+                    // === RIGHT FRAME ROW ===
+                    const row = document.createElement('div');
+                    row.className = 'layer-frames-row ' + rowCls;
+                    row.dataset.layerId = layer.id;
+                    
+                    // Build hold frame set for this layer
+                    const holdGroups = this.getHoldGroups(layer);
+                    const holdFrameSet = new Set();
+                    for (const [, indices] of holdGroups) {
+                        for (const idx of indices) holdFrameSet.add(idx);
                     }
                     
-                    const frameNumber = document.createElement('div');
-                    frameNumber.className = 'frame-number';
-                    frameNumber.textContent = i + 1;
-                    frameDiv.appendChild(frameNumber);
+                    const layerMaxFrames = Math.max(layer.frames.length, isActive ? this.currentFrameIndex + 1 : 0);
                     
-                    // Pointer-based drag: pointerdown starts potential drag (works with mouse, touch, pencil)
-                    frameDiv.addEventListener('pointerdown', (e) => {
-                        if (e.button && e.button !== 0) return; // left click only for mouse
-                        e.preventDefault();
+                    for (let i = 0; i < layerMaxFrames; i++) {
+                        const frameDiv = document.createElement('div');
+                        let cls = 'frame';
+                        if (isActive && i === this.currentFrameIndex) cls += ' active';
+                        if (holdFrameSet.has(i)) cls += ' hold-frame';
+                        frameDiv.className = cls;
+                        frameDiv.dataset.frameIndex = i;
+                        frameDiv.dataset.layerId = layer.id;
                         
-                        this._frameDragState = {
-                            index: i,
-                            startX: e.clientX,
-                            startY: e.clientY,
-                            started: false,
-                            element: frameDiv
-                        };
+                        // Hold badge
+                        if (holdFrameSet.has(i)) {
+                            const badge = document.createElement('div');
+                            badge.className = 'hold-badge';
+                            badge.textContent = 'H';
+                            frameDiv.appendChild(badge);
+                        }
+                        
+                        if (layer.frames[i]) {
+                            const thumbnail = document.createElement('canvas');
+                            thumbnail.width = 80;
+                            thumbnail.height = 60;
+                            const thumbCtx = thumbnail.getContext('2d');
+                            thumbCtx.drawImage(layer.frames[i], 0, 0, 80, 60);
+                            frameDiv.appendChild(thumbnail);
+                        }
+                        
+                        const frameNumber = document.createElement('div');
+                        frameNumber.className = 'frame-number';
+                        frameNumber.textContent = i + 1;
+                        frameDiv.appendChild(frameNumber);
+                        
+                        // Frame interactions
+                        const layerRef = layer;
+                        const frameIdx = i;
+                        
+                        frameDiv.addEventListener('pointerdown', (e) => {
+                            if (e.button && e.button !== 0) return;
+                            e.preventDefault();
+                            
+                            // If clicking a non-active layer, switch to it
+                            if (layerRef.id !== this.currentLayerId) {
+                                this.commitSelection();
+                                this.currentLayerId = layerRef.id;
+                                this.audioLayerSelected = false;
+                                this.currentFrameIndex = frameIdx;
+                                this.initializeFrame();
+                                this.render();
+                                this.scrubAudio(frameIdx);
+                                return;
+                            }
+                            
+                            // Active layer: support drag reorder
+                            this._frameDragState = {
+                                index: frameIdx,
+                                startX: e.clientX,
+                                startY: e.clientY,
+                                started: false,
+                                element: frameDiv,
+                                layerId: layerRef.id
+                            };
+                        });
+                        
+                        // Right-click context menu
+                        frameDiv.addEventListener('contextmenu', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            // Switch to this layer if needed
+                            if (layerRef.id !== this.currentLayerId) {
+                                this.commitSelection();
+                                this.currentLayerId = layerRef.id;
+                                this.audioLayerSelected = false;
+                                this.currentFrameIndex = frameIdx;
+                                this.initializeFrame();
+                            }
+                            this.contextMenuFrameIndex = frameIdx;
+                            
+                            const ctxMenu = document.getElementById('frameContextMenu');
+                            const pasteItem = document.getElementById('ctxPasteFrame');
+                            if (this.copiedFrame) {
+                                pasteItem.classList.remove('disabled');
+                            } else {
+                                pasteItem.classList.add('disabled');
+                            }
+                            const releaseItem = document.getElementById('ctxReleaseHold');
+                            if (this.isHoldFrame(layerRef, frameIdx)) {
+                                releaseItem.style.display = '';
+                            } else {
+                                releaseItem.style.display = 'none';
+                            }
+                            ctxMenu.style.left = e.clientX + 'px';
+                            ctxMenu.style.top = e.clientY + 'px';
+                            ctxMenu.classList.add('show');
+                            const menuRect = ctxMenu.getBoundingClientRect();
+                            if (menuRect.right > window.innerWidth) ctxMenu.style.left = (e.clientX - menuRect.width) + 'px';
+                            if (menuRect.bottom > window.innerHeight) ctxMenu.style.top = (e.clientY - menuRect.height) + 'px';
+                        });
+                        
+                        row.appendChild(frameDiv);
+                    }
+                    
+                    // Add frame button (only on active layer)
+                    if (isActive) {
+                        const addFrameDiv = document.createElement('div');
+                        addFrameDiv.className = 'add-frame';
+                        addFrameDiv.textContent = '+';
+                        addFrameDiv.title = 'Add new frame';
+                        addFrameDiv.addEventListener('click', () => this.insertFrameAfterCurrent());
+                        row.appendChild(addFrameDiv);
+                    }
+                    
+                    // Append drop indicator to active layer row
+                    if (isActive && this._dropIndicator) {
+                        row.style.position = 'relative';
+                        row.appendChild(this._dropIndicator);
+                    }
+                    
+                    container.appendChild(row);
+                });
+                
+                // Audio label in left column
+                if (this.audioTrack) {
+                    const audioLabel = document.createElement('div');
+                    audioLabel.className = 'tl-label' + (this.audioLayerSelected ? ' active-row' : '');
+                    audioLabel.style.minHeight = '58px';
+                    audioLabel.style.borderBottom = 'none';
+                    
+                    const audioIcon = document.createElement('span');
+                    audioIcon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4v6M5 2.5v9M7 4.5v5M9 3v8M11 5v4"/></svg>';
+                    audioIcon.style.flexShrink = '0';
+                    
+                    const audioName = document.createElement('span');
+                    audioName.className = 'layer-name';
+                    let displayName = this.audioTrack.name;
+                    if (displayName.length > 18) displayName = displayName.substring(0, 15) + '…';
+                    audioName.textContent = '♪ ' + displayName;
+                    audioName.style.color = '#8888cc';
+                    
+                    audioLabel.appendChild(audioIcon);
+                    audioLabel.appendChild(audioName);
+                    audioLabel.addEventListener('click', () => {
+                        this.audioLayerSelected = true;
+                        this.renderTimeline();
                     });
-                    
-                    // Right-click context menu
-                    frameDiv.addEventListener('contextmenu', (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        this.contextMenuFrameIndex = i;
-                        
-                        const ctxMenu = document.getElementById('frameContextMenu');
-                        const pasteItem = document.getElementById('ctxPasteFrame');
-                        
-                        // Enable/disable paste based on clipboard
-                        if (this.copiedFrame) {
-                            pasteItem.classList.remove('disabled');
-                        } else {
-                            pasteItem.classList.add('disabled');
-                        }
-                        
-                        // Position the menu
-                        ctxMenu.style.left = e.clientX + 'px';
-                        ctxMenu.style.top = e.clientY + 'px';
-                        ctxMenu.classList.add('show');
-                        
-                        // Keep menu within viewport
-                        const menuRect = ctxMenu.getBoundingClientRect();
-                        if (menuRect.right > window.innerWidth) {
-                            ctxMenu.style.left = (e.clientX - menuRect.width) + 'px';
-                        }
-                        if (menuRect.bottom > window.innerHeight) {
-                            ctxMenu.style.top = (e.clientY - menuRect.height) + 'px';
-                        }
-                    });
-                    
-                    container.appendChild(frameDiv);
+                    layersList.appendChild(audioLabel);
                 }
                 
                 // Set up document-level drag handlers (only once)
                 if (!this._frameDragBound) {
                     this._frameDragBound = true;
                     
-                    // Create reusable ghost and indicator elements
                     this._dragGhost = document.createElement('div');
                     this._dragGhost.className = 'frame-drag-ghost';
                     this._dragGhost.style.display = 'none';
@@ -5970,25 +7002,21 @@
                     this._dropIndicator = document.createElement('div');
                     this._dropIndicator.className = 'frame-drop-indicator';
                     this._dropIndicator.style.display = 'none';
-                    container.appendChild(this._dropIndicator);
                     
                     document.addEventListener('pointermove', (e) => {
                         if (!this._frameDragState) return;
-                        
                         const state = this._frameDragState;
                         const dx = e.clientX - state.startX;
                         const dy = e.clientY - state.startY;
                         
-                        // Require minimum movement to start drag (5px)
                         if (!state.started && (Math.abs(dx) > 5 || Math.abs(dy) > 5)) {
                             state.started = true;
                             state.element.classList.add('dragging');
-                            
-                            // Show ghost with thumbnail clone
                             const ghost = this._dragGhost;
                             ghost.innerHTML = '';
-                            ghost.style.width = '80px';
-                            ghost.style.height = '80px';
+                            const gm = this.getTimelineMetrics();
+                            ghost.style.width = gm.frameW + 'px';
+                            ghost.style.height = gm.frameW + 'px';
                             const thumb = state.element.querySelector('canvas');
                             if (thumb) {
                                 const c = document.createElement('canvas');
@@ -6005,28 +7033,25 @@
                         if (!state.started) return;
                         e.preventDefault();
                         
-                        // Move ghost to cursor
                         this._dragGhost.style.left = e.clientX + 'px';
                         this._dragGhost.style.top = e.clientY + 'px';
                         
-                        // Find insertion position
-                        const containerEl = document.getElementById('framesContainer');
-                        const frames = containerEl.querySelectorAll('.frame');
-                        const containerRect = containerEl.getBoundingClientRect();
+                        // Find active layer row for drop indicator
+                        const activeRow = container.querySelector('.layer-frames-row.active-row');
+                        if (!activeRow) return;
+                        const frames = activeRow.querySelectorAll('.frame');
+                        const containerRect = activeRow.getBoundingClientRect();
                         let bestInsert = null;
                         let bestDist = Infinity;
                         
                         for (const frame of frames) {
                             const rect = frame.getBoundingClientRect();
                             const idx = parseInt(frame.dataset.frameIndex);
-                            
-                            // Check left edge
                             const leftDist = Math.abs(e.clientX - rect.left);
                             if (leftDist < bestDist) {
                                 bestDist = leftDist;
                                 bestInsert = { idx, side: 'left', x: rect.left - containerRect.left };
                             }
-                            // Check right edge
                             const rightDist = Math.abs(e.clientX - rect.right);
                             if (rightDist < bestDist) {
                                 bestDist = rightDist;
@@ -6036,7 +7061,6 @@
                         
                         if (bestInsert) {
                             const insertIdx = bestInsert.side === 'right' ? bestInsert.idx + 1 : bestInsert.idx;
-                            // Don't show indicator adjacent to dragged frame's original position
                             if (insertIdx === state.index || insertIdx === state.index + 1) {
                                 this._dropIndicator.style.display = 'none';
                                 state.insertIdx = undefined;
@@ -6050,39 +7074,173 @@
                     
                     document.addEventListener('pointerup', (e) => {
                         if (!this._frameDragState) return;
-                        
                         const state = this._frameDragState;
-                        
-                        // Clean up
                         state.element.classList.remove('dragging');
                         this._dragGhost.style.display = 'none';
                         this._dropIndicator.style.display = 'none';
                         
                         if (state.started && state.insertIdx !== undefined) {
-                            // Convert insertion index to reorder target
                             const target = state.insertIdx > state.index ? state.insertIdx - 1 : state.insertIdx;
                             if (target !== state.index) {
                                 this.reorderFrames(state.index, target);
                             }
                         } else if (!state.started) {
-                            // It was just a click, not a drag — select the frame
                             this.commitSelection();
                             this.currentFrameIndex = state.index;
                             this.initializeFrame();
                             this.render();
+                            this.scrubAudio(state.index);
                         }
                         
                         this._frameDragState = null;
                     });
                 }
                 
-                // Add new frame button
-                const addFrameDiv = document.createElement('div');
-                addFrameDiv.className = 'add-frame';
-                addFrameDiv.textContent = '+';
-                addFrameDiv.title = 'Add new frame after current frame';
-                addFrameDiv.addEventListener('click', () => this.nextFrame());
-                container.appendChild(addFrameDiv);
+                // Sync audio waveform
+                if (this.audioTrack) {
+                    this.renderAudioWaveform();
+                    this.syncAudioLabelWidth();
+                }
+                
+                // Render scrub ruler (use max frame count across all layers)
+                this._maxFrameCount = maxFrameCount;
+                this.renderScrubRuler();
+                this.updatePlayheadPosition();
+                
+                // Sync vertical scroll between labels and frames
+                this._syncVerticalScroll();
+            }
+            
+            renderScrubRuler() {
+                const ruler = document.getElementById('scrubRulerInner');
+                ruler.innerHTML = '';
+                
+                const numFrames = this._maxFrameCount || Math.max(...this.layers.map(l => l.frames.length), this.currentFrameIndex + 1);
+                const { cellW, padding } = this.getTimelineMetrics();
+                const totalWidth = padding + numFrames * cellW + 40;
+                ruler.style.width = totalWidth + 'px';
+                
+                // Adapt label frequency to zoom level
+                const labelEvery = cellW < 30 ? 10 : cellW < 50 ? 5 : cellW < 70 ? 2 : 1;
+                
+                for (let i = 0; i < numFrames; i++) {
+                    const x = padding + i * cellW + cellW / 2;
+                    const tick = document.createElement('div');
+                    tick.className = 'scrub-tick';
+                    tick.style.left = x + 'px';
+                    
+                    const line = document.createElement('div');
+                    line.className = 'scrub-tick-line';
+                    tick.appendChild(line);
+                    
+                    if (i === 0 || (i + 1) % labelEvery === 0) {
+                        const label = document.createElement('span');
+                        label.className = 'scrub-tick-label';
+                        label.textContent = i + 1;
+                        tick.appendChild(label);
+                    }
+                    
+                    ruler.appendChild(tick);
+                }
+            }
+            
+            getTimelineMetrics() {
+                const s = this.timelineScale;
+                const frameW = Math.round(80 * s);
+                const gap = 5;
+                const cellW = frameW + gap;
+                const thumbH = Math.round(60 * s);
+                const padding = 10;
+                return { frameW, thumbH, gap, cellW, padding };
+            }
+            
+            applyTimelineScale() {
+                const { frameW } = this.getTimelineMetrics();
+                document.documentElement.style.setProperty('--frame-w', frameW + 'px');
+                this.renderTimeline();
+            }
+            
+            timelineZoomIn() {
+                this.timelineScale = Math.min(3.0, this.timelineScale * 1.3);
+                this.applyTimelineScale();
+            }
+            
+            timelineZoomOut() {
+                this.timelineScale = Math.max(0.2, this.timelineScale / 1.3);
+                this.applyTimelineScale();
+            }
+            
+            timelineZoomFit() {
+                const numFrames = this._maxFrameCount || Math.max(...this.layers.map(l => l.frames.length), this.currentFrameIndex + 1);
+                if (numFrames === 0) return;
+                
+                const framesSection = document.getElementById('timelineFramesSection');
+                const availW = framesSection.clientWidth - 20; // padding
+                const gap = 5;
+                // Solve: numFrames * (frameW + gap) <= availW
+                const frameW = Math.max(20, Math.floor((availW - gap * numFrames) / numFrames));
+                this.timelineScale = frameW / 80;
+                this.applyTimelineScale();
+                // Scroll to start
+                framesSection.scrollLeft = 0;
+            }
+            
+            updatePlayheadPosition() {
+                const playhead = document.getElementById('timelinePlayhead');
+                const framesSection = document.getElementById('timelineFramesSection');
+                
+                const { cellW, padding } = this.getTimelineMetrics();
+                const x = padding + this.currentFrameIndex * cellW + cellW / 2;
+                const visibleX = x - framesSection.scrollLeft;
+                
+                playhead.style.left = visibleX + 'px';
+                playhead.classList.add('visible');
+            }
+            
+            scrollPlayheadIntoView() {
+                const framesSection = document.getElementById('timelineFramesSection');
+                const { cellW, padding } = this.getTimelineMetrics();
+                const x = padding + this.currentFrameIndex * cellW + cellW / 2;
+                const viewW = framesSection.clientWidth;
+                const margin = viewW * 0.25;
+                
+                // If playhead is near the right edge, scroll forward
+                if (x > framesSection.scrollLeft + viewW - margin) {
+                    framesSection.scrollLeft = x - margin;
+                }
+                // If playhead is near the left edge (after loop), scroll back
+                else if (x < framesSection.scrollLeft + margin) {
+                    framesSection.scrollLeft = Math.max(0, x - margin);
+                }
+            }
+            
+            _syncVerticalScroll() {
+                const framesSection = document.getElementById('timelineFramesSection');
+                const layersList = document.getElementById('layersList');
+                if (!framesSection || !layersList) return;
+                
+                // Remove old listeners if any
+                if (this._vertScrollHandler) {
+                    framesSection.removeEventListener('scroll', this._vertScrollHandler);
+                    layersList.removeEventListener('scroll', this._vertScrollLabelHandler);
+                }
+                
+                let syncing = false;
+                this._vertScrollHandler = () => {
+                    if (syncing) return;
+                    syncing = true;
+                    layersList.scrollTop = framesSection.scrollTop;
+                    syncing = false;
+                };
+                this._vertScrollLabelHandler = () => {
+                    if (syncing) return;
+                    syncing = true;
+                    framesSection.scrollTop = layersList.scrollTop;
+                    syncing = false;
+                };
+                
+                framesSection.addEventListener('scroll', this._vertScrollHandler);
+                layersList.addEventListener('scroll', this._vertScrollLabelHandler);
             }
             
             reorderFrames(fromIndex, toIndex) {
@@ -6118,12 +7276,21 @@
                 
                 try {
                     // Serialize all layers and frames to base64 PNG
+                    // Track hold frame relationships: shared canvases get saved once with a reference
                     const layerData = [];
                     for (const layer of this.layers) {
                         const frames = [];
-                        for (const frame of layer.frames) {
+                        const canvasIdMap = new Map(); // canvas -> first index in this layer
+                        for (let fi = 0; fi < layer.frames.length; fi++) {
+                            const frame = layer.frames[fi];
                             if (frame) {
-                                frames.push(frame.toDataURL('image/png'));
+                                if (canvasIdMap.has(frame)) {
+                                    // This is a hold frame — reference the first occurrence
+                                    frames.push({ holdRef: canvasIdMap.get(frame) });
+                                } else {
+                                    canvasIdMap.set(frame, fi);
+                                    frames.push(frame.toDataURL('image/png'));
+                                }
                             } else {
                                 frames.push(null);
                             }
@@ -6148,6 +7315,16 @@
                         nextLayerId: this.nextLayerId,
                         layers: layerData
                     };
+                    
+                    // Include audio track if present
+                    if (this.audioTrack) {
+                        project.audioTrack = {
+                            name: this.audioTrack.name,
+                            mimeType: this.audioTrack.mimeType,
+                            volume: this.audioTrack.volume,
+                            base64: this.audioTrack.base64
+                        };
+                    }
                     
                     const json = JSON.stringify(project);
                     const blob = new Blob([json], { type: 'application/json' });
@@ -6266,9 +7443,16 @@
                     const layers = [];
                     for (const layerData of project.layers) {
                         const frames = [];
-                        for (const frameData of layerData.frames) {
-                            if (frameData) {
-                                frames.push(await loadImage(frameData));
+                        const holdCanvasMap = new Map(); // index -> canvas for hold reference lookup
+                        for (let fi = 0; fi < layerData.frames.length; fi++) {
+                            const frameData = layerData.frames[fi];
+                            if (frameData && typeof frameData === 'object' && frameData.holdRef !== undefined) {
+                                // Hold frame: reuse the canvas from the referenced index
+                                frames.push(holdCanvasMap.get(frameData.holdRef) || null);
+                            } else if (frameData) {
+                                const canvas = await loadImage(frameData);
+                                holdCanvasMap.set(fi, canvas);
+                                frames.push(canvas);
                             } else {
                                 frames.push(null);
                             }
@@ -6295,9 +7479,35 @@
                     this.selectionRedoStack = [];
                     this.updateUndoRedoButtons();
                     
+                    // Restore audio track if present
+                    if (project.audioTrack && project.audioTrack.base64) {
+                        try {
+                            const ctx = this.getAudioContext();
+                            const arrayBuffer = this._base64ToArrayBuffer(project.audioTrack.base64);
+                            const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+                            const waveformPeaks = this._generateWaveformPeaks(audioBuffer, 2000);
+                            
+                            this.audioTrack = {
+                                name: project.audioTrack.name || 'Audio',
+                                audioBuffer: audioBuffer,
+                                base64: project.audioTrack.base64,
+                                mimeType: project.audioTrack.mimeType || 'audio/mpeg',
+                                volume: project.audioTrack.volume || 1.0,
+                                waveformPeaks: waveformPeaks
+                            };
+                            this.showAudioTimeline();
+                        } catch (audioErr) {
+                            console.warn('Could not restore audio:', audioErr);
+                            this.audioTrack = null;
+                            this.hideAudioTimeline();
+                        }
+                    } else {
+                        this.audioTrack = null;
+                        this.hideAudioTimeline();
+                    }
+                    
                     // Render
                     this.positionOnionCanvas();
-                    this.renderLayers();
                     this.render();
                     
                     fileMenuBtn.textContent = '✓ Loaded!';
