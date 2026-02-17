@@ -807,9 +807,10 @@
         
         .tl-label {
             display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 0 8px;
+            flex-direction: column;
+            justify-content: center;
+            gap: 4px;
+            padding: 6px 8px;
             border-bottom: 1px solid #333;
             min-height: calc(var(--frame-w, 80px) + 13px);
             box-sizing: border-box;
@@ -819,6 +820,33 @@
             -webkit-user-select: none;
             touch-action: none;
             background: #252525;
+        }
+        
+        .tl-label-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .tl-label-opacity {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding-left: 20px;
+            font-size: 9px;
+            color: #888;
+        }
+        
+        .tl-label-opacity input[type="range"] {
+            width: 50px;
+            height: 3px;
+            accent-color: #0066cc;
+            cursor: pointer;
+        }
+        
+        .tl-label-opacity .opacity-val {
+            min-width: 28px;
+            text-align: right;
         }
         
         .tl-label.active-row {
@@ -6651,6 +6679,52 @@
                 this.renderTimeline();
             }
             
+            renderCanvasOnly() {
+                // Lightweight: redraws canvas composite without rebuilding timeline DOM
+                this.positionOnionCanvas();
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                this.onionCtx.clearRect(0, 0, this.onionCanvas.width, this.onionCanvas.height);
+                
+                if (this.onionSkinEnabled) {
+                    const curLayer = this.getCurrentLayer();
+                    for (let offset = 1; offset <= this.onionFramesBefore; offset++) {
+                        const frameIdx = this.currentFrameIndex - offset;
+                        if (frameIdx >= 0 && curLayer.frames[frameIdx] && curLayer.visible) {
+                            const fadeOpacity = this.onionSkinOpacity * (1 - (offset - 1) / Math.max(this.onionFramesBefore, 1));
+                            this.drawOnionFrame(curLayer.frames[frameIdx], this.onionPrevColor, fadeOpacity);
+                        }
+                    }
+                    for (let offset = 1; offset <= this.onionFramesAfter; offset++) {
+                        const frameIdx = this.currentFrameIndex + offset;
+                        if (frameIdx < curLayer.frames.length && curLayer.frames[frameIdx] && curLayer.visible) {
+                            const fadeOpacity = this.onionSkinOpacity * (1 - (offset - 1) / Math.max(this.onionFramesAfter, 1));
+                            this.drawOnionFrame(curLayer.frames[frameIdx], this.onionNextColor, fadeOpacity);
+                        }
+                    }
+                }
+                
+                for (const layer of this.layers) {
+                    if (layer.visible && layer.frames[this.currentFrameIndex]) {
+                        this.ctx.globalAlpha = layer.opacity || 1.0;
+                        this.ctx.drawImage(layer.frames[this.currentFrameIndex], 0, 0);
+                        this.ctx.globalAlpha = 1.0;
+                    }
+                }
+                
+                if (this.selection) {
+                    const b = this.selection.bounds;
+                    const rotation = this.selection.rotation || 0;
+                    const anchorX = this.selection.anchorX || (b.x + b.width / 2);
+                    const anchorY = this.selection.anchorY || (b.y + b.height / 2);
+                    this.ctx.save();
+                    this.ctx.translate(anchorX, anchorY);
+                    this.ctx.rotate(rotation);
+                    this.ctx.translate(-anchorX, -anchorY);
+                    this.ctx.drawImage(this.selection.imageData, b.x, b.y, b.width, b.height);
+                    this.ctx.restore();
+                }
+            }
+            
             renderLayers() {
                 // Shim — renderTimeline builds both labels and frames
                 this.renderTimeline();
@@ -6722,52 +6796,51 @@
                     name.className = 'layer-name';
                     name.textContent = layer.name;
                     
-                    label.appendChild(dragHandle);
-                    label.appendChild(vis);
-                    label.appendChild(name);
+                    const topRow = document.createElement('div');
+                    topRow.className = 'tl-label-row';
+                    topRow.appendChild(dragHandle);
+                    topRow.appendChild(vis);
+                    topRow.appendChild(name);
+                    label.appendChild(topRow);
+                    
+                    // Opacity row
+                    const opRow = document.createElement('div');
+                    opRow.className = 'tl-label-opacity';
+                    const opLabel = document.createElement('span');
+                    opLabel.textContent = 'Opacity';
+                    const opSlider = document.createElement('input');
+                    opSlider.type = 'range';
+                    opSlider.min = '0';
+                    opSlider.max = '100';
+                    opSlider.value = Math.round((layer.opacity || 1.0) * 100);
+                    const opVal = document.createElement('span');
+                    opVal.className = 'opacity-val';
+                    opVal.textContent = Math.round((layer.opacity || 1.0) * 100) + '%';
+                    
+                    opSlider.addEventListener('input', (e) => {
+                        e.stopPropagation();
+                        layer.opacity = parseInt(e.target.value) / 100;
+                        opVal.textContent = Math.round(layer.opacity * 100) + '%';
+                        this.renderCanvasOnly();
+                    });
+                    opSlider.addEventListener('pointerdown', (e) => e.stopPropagation());
+                    
+                    opRow.appendChild(opLabel);
+                    opRow.appendChild(opSlider);
+                    opRow.appendChild(opVal);
+                    label.appendChild(opRow);
                     
                     // Click label to select layer
                     label.addEventListener('click', (e) => {
                         if (this._layerDragDidMove) return;
                         if (e.target.classList.contains('layer-visibility')) return;
                         if (e.target.closest('.layer-drag-handle')) return;
+                        if (e.target.closest('.tl-label-opacity')) return;
                         this.commitSelection();
                         this.currentLayerId = layer.id;
                         this.audioLayerSelected = false;
                         this.initializeFrame();
                         this.render();
-                    });
-                    
-                    // Right-click for opacity control
-                    label.addEventListener('contextmenu', (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        // Remove any existing popup
-                        document.querySelectorAll('.layer-opacity-popup').forEach(p => p.remove());
-                        
-                        const popup = document.createElement('div');
-                        popup.className = 'layer-opacity-popup';
-                        popup.innerHTML = `<span>Opacity:</span><input type="range" min="0" max="100" value="${Math.round((layer.opacity || 1.0) * 100)}"><span class="opval">${Math.round((layer.opacity || 1.0) * 100)}%</span>`;
-                        
-                        const slider = popup.querySelector('input');
-                        const valSpan = popup.querySelector('.opval');
-                        slider.addEventListener('input', (se) => {
-                            se.stopPropagation();
-                            layer.opacity = parseInt(se.target.value) / 100;
-                            valSpan.textContent = Math.round(layer.opacity * 100) + '%';
-                            this.render();
-                        });
-                        slider.addEventListener('pointerdown', (se) => se.stopPropagation());
-                        
-                        label.appendChild(popup);
-                        
-                        const closePopup = (ce) => {
-                            if (!popup.contains(ce.target)) {
-                                popup.remove();
-                                document.removeEventListener('pointerdown', closePopup);
-                            }
-                        };
-                        setTimeout(() => document.addEventListener('pointerdown', closePopup), 0);
                     });
                     
                     // Layer drag reorder
