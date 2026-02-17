@@ -7207,7 +7207,9 @@
                     
                     if (elapsed >= frameDelay) {
                         this.currentFrameIndex = frameIndex;
-                        this.render();
+                        // Lightweight render during playback: canvas only + playhead
+                        this.renderCanvasOnly();
+                        this.updatePlayheadPosition();
                         this.updateAudioPlayhead(frameIndex, maxFrames);
                         this.scrollPlayheadIntoView();
                         frameIndex = (frameIndex + 1) % maxFrames;
@@ -7238,6 +7240,7 @@
                 }
                 this.stopAudioPlayback();
                 this.hideAudioPlayhead();
+                this.render(); // Full render to restore timeline + onion skin
             }
             
             // === Audio System ===
@@ -7534,8 +7537,8 @@
                 // Clear onion skin canvas
                 this.onionCtx.clearRect(0, 0, this.onionCanvas.width, this.onionCanvas.height);
                 
-                // Draw onion skin (previous and next frames)
-                if (this.onionSkinEnabled) {
+                // Draw onion skin (previous and next frames) — skip during playback
+                if (this.onionSkinEnabled && !this.isPlaying) {
                     const layer = this.getCurrentLayer();
                     
                     // Draw previous frames (tinted with prevColor)
@@ -7607,7 +7610,7 @@
                 this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
                 this.onionCtx.clearRect(0, 0, this.onionCanvas.width, this.onionCanvas.height);
                 
-                if (this.onionSkinEnabled) {
+                if (this.onionSkinEnabled && !this.isPlaying) {
                     const curLayer = this.getCurrentLayer();
                     for (let offset = 1; offset <= this.onionFramesBefore; offset++) {
                         const frameIdx = this.currentFrameIndex - offset;
