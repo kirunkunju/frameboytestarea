@@ -2677,6 +2677,7 @@
                 this.audioLayerSelected = false;
                 this.timelineScale = 1.0;
                 this._openTransformLayers = new Set();
+                this._showAnchorIndicator = false;
                 
                 this.initializeFrame();
                 this.setupEventListeners();
@@ -5717,8 +5718,8 @@
             }
             
             drawAnchorIndicator(ctx) {
+                if (!this._showAnchorIndicator) return;
                 const layer = this.getCurrentLayer();
-                if (!layer || !this._openTransformLayers.has(layer.id)) return;
                 
                 const tf = this.getLayerTransformAtFrame(layer, this.currentFrameIndex);
                 const ax = this.canvas.width / 2 + tf.anchorX;
@@ -7238,6 +7239,10 @@
                                 dragStartVal = currentVal;
                                 wrap.classList.add('dragging');
                                 wrap.setPointerCapture(e.pointerId);
+                                if (key === 'anchorX' || key === 'anchorY') {
+                                    this._showAnchorIndicator = true;
+                                    this.renderCanvasOnly();
+                                }
                             });
                             
                             wrap.addEventListener('pointermove', (e) => {
@@ -7251,6 +7256,10 @@
                                 if (!isDragging) return;
                                 isDragging = false;
                                 wrap.classList.remove('dragging');
+                                if (key === 'anchorX' || key === 'anchorY') {
+                                    this._showAnchorIndicator = false;
+                                    this.renderCanvasOnly();
+                                }
                             });
                             
                             // Double-click to type
@@ -7260,18 +7269,32 @@
                                 editInput.value = Math.abs(step) < 1 ? currentVal.toFixed(1) : Math.round(currentVal);
                                 editInput.focus();
                                 editInput.select();
+                                if (key === 'anchorX' || key === 'anchorY') {
+                                    this._showAnchorIndicator = true;
+                                    this.renderCanvasOnly();
+                                }
                             });
                             
                             editInput.addEventListener('keydown', (e) => {
                                 e.stopPropagation();
                                 if (e.key === 'Enter') { editInput.blur(); }
-                                if (e.key === 'Escape') { editInput.style.display = 'none'; }
+                                if (e.key === 'Escape') {
+                                    editInput.style.display = 'none';
+                                    if (key === 'anchorX' || key === 'anchorY') {
+                                        this._showAnchorIndicator = false;
+                                        this.renderCanvasOnly();
+                                    }
+                                }
                             });
                             
                             editInput.addEventListener('blur', () => {
                                 editInput.style.display = 'none';
                                 const v = parseFloat(editInput.value);
                                 if (!isNaN(v)) commitValue(v);
+                                if (key === 'anchorX' || key === 'anchorY') {
+                                    this._showAnchorIndicator = false;
+                                    this.renderCanvasOnly();
+                                }
                             });
                             
                             editInput.addEventListener('pointerdown', (e) => e.stopPropagation());
