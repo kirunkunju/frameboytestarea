@@ -652,6 +652,246 @@
             background: #0066cc;
         }
         
+        /* Layer disclosure & property panel */
+        .tl-label-twirl {
+            cursor: pointer;
+            flex-shrink: 0;
+            font-size: 8px;
+            color: #666;
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.15s;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        
+        .tl-label-twirl.open {
+            transform: rotate(90deg);
+            color: #bbb;
+        }
+        
+        .tl-props {
+            display: none;
+            padding: 6px 6px 6px 10px;
+            border-top: 1px solid #333;
+            margin-top: 4px;
+        }
+        
+        .tl-props.open {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        /* Each property row */
+        .tl-prop {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            height: 24px;
+        }
+        
+        .tl-prop-diamond {
+            width: 16px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        
+        .tl-prop-diamond svg {
+            width: 10px;
+            height: 10px;
+        }
+        
+        .tl-prop-diamond .diamond-fill {
+            fill: #444;
+            transition: fill 0.1s;
+        }
+        
+        .tl-prop-diamond.has-key .diamond-fill {
+            fill: #dda520;
+        }
+        
+        .tl-prop-diamond:hover .diamond-fill {
+            fill: #eebb00;
+        }
+        
+        .tl-prop-name {
+            font-size: 10px;
+            color: #999;
+            width: 56px;
+            flex-shrink: 0;
+        }
+        
+        /* Scrub slider — the main control */
+        .scrub-slider {
+            flex: 1;
+            height: 20px;
+            background: #1a1a24;
+            border: 1px solid #333;
+            border-radius: 4px;
+            position: relative;
+            cursor: ew-resize;
+            overflow: hidden;
+            min-width: 60px;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        
+        .scrub-slider:hover {
+            border-color: #4a4a5a;
+        }
+        
+        .scrub-slider:active, .scrub-slider.dragging {
+            border-color: #5588cc;
+        }
+        
+        .scrub-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: linear-gradient(90deg, #2a3a55, #334466);
+            border-radius: 3px 0 0 3px;
+            pointer-events: none;
+            transition: none;
+        }
+        
+        .scrub-value {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+            color: #d0d8e8;
+            pointer-events: none;
+            z-index: 1;
+            letter-spacing: 0.3px;
+        }
+        
+        .scrub-value .scrub-unit {
+            font-size: 9px;
+            color: #667;
+            margin-left: 2px;
+        }
+        
+        /* Editable input overlay (appears on double-click) */
+        .scrub-input {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 3px;
+            background: #111122;
+            color: #e0e8f0;
+            font-size: 11px;
+            font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
+            text-align: center;
+            z-index: 2;
+            outline: 2px solid #5588cc;
+            display: none;
+            -moz-appearance: textfield;
+        }
+        
+        .scrub-input::-webkit-outer-spin-button,
+        .scrub-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        
+        /* Paired values (Position X/Y, Scale X/Y) */
+        .tl-prop-pair-wrap {
+            flex: 1;
+            display: flex;
+            gap: 4px;
+            min-width: 0;
+        }
+        
+        .tl-prop-pair-wrap .scrub-pair {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 0;
+            min-width: 0;
+        }
+        
+        .tl-prop-pair-wrap .pair-lbl {
+            font-size: 9px;
+            color: #667;
+            width: 12px;
+            flex-shrink: 0;
+            text-align: center;
+        }
+        
+        .tl-prop-pair-wrap .scrub-slider {
+            flex: 1;
+            min-width: 40px;
+        }
+        
+        /* Keyframe action buttons */
+        .tl-key-actions {
+            display: flex;
+            gap: 5px;
+            padding-top: 4px;
+            margin-top: 2px;
+            border-top: 1px solid #2a2a2a;
+        }
+        
+        .tl-key-actions button {
+            padding: 4px 10px;
+            font-size: 10px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            cursor: pointer;
+            background: #2a2a2a;
+            color: #bbb;
+            transition: all 0.1s;
+        }
+        
+        .tl-key-actions button:hover {
+            background: #3a3a3a;
+            color: #eee;
+        }
+        
+        .tl-key-actions .act-set {
+            border-color: #8a7a20;
+            color: #eec840;
+        }
+        
+        .tl-key-actions .act-set:hover {
+            background: #3a3518;
+        }
+        
+        .tl-key-actions .act-del {
+            border-color: #5a2a2a;
+            color: #d88;
+        }
+        
+        .tl-key-actions .act-del:hover {
+            background: #3a1a1a;
+        }
+        
+        /* Keyframe diamonds on timeline */
+        .keyframe-diamond {
+            position: absolute;
+            bottom: 2px;
+            width: 7px;
+            height: 7px;
+            background: #ffcc00;
+            transform: rotate(45deg);
+            z-index: 3;
+            pointer-events: none;
+        }
+        
         .timeline-body {
             flex: 1;
             display: flex;
@@ -669,7 +909,7 @@
         }
         
         .scrub-ruler {
-            height: 20px;
+            height: 32px;
             background: #1a1a1a;
             border-bottom: 1px solid #3a3a3a;
             flex-shrink: 0;
@@ -789,7 +1029,7 @@
         }
         
         .layers-header {
-            padding: 0px 10px;
+            padding: 6px 10px;
             background: #1a1a1a;
             font-weight: bold;
             font-size: 11px;
@@ -800,8 +1040,7 @@
             justify-content: space-between;
             user-select: none;
             -webkit-user-select: none;
-            height: 20px;
-            min-height: 20px;
+            min-height: 32px;
             box-sizing: border-box;
         }
         
@@ -815,7 +1054,7 @@
             min-height: calc(var(--frame-w, 80px) + 13px);
             box-sizing: border-box;
             cursor: pointer;
-            font-size: 11px;
+            font-size: 12px;
             user-select: none;
             -webkit-user-select: none;
             touch-action: none;
@@ -826,27 +1065,6 @@
             display: flex;
             align-items: center;
             gap: 6px;
-        }
-        
-        .tl-label-opacity {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            padding-left: 20px;
-            font-size: 9px;
-            color: #888;
-        }
-        
-        .tl-label-opacity input[type="range"] {
-            width: 50px;
-            height: 3px;
-            accent-color: #0066cc;
-            cursor: pointer;
-        }
-        
-        .tl-label-opacity .opacity-val {
-            min-width: 28px;
-            text-align: right;
         }
         
         .tl-label.active-row {
@@ -912,16 +1130,16 @@
         
         .layer-buttons {
             display: flex;
-            gap: 4px;
+            gap: 5px;
         }
         
         .add-layer-btn-inline {
-            padding: 2px 8px;
+            padding: 3px 9px;
             font-size: 14px;
             background: #0066cc;
             border: none;
             color: white;
-            border-radius: 3px;
+            border-radius: 4px;
             cursor: pointer;
             font-weight: bold;
             user-select: none;
@@ -933,12 +1151,12 @@
         }
         
         .delete-layer-btn-inline {
-            padding: 2px 8px;
+            padding: 3px 9px;
             font-size: 14px;
             background: #cc3333;
             border: none;
             color: white;
-            border-radius: 3px;
+            border-radius: 4px;
             cursor: pointer;
             font-weight: bold;
             user-select: none;
@@ -959,28 +1177,6 @@
         
         .timeline-layers-section .layers-list::-webkit-scrollbar {
             display: none;
-        }
-        
-        .layer-opacity-popup {
-            position: absolute;
-            left: 100%;
-            top: 0;
-            background: #2a2a2a;
-            border: 1px solid #555;
-            border-radius: 4px;
-            padding: 6px 8px;
-            z-index: 50;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-size: 10px;
-            white-space: nowrap;
-            box-shadow: 2px 2px 8px rgba(0,0,0,0.5);
-        }
-        
-        .layer-opacity-popup input[type="range"] {
-            width: 60px;
-            height: 3px;
         }
         
         .timeline-frames-section {
@@ -2379,7 +2575,7 @@
                 this.selectionCtx = this.selectionCanvas.getContext('2d');
                 this.brushCursor = document.getElementById('brushCursor');
                 
-                this.layers = [{ id: 1, name: 'Layer 1', visible: true, opacity: 1.0, frames: [] }];
+                this.layers = [{ id: 1, name: 'Layer 1', visible: true, opacity: 1.0, frames: [], transformKeyframes: [] }];
                 this.currentLayerId = 1;
                 this.currentFrameIndex = 0;
                 this.nextLayerId = 2;
@@ -2480,6 +2676,7 @@
                 this.audioMuted = false;
                 this.audioLayerSelected = false;
                 this.timelineScale = 1.0;
+                this._openTransformLayers = new Set();
                 
                 this.initializeFrame();
                 this.setupEventListeners();
@@ -4480,7 +4677,8 @@
                                     height: frame.height,
                                     imageData: frame.getContext('2d').getImageData(0, 0, frame.width, frame.height)
                                 };
-                            })
+                            }),
+                            transformKeyframes: (layer.transformKeyframes || []).map(kf => ({...kf}))
                         };
                     }),
                     currentLayerId: this.currentLayerId,
@@ -4601,8 +4799,9 @@
                     name: layer.name,
                     visible: layer.visible,
                     opacity: layer.opacity,
+                    transformKeyframes: (layer.transformKeyframes || []).map(kf => ({...kf})),
                     frames: (() => {
-                        const canvasMap = new Map(); // index -> canvas for hold lookups
+                        const canvasMap = new Map();
                         return layer.frames.map((snapshot, fi) => {
                             if (!snapshot) return null;
                             if (snapshot.holdRef !== undefined) {
@@ -5183,9 +5382,7 @@
                     
                     // Draw all visible layers
                     for (const l of this.layers) {
-                        if (l.visible && l.frames[this.currentFrameIndex]) {
-                            this.ctx.drawImage(l.frames[this.currentFrameIndex], 0, 0);
-                        }
+                        this.drawLayerWithTransform(this.ctx, l, this.currentFrameIndex);
                     }
                     
                     // Now draw the preview shape on top
@@ -5255,7 +5452,8 @@
                     name: `Layer ${this.layers.length + 1}`,
                     visible: true,
                     opacity: 1.0,
-                    frames: []
+                    frames: [],
+                    transformKeyframes: []
                 };
                 this.layers.push(newLayer);
                 this.currentLayerId = newLayer.id;
@@ -5280,7 +5478,8 @@
                         copy.height = frame.height;
                         copy.getContext('2d').drawImage(frame, 0, 0);
                         return copy;
-                    })
+                    }),
+                    transformKeyframes: (currentLayer.transformKeyframes || []).map(kf => ({...kf}))
                 };
                 
                 // Insert after current layer
@@ -5431,6 +5630,156 @@
                 layer.frames[this.currentFrameIndex] = copy;
                 this.initializeFrame();
                 this.render();
+            }
+            
+            // ===== LAYER TRANSFORM KEYFRAMES =====
+            
+            getLayerTransformAtFrame(layer, frameIndex) {
+                const kfs = layer.transformKeyframes;
+                const baseOp = layer.opacity != null ? layer.opacity : 1.0;
+                const defaults = { x: 0, y: 0, anchorX: 0, anchorY: 0, scaleX: 1, scaleY: 1, rotation: 0, opacity: baseOp };
+                if (!kfs || kfs.length === 0) return defaults;
+                
+                // Find surrounding keyframes
+                let before = null, after = null;
+                for (const kf of kfs) {
+                    if (kf.frame <= frameIndex) before = kf;
+                    if (kf.frame >= frameIndex && !after) after = kf;
+                }
+                
+                const kfOp = (kf) => kf.opacity != null ? kf.opacity : baseOp;
+                const kfAx = (kf) => kf.anchorX || 0;
+                const kfAy = (kf) => kf.anchorY || 0;
+                
+                if (!before && after) return { x: after.x, y: after.y, anchorX: kfAx(after), anchorY: kfAy(after), scaleX: after.scaleX, scaleY: after.scaleY, rotation: after.rotation, opacity: kfOp(after) };
+                if (before && !after) return { x: before.x, y: before.y, anchorX: kfAx(before), anchorY: kfAy(before), scaleX: before.scaleX, scaleY: before.scaleY, rotation: before.rotation, opacity: kfOp(before) };
+                if (before === after || before.frame === after.frame) return { x: before.x, y: before.y, anchorX: kfAx(before), anchorY: kfAy(before), scaleX: before.scaleX, scaleY: before.scaleY, rotation: before.rotation, opacity: kfOp(before) };
+                
+                // Linear interpolation
+                const t = (frameIndex - before.frame) / (after.frame - before.frame);
+                return {
+                    x: before.x + (after.x - before.x) * t,
+                    y: before.y + (after.y - before.y) * t,
+                    anchorX: kfAx(before) + (kfAx(after) - kfAx(before)) * t,
+                    anchorY: kfAy(before) + (kfAy(after) - kfAy(before)) * t,
+                    scaleX: before.scaleX + (after.scaleX - before.scaleX) * t,
+                    scaleY: before.scaleY + (after.scaleY - before.scaleY) * t,
+                    rotation: before.rotation + (after.rotation - before.rotation) * t,
+                    opacity: kfOp(before) + (kfOp(after) - kfOp(before)) * t
+                };
+            }
+            
+            setTransformKeyframe(layer, frameIndex, props) {
+                if (!layer.transformKeyframes) layer.transformKeyframes = [];
+                const existing = layer.transformKeyframes.find(kf => kf.frame === frameIndex);
+                if (existing) {
+                    Object.assign(existing, props);
+                } else {
+                    layer.transformKeyframes.push({ frame: frameIndex, ...props });
+                    layer.transformKeyframes.sort((a, b) => a.frame - b.frame);
+                }
+            }
+            
+            removeTransformKeyframe(layer, frameIndex) {
+                if (!layer.transformKeyframes) return;
+                layer.transformKeyframes = layer.transformKeyframes.filter(kf => kf.frame !== frameIndex);
+            }
+            
+            hasTransformKeyframeAt(layer, frameIndex) {
+                return (layer.transformKeyframes || []).some(kf => kf.frame === frameIndex);
+            }
+            
+            getTransformKeyframeFrames(layer) {
+                return (layer.transformKeyframes || []).map(kf => kf.frame);
+            }
+            
+            drawLayerWithTransform(ctx, layer, frameIndex) {
+                if (!layer.visible || !layer.frames[frameIndex]) return;
+                
+                const tf = this.getLayerTransformAtFrame(layer, frameIndex);
+                const hasTransform = tf.x !== 0 || tf.y !== 0 || tf.anchorX !== 0 || tf.anchorY !== 0 || tf.scaleX !== 1 || tf.scaleY !== 1 || tf.rotation !== 0;
+                
+                ctx.save();
+                ctx.globalAlpha = tf.opacity;
+                
+                if (hasTransform) {
+                    // Anchor point = canvas center + anchor offset
+                    const ax = this.canvas.width / 2 + tf.anchorX;
+                    const ay = this.canvas.height / 2 + tf.anchorY;
+                    ctx.translate(ax + tf.x, ay + tf.y);
+                    ctx.rotate(tf.rotation * Math.PI / 180);
+                    ctx.scale(tf.scaleX, tf.scaleY);
+                    ctx.translate(-ax, -ay);
+                }
+                
+                ctx.drawImage(layer.frames[frameIndex], 0, 0);
+                ctx.restore();
+            }
+            
+            drawAnchorIndicator(ctx) {
+                const layer = this.getCurrentLayer();
+                if (!layer || !this._openTransformLayers.has(layer.id)) return;
+                
+                const tf = this.getLayerTransformAtFrame(layer, this.currentFrameIndex);
+                const ax = this.canvas.width / 2 + tf.anchorX;
+                const ay = this.canvas.height / 2 + tf.anchorY;
+                const r = 12; // crosshair radius
+                
+                ctx.save();
+                ctx.lineWidth = 1.5;
+                
+                // Outer circle - dark outline for contrast
+                ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+                ctx.beginPath();
+                ctx.arc(ax, ay, r, 0, Math.PI * 2);
+                ctx.stroke();
+                // Crosshair lines - dark
+                ctx.beginPath();
+                ctx.moveTo(ax - r - 4, ay); ctx.lineTo(ax - 3, ay);
+                ctx.moveTo(ax + 3, ay); ctx.lineTo(ax + r + 4, ay);
+                ctx.moveTo(ax, ay - r - 4); ctx.lineTo(ax, ay - 3);
+                ctx.moveTo(ax, ay + 3); ctx.lineTo(ax, ay + r + 4);
+                ctx.stroke();
+                
+                // Inner circle - bright colored
+                ctx.strokeStyle = '#eebb00';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(ax, ay, r, 0, Math.PI * 2);
+                ctx.stroke();
+                // Crosshair lines - bright
+                ctx.beginPath();
+                ctx.moveTo(ax - r - 4, ay); ctx.lineTo(ax - 3, ay);
+                ctx.moveTo(ax + 3, ay); ctx.lineTo(ax + r + 4, ay);
+                ctx.moveTo(ax, ay - r - 4); ctx.lineTo(ax, ay - 3);
+                ctx.moveTo(ax, ay + 3); ctx.lineTo(ax, ay + r + 4);
+                ctx.stroke();
+                
+                // Center dot
+                ctx.fillStyle = '#eebb00';
+                ctx.beginPath();
+                ctx.arc(ax, ay, 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                ctx.restore();
+            }
+            
+            updateTransformPanel() {
+                // No-op: inline transform controls are rebuilt by renderTimeline
+            }
+            
+            _readPropInputs(inputs) {
+                const g = (key, def) => inputs[key] ? inputs[key].getValue() : def;
+                return {
+                    x: g('x', 0),
+                    y: g('y', 0),
+                    anchorX: g('anchorX', 0),
+                    anchorY: g('anchorY', 0),
+                    scaleX: g('scaleX', 100) / 100,
+                    scaleY: g('scaleY', 100) / 100,
+                    rotation: g('rotation', 0),
+                    opacity: Math.max(0, Math.min(1, g('opacity', 100) / 100))
+                };
             }
             
             deleteCurrentFrame() {
@@ -6644,12 +6993,11 @@
                 
                 // Draw all visible layers for current frame ON THE MAIN CANVAS
                 for (const layer of this.layers) {
-                    if (layer.visible && layer.frames[this.currentFrameIndex]) {
-                        this.ctx.globalAlpha = layer.opacity || 1.0;
-                        this.ctx.drawImage(layer.frames[this.currentFrameIndex], 0, 0);
-                        this.ctx.globalAlpha = 1.0;
-                    }
+                    this.drawLayerWithTransform(this.ctx, layer, this.currentFrameIndex);
                 }
+                
+                // Draw anchor point indicator
+                this.drawAnchorIndicator(this.ctx);
                 
                 // Draw selection if it exists (with rotation)
                 if (this.selection) {
@@ -6704,12 +7052,11 @@
                 }
                 
                 for (const layer of this.layers) {
-                    if (layer.visible && layer.frames[this.currentFrameIndex]) {
-                        this.ctx.globalAlpha = layer.opacity || 1.0;
-                        this.ctx.drawImage(layer.frames[this.currentFrameIndex], 0, 0);
-                        this.ctx.globalAlpha = 1.0;
-                    }
+                    this.drawLayerWithTransform(this.ctx, layer, this.currentFrameIndex);
                 }
+                
+                // Draw anchor point indicator
+                this.drawAnchorIndicator(this.ctx);
                 
                 if (this.selection) {
                     const b = this.selection.bounds;
@@ -6783,6 +7130,21 @@
                     dragHandle.className = 'layer-drag-handle';
                     dragHandle.innerHTML = '<svg width="8" height="12" viewBox="0 0 10 14" fill="currentColor"><circle cx="3" cy="2" r="1.3"/><circle cx="7" cy="2" r="1.3"/><circle cx="3" cy="7" r="1.3"/><circle cx="7" cy="7" r="1.3"/><circle cx="3" cy="12" r="1.3"/><circle cx="7" cy="12" r="1.3"/></svg>';
                     
+                    // Disclosure twirl triangle
+                    const isOpen = this._openTransformLayers.has(layer.id);
+                    const twirl = document.createElement('span');
+                    twirl.className = 'tl-label-twirl' + (isOpen ? ' open' : '');
+                    twirl.textContent = '▶';
+                    twirl.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (this._openTransformLayers.has(layer.id)) {
+                            this._openTransformLayers.delete(layer.id);
+                        } else {
+                            this._openTransformLayers.add(layer.id);
+                        }
+                        this.renderTimeline();
+                    });
+                    
                     const vis = document.createElement('span');
                     vis.className = 'layer-visibility';
                     vis.textContent = layer.visible ? '👁️' : '🚫';
@@ -6798,44 +7160,297 @@
                     
                     const topRow = document.createElement('div');
                     topRow.className = 'tl-label-row';
+                    topRow.appendChild(twirl);
                     topRow.appendChild(dragHandle);
                     topRow.appendChild(vis);
                     topRow.appendChild(name);
                     label.appendChild(topRow);
                     
-                    // Opacity row
-                    const opRow = document.createElement('div');
-                    opRow.className = 'tl-label-opacity';
-                    const opLabel = document.createElement('span');
-                    opLabel.textContent = 'Opacity';
-                    const opSlider = document.createElement('input');
-                    opSlider.type = 'range';
-                    opSlider.min = '0';
-                    opSlider.max = '100';
-                    opSlider.value = Math.round((layer.opacity || 1.0) * 100);
-                    const opVal = document.createElement('span');
-                    opVal.className = 'opacity-val';
-                    opVal.textContent = Math.round((layer.opacity || 1.0) * 100) + '%';
-                    
-                    opSlider.addEventListener('input', (e) => {
-                        e.stopPropagation();
-                        layer.opacity = parseInt(e.target.value) / 100;
-                        opVal.textContent = Math.round(layer.opacity * 100) + '%';
-                        this.renderCanvasOnly();
-                    });
-                    opSlider.addEventListener('pointerdown', (e) => e.stopPropagation());
-                    
-                    opRow.appendChild(opLabel);
-                    opRow.appendChild(opSlider);
-                    opRow.appendChild(opVal);
-                    label.appendChild(opRow);
+                    // === PROPERTY PANEL DROPDOWN (AE-style scrub sliders) ===
+                    if (isOpen) {
+                        const props = document.createElement('div');
+                        props.className = 'tl-props open';
+                        
+                        const tf = this.getLayerTransformAtFrame(layer, this.currentFrameIndex);
+                        const hasKeyHere = this.hasTransformKeyframeAt(layer, this.currentFrameIndex);
+                        const inputs = {};
+                        
+                        // Diamond SVG template
+                        const diamondSVG = '<svg viewBox="0 0 10 10"><polygon class="diamond-fill" points="5,0 10,5 5,10 0,5"/></svg>';
+                        
+                        // Create a scrub slider element
+                        const makeScrub = (key, value, min, max, step, unit, sensitivity) => {
+                            const wrap = document.createElement('div');
+                            wrap.className = 'scrub-slider';
+                            
+                            const fill = document.createElement('div');
+                            fill.className = 'scrub-fill';
+                            
+                            const valDisplay = document.createElement('div');
+                            valDisplay.className = 'scrub-value';
+                            
+                            const editInput = document.createElement('input');
+                            editInput.type = 'number';
+                            editInput.className = 'scrub-input';
+                            editInput.step = step;
+                            
+                            let currentVal = value;
+                            inputs[key] = { getValue: () => currentVal, el: wrap };
+                            
+                            const updateDisplay = () => {
+                                const displayVal = Math.abs(step) < 1 ? currentVal.toFixed(1) : Math.round(currentVal);
+                                valDisplay.innerHTML = `${displayVal}<span class="scrub-unit">${unit}</span>`;
+                                // Fill bar: map value to 0-100% of slider width
+                                if (min != null && max != null) {
+                                    const pct = Math.max(0, Math.min(100, ((currentVal - min) / (max - min)) * 100));
+                                    fill.style.width = pct + '%';
+                                } else {
+                                    // Unbounded: no fill bar
+                                    fill.style.width = '0%';
+                                }
+                            };
+                            
+                            const commitValue = (newVal) => {
+                                currentVal = Math.round(newVal / step) * step;
+                                if (min != null) currentVal = Math.max(min, currentVal);
+                                if (max != null) currentVal = Math.min(max, currentVal);
+                                updateDisplay();
+                                
+                                if (hasKeyHere) {
+                                    const p = this._readPropInputs(inputs);
+                                    this.setTransformKeyframe(layer, this.currentFrameIndex, p);
+                                    this.renderCanvasOnly();
+                                } else if (key === 'opacity') {
+                                    layer.opacity = Math.max(0, Math.min(1, currentVal / 100));
+                                    this.renderCanvasOnly();
+                                }
+                            };
+                            
+                            // Drag to scrub
+                            let dragStartX = 0, dragStartVal = 0, isDragging = false;
+                            
+                            wrap.addEventListener('pointerdown', (e) => {
+                                if (editInput.style.display === 'block') return;
+                                e.stopPropagation();
+                                e.preventDefault();
+                                isDragging = true;
+                                dragStartX = e.clientX;
+                                dragStartVal = currentVal;
+                                wrap.classList.add('dragging');
+                                wrap.setPointerCapture(e.pointerId);
+                            });
+                            
+                            wrap.addEventListener('pointermove', (e) => {
+                                if (!isDragging) return;
+                                const dx = e.clientX - dragStartX;
+                                const newVal = dragStartVal + dx * (sensitivity || step);
+                                commitValue(newVal);
+                            });
+                            
+                            wrap.addEventListener('pointerup', (e) => {
+                                if (!isDragging) return;
+                                isDragging = false;
+                                wrap.classList.remove('dragging');
+                            });
+                            
+                            // Double-click to type
+                            wrap.addEventListener('dblclick', (e) => {
+                                e.stopPropagation();
+                                editInput.style.display = 'block';
+                                editInput.value = Math.abs(step) < 1 ? currentVal.toFixed(1) : Math.round(currentVal);
+                                editInput.focus();
+                                editInput.select();
+                            });
+                            
+                            editInput.addEventListener('keydown', (e) => {
+                                e.stopPropagation();
+                                if (e.key === 'Enter') { editInput.blur(); }
+                                if (e.key === 'Escape') { editInput.style.display = 'none'; }
+                            });
+                            
+                            editInput.addEventListener('blur', () => {
+                                editInput.style.display = 'none';
+                                const v = parseFloat(editInput.value);
+                                if (!isNaN(v)) commitValue(v);
+                            });
+                            
+                            editInput.addEventListener('pointerdown', (e) => e.stopPropagation());
+                            
+                            wrap.appendChild(fill);
+                            wrap.appendChild(valDisplay);
+                            wrap.appendChild(editInput);
+                            updateDisplay();
+                            return wrap;
+                        };
+                        
+                        // Position row (paired X, Y)
+                        const posRow = document.createElement('div');
+                        posRow.className = 'tl-prop';
+                        const posDia = document.createElement('span');
+                        posDia.className = 'tl-prop-diamond' + (hasKeyHere ? ' has-key' : '');
+                        posDia.innerHTML = diamondSVG;
+                        posDia.addEventListener('click', (e) => { e.stopPropagation(); if (!hasKeyHere) { this.saveFullState(); this.setTransformKeyframe(layer, this.currentFrameIndex, this._readPropInputs(inputs)); this.render(); }});
+                        posRow.appendChild(posDia);
+                        const posLbl = document.createElement('span');
+                        posLbl.className = 'tl-prop-name';
+                        posLbl.textContent = 'Position';
+                        posRow.appendChild(posLbl);
+                        const posPair = document.createElement('div');
+                        posPair.className = 'tl-prop-pair-wrap';
+                        const pxWrap = document.createElement('div');
+                        pxWrap.className = 'scrub-pair';
+                        const pxLbl = document.createElement('span');
+                        pxLbl.className = 'pair-lbl';
+                        pxLbl.textContent = 'X';
+                        pxWrap.appendChild(pxLbl);
+                        pxWrap.appendChild(makeScrub('x', Math.round(tf.x), -2000, 2000, 1, 'px', 1));
+                        posPair.appendChild(pxWrap);
+                        const pyWrap = document.createElement('div');
+                        pyWrap.className = 'scrub-pair';
+                        const pyLbl = document.createElement('span');
+                        pyLbl.className = 'pair-lbl';
+                        pyLbl.textContent = 'Y';
+                        pyWrap.appendChild(pyLbl);
+                        pyWrap.appendChild(makeScrub('y', Math.round(tf.y), -2000, 2000, 1, 'px', 1));
+                        posPair.appendChild(pyWrap);
+                        posRow.appendChild(posPair);
+                        props.appendChild(posRow);
+                        
+                        // Anchor Point row (paired X, Y)
+                        const ancRow = document.createElement('div');
+                        ancRow.className = 'tl-prop';
+                        const ancDia = document.createElement('span');
+                        ancDia.className = 'tl-prop-diamond' + (hasKeyHere ? ' has-key' : '');
+                        ancDia.innerHTML = diamondSVG;
+                        ancDia.addEventListener('click', (e) => { e.stopPropagation(); if (!hasKeyHere) { this.saveFullState(); this.setTransformKeyframe(layer, this.currentFrameIndex, this._readPropInputs(inputs)); this.render(); }});
+                        ancRow.appendChild(ancDia);
+                        const ancLbl = document.createElement('span');
+                        ancLbl.className = 'tl-prop-name';
+                        ancLbl.textContent = 'Anchor';
+                        ancRow.appendChild(ancLbl);
+                        const ancPair = document.createElement('div');
+                        ancPair.className = 'tl-prop-pair-wrap';
+                        const axWrap = document.createElement('div');
+                        axWrap.className = 'scrub-pair';
+                        const axLbl = document.createElement('span');
+                        axLbl.className = 'pair-lbl';
+                        axLbl.textContent = 'X';
+                        axWrap.appendChild(axLbl);
+                        axWrap.appendChild(makeScrub('anchorX', Math.round(tf.anchorX), -2000, 2000, 1, 'px', 1));
+                        ancPair.appendChild(axWrap);
+                        const ayWrap = document.createElement('div');
+                        ayWrap.className = 'scrub-pair';
+                        const ayLbl = document.createElement('span');
+                        ayLbl.className = 'pair-lbl';
+                        ayLbl.textContent = 'Y';
+                        ayWrap.appendChild(ayLbl);
+                        ayWrap.appendChild(makeScrub('anchorY', Math.round(tf.anchorY), -2000, 2000, 1, 'px', 1));
+                        ancPair.appendChild(ayWrap);
+                        ancRow.appendChild(ancPair);
+                        props.appendChild(ancRow);
+                        
+                        // Scale row (paired X, Y)
+                        const scRow = document.createElement('div');
+                        scRow.className = 'tl-prop';
+                        const scDia = document.createElement('span');
+                        scDia.className = 'tl-prop-diamond' + (hasKeyHere ? ' has-key' : '');
+                        scDia.innerHTML = diamondSVG;
+                        scDia.addEventListener('click', (e) => { e.stopPropagation(); if (!hasKeyHere) { this.saveFullState(); this.setTransformKeyframe(layer, this.currentFrameIndex, this._readPropInputs(inputs)); this.render(); }});
+                        scRow.appendChild(scDia);
+                        const scLbl = document.createElement('span');
+                        scLbl.className = 'tl-prop-name';
+                        scLbl.textContent = 'Scale';
+                        scRow.appendChild(scLbl);
+                        const scPair = document.createElement('div');
+                        scPair.className = 'tl-prop-pair-wrap';
+                        const sxWrap = document.createElement('div');
+                        sxWrap.className = 'scrub-pair';
+                        const sxLbl = document.createElement('span');
+                        sxLbl.className = 'pair-lbl';
+                        sxLbl.textContent = 'X';
+                        sxWrap.appendChild(sxLbl);
+                        sxWrap.appendChild(makeScrub('scaleX', Math.round(tf.scaleX * 100), 1, 500, 1, '%', 0.5));
+                        scPair.appendChild(sxWrap);
+                        const syWrap = document.createElement('div');
+                        syWrap.className = 'scrub-pair';
+                        const syLbl = document.createElement('span');
+                        syLbl.className = 'pair-lbl';
+                        syLbl.textContent = 'Y';
+                        syWrap.appendChild(syLbl);
+                        syWrap.appendChild(makeScrub('scaleY', Math.round(tf.scaleY * 100), 1, 500, 1, '%', 0.5));
+                        scPair.appendChild(syWrap);
+                        scRow.appendChild(scPair);
+                        props.appendChild(scRow);
+                        
+                        // Rotation row (single)
+                        const rotRow = document.createElement('div');
+                        rotRow.className = 'tl-prop';
+                        const rotDia = document.createElement('span');
+                        rotDia.className = 'tl-prop-diamond' + (hasKeyHere ? ' has-key' : '');
+                        rotDia.innerHTML = diamondSVG;
+                        rotDia.addEventListener('click', (e) => { e.stopPropagation(); if (!hasKeyHere) { this.saveFullState(); this.setTransformKeyframe(layer, this.currentFrameIndex, this._readPropInputs(inputs)); this.render(); }});
+                        rotRow.appendChild(rotDia);
+                        const rotLbl = document.createElement('span');
+                        rotLbl.className = 'tl-prop-name';
+                        rotLbl.textContent = 'Rotation';
+                        rotRow.appendChild(rotLbl);
+                        rotRow.appendChild(makeScrub('rotation', Math.round(tf.rotation * 10) / 10, null, null, 1, '°', 0.5));
+                        props.appendChild(rotRow);
+                        
+                        // Opacity row (single)
+                        const opRow = document.createElement('div');
+                        opRow.className = 'tl-prop';
+                        const opDia = document.createElement('span');
+                        opDia.className = 'tl-prop-diamond' + (hasKeyHere ? ' has-key' : '');
+                        opDia.innerHTML = diamondSVG;
+                        opDia.addEventListener('click', (e) => { e.stopPropagation(); if (!hasKeyHere) { this.saveFullState(); this.setTransformKeyframe(layer, this.currentFrameIndex, this._readPropInputs(inputs)); this.render(); }});
+                        opRow.appendChild(opDia);
+                        const opLbl = document.createElement('span');
+                        opLbl.className = 'tl-prop-name';
+                        opLbl.textContent = 'Opacity';
+                        opRow.appendChild(opLbl);
+                        opRow.appendChild(makeScrub('opacity', Math.round(tf.opacity * 100), 0, 100, 1, '%', 0.5));
+                        props.appendChild(opRow);
+                        
+                        // Keyframe actions
+                        const actRow = document.createElement('div');
+                        actRow.className = 'tl-key-actions';
+                        
+                        const setBtn = document.createElement('button');
+                        setBtn.className = 'act-set';
+                        setBtn.textContent = '◆ Set Key';
+                        setBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            this.saveFullState();
+                            const p = this._readPropInputs(inputs);
+                            this.setTransformKeyframe(layer, this.currentFrameIndex, p);
+                            this.render();
+                        });
+                        
+                        const delBtn = document.createElement('button');
+                        delBtn.className = 'act-del';
+                        delBtn.textContent = '✕ Remove Key';
+                        delBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            this.saveFullState();
+                            this.removeTransformKeyframe(layer, this.currentFrameIndex);
+                            this.render();
+                        });
+                        
+                        actRow.appendChild(setBtn);
+                        actRow.appendChild(delBtn);
+                        props.appendChild(actRow);
+                        
+                        label.appendChild(props);
+                    }
                     
                     // Click label to select layer
                     label.addEventListener('click', (e) => {
                         if (this._layerDragDidMove) return;
                         if (e.target.classList.contains('layer-visibility')) return;
                         if (e.target.closest('.layer-drag-handle')) return;
-                        if (e.target.closest('.tl-label-opacity')) return;
+                        if (e.target.closest('.tl-label-twirl')) return;
+                        if (e.target.closest('.tl-props')) return;
                         this.commitSelection();
                         this.currentLayerId = layer.id;
                         this.audioLayerSelected = false;
@@ -6932,6 +7547,14 @@
                             badge.className = 'hold-badge';
                             badge.textContent = 'H';
                             frameDiv.appendChild(badge);
+                        }
+                        
+                        // Keyframe diamond
+                        if (this.hasTransformKeyframeAt(layer, i)) {
+                            const diamond = document.createElement('div');
+                            diamond.className = 'keyframe-diamond';
+                            diamond.style.left = 'calc(50% - 3.5px)';
+                            frameDiv.appendChild(diamond);
                         }
                         
                         if (layer.frames[i]) {
@@ -7182,6 +7805,19 @@
                 
                 // Sync vertical scroll between labels and frames
                 this._syncVerticalScroll();
+                
+                // Sync heights between labels and frame rows
+                requestAnimationFrame(() => {
+                    const labels = document.querySelectorAll('#layersList .tl-label');
+                    const rows = document.querySelectorAll('#framesContainer .layer-frames-row');
+                    labels.forEach((lbl, i) => {
+                        if (rows[i]) {
+                            const h = lbl.offsetHeight;
+                            rows[i].style.minHeight = h + 'px';
+                            lbl.style.minHeight = h + 'px';
+                        }
+                    });
+                });
             }
             
             renderScrubRuler() {
@@ -7373,7 +8009,8 @@
                             name: layer.name,
                             visible: layer.visible,
                             opacity: layer.opacity,
-                            frames: frames
+                            frames: frames,
+                            transformKeyframes: layer.transformKeyframes || []
                         });
                     }
                     
@@ -7535,7 +8172,8 @@
                             name: layerData.name,
                             visible: layerData.visible,
                             opacity: layerData.opacity,
-                            frames: frames
+                            frames: frames,
+                            transformKeyframes: layerData.transformKeyframes || []
                         });
                     }
                     
@@ -7781,11 +8419,7 @@
                         
                         // Draw all visible layers for this frame
                         for (const layer of this.layers) {
-                            if (layer.visible && layer.frames[i]) {
-                                compositeCtx.globalAlpha = layer.opacity || 1.0;
-                                compositeCtx.drawImage(layer.frames[i], 0, 0);
-                                compositeCtx.globalAlpha = 1.0;
-                            }
+                            this.drawLayerWithTransform(compositeCtx, layer, i);
                         }
                         
                         // Convert composite to blob
@@ -7879,14 +8513,7 @@
                         
                         // Render all visible layers for this frame
                         for (const layer of this.layers) {
-                            if (!layer.visible) continue;
-                            
-                            const frame = layer.frames[i];
-                            if (frame) {
-                                tempCtx.globalAlpha = layer.opacity || 1.0;
-                                tempCtx.drawImage(frame, 0, 0);
-                                tempCtx.globalAlpha = 1.0;
-                            }
+                            this.drawLayerWithTransform(tempCtx, layer, i);
                         }
                         
                         // Convert to data URL
@@ -8039,11 +8666,7 @@
                             
                             // Draw all visible layers for this frame
                             for (const layer of this.layers) {
-                                if (layer.visible && layer.frames[currentFrame]) {
-                                    recordCtx.globalAlpha = layer.opacity || 1.0;
-                                    recordCtx.drawImage(layer.frames[currentFrame], 0, 0);
-                                    recordCtx.globalAlpha = 1.0;
-                                }
+                                this.drawLayerWithTransform(recordCtx, layer, currentFrame);
                             }
                             
                             const progress = Math.round((currentFrame / maxFrames) * 100);
