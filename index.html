@@ -611,6 +611,81 @@
             -ms-user-select: none;
             user-select: none;
         }
+        
+        .play-btn-group {
+            display: flex;
+            position: relative;
+            gap: 0;
+        }
+        
+        .play-btn-group #playBtn {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+            border-right: none;
+            margin-right: 0;
+        }
+        
+        .playback-controls .play-mode-arrow {
+            width: 18px;
+            min-width: 18px;
+            padding: 0;
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+            border-left: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .play-mode-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 0;
+            margin-top: 3px;
+            background: #2a2a2a;
+            border: 1px solid #555;
+            border-radius: 6px;
+            padding: 3px;
+            z-index: 1000;
+            min-width: 180px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        
+        .play-mode-menu.show {
+            display: block;
+        }
+        
+        .play-mode-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            width: 100%;
+            padding: 6px 10px;
+            border: none;
+            border-radius: 4px;
+            background: transparent;
+            color: #ccc;
+            font-size: 12px;
+            cursor: pointer;
+            text-align: left;
+            white-space: nowrap;
+        }
+        
+        .play-mode-item:hover {
+            background: #3a3a3a;
+        }
+        
+        .play-mode-item.active {
+            background: rgba(0, 102, 204, 0.25);
+            color: #6af;
+        }
+        
+        .play-mode-item .shortcut {
+            margin-left: auto;
+            font-size: 10px;
+            color: #777;
+        }
 
         .fps-control {
             margin-left: auto;
@@ -1328,16 +1403,16 @@
             background: #2a2a2a;
         }
         
-        /* Audio Timeline */
-        .audio-timeline {
-            display: none;
-            border-top: 1px solid #3a3a3a;
-            height: 60px;
+        /* Audio Timeline (multi-track) */
+        .audio-tracks-container {
             flex-shrink: 0;
         }
         
-        .audio-timeline.visible {
+        .audio-timeline {
             display: flex;
+            border-top: 1px solid #3a3a3a;
+            height: 54px;
+            flex-shrink: 0;
         }
         
         .audio-timeline-label {
@@ -1479,10 +1554,79 @@
         .layer-frames-row {
             display: flex;
             padding: 6px 10px;
-            gap: 5px;
+            gap: 0;
             border-bottom: 1px solid #333;
             align-items: center;
             min-height: calc(var(--frame-w, 80px) + 13px);
+        }
+        
+        .frame-offset-spacer {
+            flex-shrink: 0;
+            height: 100%;
+            position: relative;
+            cursor: pointer;
+        }
+        
+        .frame-offset-spacer::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: repeating-linear-gradient(90deg, transparent 0, transparent 6px, rgba(255,255,255,0.08) 6px, rgba(255,255,255,0.08) 12px);
+            transform: translateY(-50%);
+        }
+        
+        .frame-block {
+            display: flex;
+            gap: 5px;
+            position: relative;
+            align-items: center;
+            border-radius: 6px;
+            border: 2px solid transparent;
+            transition: border-color 0.15s;
+            padding: 0 2px;
+            overflow: visible;
+        }
+        
+        .frame-block:hover {
+            border-color: rgba(255,255,255,0.08);
+        }
+        
+        .frame-block.sliding {
+            border-color: rgba(0, 180, 255, 0.4);
+            background: rgba(0, 180, 255, 0.05);
+        }
+        
+        .frame-block .slide-handle {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 12px;
+            background: linear-gradient(90deg, rgba(0, 180, 255, 0.4), transparent);
+            border-radius: 3px 0 0 3px;
+            cursor: ew-resize;
+            opacity: 0;
+            transition: opacity 0.15s;
+            z-index: 10;
+        }
+        
+        .frame-block .slide-handle::after {
+            content: '⋮';
+            position: absolute;
+            top: 50%;
+            left: 2px;
+            transform: translateY(-50%);
+            font-size: 10px;
+            color: rgba(255,255,255,0.8);
+            line-height: 1;
+        }
+        
+        .frame-block:hover .slide-handle,
+        .frame-block.sliding .slide-handle {
+            opacity: 1;
         }
         
         .layer-frames-row.inactive-row {
@@ -1610,6 +1754,7 @@
             font-size: 24px;
             color: #666;
             flex-shrink: 0;
+            margin-left: 5px;
         }
 
         .add-frame:hover {
@@ -2003,6 +2148,12 @@
                 min-height: 34px;
             }
             
+            .playback-controls .play-mode-arrow {
+                min-width: 22px;
+                width: 22px;
+                padding: 0;
+            }
+            
             .fps-control {
                 flex-shrink: 0;
             }
@@ -2114,6 +2265,12 @@
                 min-height: 30px;
                 padding: 4px;
                 font-size: 12px;
+            }
+            
+            .playback-controls .play-mode-arrow {
+                min-width: 20px;
+                width: 20px;
+                padding: 0;
             }
             
             .add-frame {
@@ -2559,7 +2716,14 @@
             <div class="timeline-header">
                 <div class="timeline-controls">
                     <div class="playback-controls">
-                        <button id="playBtn" title="Play (Space)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2.5v11l9-5.5z" fill="currentColor" stroke="none"/></svg> <span class="btn-label">Play</span></button>
+                        <div class="play-btn-group">
+                            <button id="playBtn" title="Play (Space)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2.5v11l9-5.5z" fill="currentColor" stroke="none"/></svg> <span class="btn-label">Play</span></button>
+                            <button id="playModeBtn" class="play-mode-arrow" title="Play mode"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 6" width="8" height="6"><path d="M0 0l4 5 4-5z" fill="currentColor"/></svg></button>
+                            <div class="play-mode-menu" id="playModeMenu">
+                                <button class="play-mode-item active" data-mode="layer"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="5" width="12" height="4" rx="1"/></svg> Active Layer<span class="shortcut">Space</span></button>
+                                <button class="play-mode-item" data-mode="timeline"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="12" height="3" rx="1"/><rect x="3" y="6" width="10" height="3" rx="1"/><rect x="1" y="10" width="8" height="3" rx="1"/></svg> Full Timeline<span class="shortcut">⇧Space</span></button>
+                            </div>
+                        </div>
                         <button id="stopBtn" title="Stop (Space)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="10" height="10" rx="1" fill="currentColor" stroke="none"/></svg> <span class="btn-label">Stop</span></button>
                         <button id="prevFrame" title="Previous Frame (,)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M10 3L5 8l5 5"/></svg></button>
                         <button id="nextFrame" title="Next Frame (.)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M6 3l5 5-5 5"/></svg></button>
@@ -2616,23 +2780,7 @@
                     </div>
                 </div>
             </div>
-            <div class="audio-timeline" id="audioTimeline">
-                <div class="audio-timeline-label" id="audioTimelineLabel">
-                    <div class="audio-track-header">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4v6M5 2.5v9M7 4.5v5M9 3v8M11 5v4"/></svg>
-                        <span class="audio-track-name" id="audioTrackName">Audio</span>
-                    </div>
-                    <div class="audio-controls">
-                        <button id="audioVolDown" title="Decrease volume">−</button>
-                        <span class="audio-vol-display" id="audioVolDisplay">100%</span>
-                        <button id="audioVolUp" title="Increase volume">+</button>
-                        <button id="audioMuteBtn" class="audio-mute-btn" title="Mute/Unmute"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5h2l3-3v10L4 9H2a1 1 0 01-1-1V6a1 1 0 011-1z"/><path d="M10 4.5c.7.7 1 1.6 1 2.5s-.3 1.8-1 2.5"/></svg></button>
-                    </div>
-                </div>
-                <div class="audio-timeline-waveform" id="audioWaveformContainer">
-                    <canvas id="audioWaveformCanvas"></canvas>
-                    <div class="audio-playhead" id="audioPlayhead"></div>
-                </div>
+            <div class="audio-tracks-container" id="audioTracksContainer">
             </div>
         </div>
     </div>
@@ -2730,7 +2878,7 @@
                 this.selectionCtx = this.selectionCanvas.getContext('2d');
                 this.brushCursor = document.getElementById('brushCursor');
                 
-                this.layers = [{ id: 1, name: 'Layer 1', visible: true, opacity: 1.0, frames: [], transformKeyframes: [] }];
+                this.layers = [{ id: 1, name: 'Layer 1', visible: true, opacity: 1.0, frames: [], transformKeyframes: [], startFrame: 0 }];
                 this.currentLayerId = 1;
                 this.currentFrameIndex = 0;
                 this.nextLayerId = 2;
@@ -2753,6 +2901,7 @@
                 this.onionPrevColor = '#ff0000';
                 this.onionNextColor = '#00cc00';
                 this.isPlaying = false;
+                this.playbackMode = 'layer'; // 'layer' or 'timeline'
                 this.fps = 12;
                 this.playbackInterval = null;
                 
@@ -2823,12 +2972,11 @@
                 
                 // Audio system
                 this.audioContext = null;
-                this.audioTrack = null;  // { name, audioBuffer, base64, volume, waveformPeaks }
-                this.audioSourceNode = null;
-                this.audioGainNode = null;
+                this.audioTracks = [];  // [{ id, name, audioBuffer, base64, mimeType, volume, muted, waveformPeaks }]
+                this._audioTrackIdCounter = 0;
+                this._audioSourceNodes = []; // [{ trackId, source, gain }]
                 this._scrubSource = null;
                 this._scrubGain = null;
-                this.audioMuted = false;
                 this.audioLayerSelected = false;
                 this.timelineScale = 1.0;
                 this._openTransformLayers = new Set();
@@ -2893,7 +3041,7 @@
                     const deltaX = e.clientX - startX;
                     const newWidth = Math.max(160, Math.min(400, startWidth + deltaX));
                     layersSection.style.width = newWidth + 'px';
-                    if (this.audioTrack) this.syncAudioLabelWidth();
+                    if (this.audioTracks.length) this.syncAudioLabelWidth();
                 };
                 
                 const onPointerUp = (e) => {
@@ -3423,6 +3571,36 @@
             
             getCurrentLayer() {
                 return this.layers.find(l => l.id === this.currentLayerId);
+            }
+            
+            // NLE helpers: timeline position ↔ local frame index
+            getPlayheadPosition() {
+                // During timeline playback, use the raw timeline position
+                if (this.isPlaying && this._activePlayMode === 'timeline' && this._playbackTimelinePos !== undefined) {
+                    return this._playbackTimelinePos;
+                }
+                const layer = this.getCurrentLayer();
+                return this.currentFrameIndex + (layer ? (layer.startFrame || 0) : 0);
+            }
+            
+            getTimelineLength() {
+                let maxEnd = 1;
+                for (const layer of this.layers) {
+                    maxEnd = Math.max(maxEnd, (layer.startFrame || 0) + layer.frames.length);
+                }
+                // Include audio track ends
+                for (const track of this.audioTracks) {
+                    const audioFrames = Math.ceil(track.audioBuffer.duration * this.fps);
+                    maxEnd = Math.max(maxEnd, (track.startFrame || 0) + audioFrames);
+                }
+                return maxEnd;
+            }
+            
+            // Get the frame canvas for a layer at a given timeline position
+            getFrameAtPosition(layer, timelinePos) {
+                const localIdx = timelinePos - (layer.startFrame || 0);
+                if (localIdx < 0 || localIdx >= layer.frames.length) return null;
+                return layer.frames[localIdx];
             }
             
             setupEventListeners() {
@@ -4232,6 +4410,7 @@
                                 if (!this._spaceHeld) {
                                     this._spaceHeld = true;
                                     this._spaceDidPan = false;
+                                    this._spaceShift = e.shiftKey;
                                     this._toolBeforeSpace = this.tool;
                                     this.canvas.style.cursor = 'grab';
                                     this.selectionCanvas.style.cursor = 'grab';
@@ -4282,11 +4461,14 @@
                         if (!this._spaceDidPan) {
                             if (this.isPlaying) {
                                 this.stop();
+                            } else if (this._spaceShift) {
+                                this.play('timeline');
                             } else {
                                 this.play();
                             }
                         }
                         this._spaceDidPan = false;
+                        this._spaceShift = false;
                         // Restore cursor to previous tool
                         if (this._toolBeforeSpace && this.tool !== 'pan') {
                             this.selectTool(this._toolBeforeSpace);
@@ -4315,6 +4497,31 @@
                 
                 // Playback controls
                 document.getElementById('playBtn').addEventListener('click', () => this.play());
+                
+                // Play mode dropdown
+                const playModeBtn = document.getElementById('playModeBtn');
+                const playModeMenu = document.getElementById('playModeMenu');
+                playModeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    playModeMenu.classList.toggle('show');
+                });
+                playModeMenu.querySelectorAll('.play-mode-item').forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.playbackMode = item.dataset.mode;
+                        playModeMenu.querySelectorAll('.play-mode-item').forEach(el => el.classList.remove('active'));
+                        item.classList.add('active');
+                        playModeMenu.classList.remove('show');
+                        // Update play button tooltip
+                        document.getElementById('playBtn').title = this.playbackMode === 'timeline' 
+                            ? 'Play Full Timeline (Space)' : 'Play Active Layer (Space)';
+                    });
+                });
+                document.addEventListener('pointerdown', (e) => {
+                    if (!playModeMenu.contains(e.target) && e.target !== playModeBtn) {
+                        playModeMenu.classList.remove('show');
+                    }
+                });
                 document.getElementById('stopBtn').addEventListener('click', () => this.stop());
                 document.getElementById('prevFrame').addEventListener('click', () => this.previousFrame());
                 document.getElementById('nextFrame').addEventListener('click', () => this.nextFrame());
@@ -4324,7 +4531,7 @@
                 document.getElementById('deleteFrame').addEventListener('click', () => this.deleteCurrentFrame());
                 document.getElementById('fpsInput').addEventListener('change', (e) => {
                     this.fps = parseInt(e.target.value);
-                    if (this.audioTrack) this.renderAudioWaveform();
+                    if (this.audioTracks.length) this.renderAudioWaveform();
                 });
                 
                 // Timeline zoom controls
@@ -4414,51 +4621,36 @@
                         e.target.value = '';
                     }
                 });
-                document.getElementById('audioVolDown').addEventListener('click', () => {
-                    if (!this.audioTrack) return;
-                    this.audioTrack.volume = Math.max(0, this.audioTrack.volume - 0.1);
-                    this.updateAudioUI();
-                });
-                document.getElementById('audioVolUp').addEventListener('click', () => {
-                    if (!this.audioTrack) return;
-                    this.audioTrack.volume = Math.min(1.5, this.audioTrack.volume + 0.1);
-                    this.updateAudioUI();
-                });
-                document.getElementById('audioMuteBtn').addEventListener('click', () => {
-                    this.audioMuted = !this.audioMuted;
-                    const btn = document.getElementById('audioMuteBtn');
-                    btn.classList.toggle('muted', this.audioMuted);
-                    btn.innerHTML = this.audioMuted
-                        ? '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5h2l3-3v10L4 9H2a1 1 0 01-1-1V6a1 1 0 011-1z"/><path d="M10 4.5l3 5M13 4.5l-3 5"/></svg>'
-                        : '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5h2l3-3v10L4 9H2a1 1 0 01-1-1V6a1 1 0 011-1z"/><path d="M10 4.5c.7.7 1 1.6 1 2.5s-.3 1.8-1 2.5"/></svg>';
-                    // Update live gain if playing
-                    if (this.audioGainNode) {
-                        this.audioGainNode.gain.value = this.audioMuted ? 0 : this.audioTrack.volume;
-                    }
-                    // Dim waveform visually
-                    document.getElementById('audioWaveformCanvas').style.opacity = this.audioMuted ? '0.3' : '1';
-                });
                 
-                // Sync scroll: frames ↔ audio waveform ↔ scrub ruler
+                // Sync scroll: frames ↔ audio waveforms ↔ scrub ruler
                 const framesSection = document.getElementById('timelineFramesSection');
-                const waveformContainer = document.getElementById('audioWaveformContainer');
                 const scrubRuler = document.getElementById('scrubRuler');
                 let _syncingScroll = false;
                 
-                const syncScroll = (source) => {
+                this._syncScroll = (source) => {
                     if (_syncingScroll) return;
                     _syncingScroll = true;
                     const sl = source.scrollLeft;
                     if (source !== framesSection) framesSection.scrollLeft = sl;
-                    if (source !== waveformContainer) waveformContainer.scrollLeft = sl;
                     if (source !== scrubRuler) scrubRuler.scrollLeft = sl;
+                    // Sync all audio waveform containers
+                    document.querySelectorAll('.audio-timeline-waveform').forEach(wc => {
+                        if (wc !== source) wc.scrollLeft = sl;
+                    });
                     this.updatePlayheadPosition();
                     _syncingScroll = false;
                 };
                 
-                framesSection.addEventListener('scroll', () => syncScroll(framesSection));
-                waveformContainer.addEventListener('scroll', () => syncScroll(waveformContainer));
-                scrubRuler.addEventListener('scroll', () => syncScroll(scrubRuler));
+                framesSection.addEventListener('scroll', () => this._syncScroll(framesSection));
+                scrubRuler.addEventListener('scroll', () => this._syncScroll(scrubRuler));
+                // Audio waveform scroll sync is attached via MutationObserver
+                const audioContainer = document.getElementById('audioTracksContainer');
+                const audioScrollObserver = new MutationObserver(() => {
+                    document.querySelectorAll('.audio-timeline-waveform').forEach(wc => {
+                        wc.onscroll = () => this._syncScroll(wc);
+                    });
+                });
+                audioScrollObserver.observe(audioContainer, { childList: true, subtree: true });
                 
                 // Scrub ruler interaction: click/drag to scrub through frames
                 const scrubToX = (clientX) => {
@@ -4466,14 +4658,16 @@
                     const rect = scrubRuler.getBoundingClientRect();
                     const x = clientX - rect.left + scrubRuler.scrollLeft;
                     const { cellW, padding } = this.getTimelineMetrics();
-                    const idx = Math.floor((x - padding + cellW / 2) / cellW);
+                    const timelinePos = Math.floor((x - padding + cellW / 2) / cellW);
                     const layer = this.getCurrentLayer();
-                    const maxFrame = layer.frames.length - 1;
-                    const newIdx = Math.max(0, Math.min(maxFrame, idx));
+                    const offset = layer.startFrame || 0;
+                    const localIdx = timelinePos - offset;
+                    const maxLocal = layer.frames.length - 1;
+                    const newIdx = Math.max(0, Math.min(maxLocal, localIdx));
                     if (newIdx !== this.currentFrameIndex) {
                         this.currentFrameIndex = newIdx;
                         this.render();
-                        this.scrubAudio(newIdx);
+                        this.scrubAudio(this.getPlayheadPosition());
                     }
                 };
                 
@@ -5589,7 +5783,7 @@
                     
                     // Draw all visible layers
                     for (const l of this.layers) {
-                        this.drawLayerWithTransform(this.ctx, l, this.currentFrameIndex);
+                        this.drawLayerWithTransform(this.ctx, l, this.getPlayheadPosition());
                     }
                     
                     // Now draw the preview shape on top
@@ -5660,7 +5854,8 @@
                     visible: true,
                     opacity: 1.0,
                     frames: [],
-                    transformKeyframes: []
+                    transformKeyframes: [],
+                    startFrame: 0
                 };
                 this.layers.push(newLayer);
                 this.currentLayerId = newLayer.id;
@@ -5686,7 +5881,8 @@
                         copy.getContext('2d').drawImage(frame, 0, 0);
                         return copy;
                     }),
-                    transformKeyframes: (currentLayer.transformKeyframes || []).map(kf => ({...kf}))
+                    transformKeyframes: (currentLayer.transformKeyframes || []).map(kf => ({...kf})),
+                    startFrame: currentLayer.startFrame || 0
                 };
                 
                 // Insert after current layer
@@ -5699,7 +5895,7 @@
             
             deleteLayer() {
                 // If audio layer is selected, remove the audio track
-                if (this.audioLayerSelected && this.audioTrack) {
+                if (this.audioLayerSelected && this.audioTracks.length > 0) {
                     this.removeAudio();
                     this.audioLayerSelected = false;
                     this.render();
@@ -5740,7 +5936,7 @@
                     this.currentFrameIndex--;
                     this.initializeFrame();
                     this.render();
-                    this.scrubAudio(this.currentFrameIndex);
+                    this.scrubAudio(this.getPlayheadPosition());
                 }
             }
             
@@ -5751,7 +5947,7 @@
                     this.currentFrameIndex++;
                     this.initializeFrame();
                     this.render();
-                    this.scrubAudio(this.currentFrameIndex);
+                    this.scrubAudio(this.getPlayheadPosition());
                 }
             }
             
@@ -5762,7 +5958,7 @@
                     this.currentFrameIndex++;
                     this.initializeFrame();
                     this.render();
-                    this.scrubAudio(this.currentFrameIndex);
+                    this.scrubAudio(this.getPlayheadPosition());
                 }
             }
             
@@ -5940,17 +6136,18 @@
                 return (layer.transformKeyframes || []).map(kf => kf.frame);
             }
             
-            drawLayerWithTransform(ctx, layer, frameIndex) {
-                if (!layer.visible || !layer.frames[frameIndex]) return;
+            drawLayerWithTransform(ctx, layer, timelinePos) {
+                const frame = this.getFrameAtPosition(layer, timelinePos);
+                if (!layer.visible || !frame) return;
                 
-                const tf = this.getLayerTransformAtFrame(layer, frameIndex);
+                const localIdx = timelinePos - (layer.startFrame || 0);
+                const tf = this.getLayerTransformAtFrame(layer, localIdx);
                 const hasTransform = tf.x !== 0 || tf.y !== 0 || tf.anchorX !== 0 || tf.anchorY !== 0 || tf.scaleX !== 1 || tf.scaleY !== 1 || tf.rotation !== 0;
                 
                 ctx.save();
                 ctx.globalAlpha = tf.opacity;
                 
                 if (hasTransform) {
-                    // Anchor point = canvas center + anchor offset
                     const ax = this.canvas.width / 2 + tf.anchorX;
                     const ay = this.canvas.height / 2 + tf.anchorY;
                     ctx.translate(ax + tf.x, ay + tf.y);
@@ -5959,7 +6156,7 @@
                     ctx.translate(-ax, -ay);
                 }
                 
-                ctx.drawImage(layer.frames[frameIndex], 0, 0);
+                ctx.drawImage(frame, 0, 0);
                 ctx.restore();
             }
             
@@ -7481,17 +7678,36 @@
                 } : {r: 0, g: 0, b: 0};
             }
             
-            play() {
+            play(modeOverride) {
                 if (this.isPlaying) return;
                 this.commitSelection();
                 this.isPlaying = true;
                 
+                const mode = modeOverride || this.playbackMode;
+                this._activePlayMode = mode;
+                
                 const layer = this.getCurrentLayer();
-                const maxFrames = layer.frames.length;
-                let frameIndex = 0;
+                const layerOffset = layer.startFrame || 0;
+                let frameIndex, maxFrames;
+                
+                if (mode === 'timeline') {
+                    // Full timeline: iterate over timeline positions
+                    maxFrames = this.getTimelineLength();
+                    frameIndex = 0; // start from timeline pos 0
+                } else {
+                    // Active layer only
+                    maxFrames = layer.frames.length;
+                    frameIndex = 0;
+                }
+                
                 let lastFrameTime = performance.now();
                 const frameDelay = 1000 / this.fps;
                 this._playStartTime = performance.now();
+                
+                // Set initial timeline position for audio sync
+                if (mode === 'timeline') {
+                    this._playbackTimelinePos = 0;
+                }
                 
                 // Start audio playback
                 this.startAudioPlayback();
@@ -7502,17 +7718,29 @@
                     const elapsed = currentTime - lastFrameTime;
                     
                     if (elapsed >= frameDelay) {
-                        this.currentFrameIndex = frameIndex;
+                        if (mode === 'timeline') {
+                            this._playbackTimelinePos = frameIndex;
+                            // Map timeline position to active layer's local index
+                            const localIdx = frameIndex - layerOffset;
+                            if (localIdx >= 0 && localIdx < layer.frames.length) {
+                                this.currentFrameIndex = localIdx;
+                            }
+                            // Keep currentFrameIndex in valid range for drawing
+                            this.currentFrameIndex = Math.max(0, Math.min(layer.frames.length - 1, this.currentFrameIndex));
+                        } else {
+                            this.currentFrameIndex = frameIndex;
+                        }
+                        
                         // Lightweight render during playback: canvas only + playhead
                         this.renderCanvasOnly();
                         this.updatePlayheadPosition();
-                        this.updateAudioPlayhead(frameIndex, maxFrames);
+                        this.updateAudioPlayhead(this.getPlayheadPosition(), maxFrames);
                         this.scrollPlayheadIntoView();
                         frameIndex = (frameIndex + 1) % maxFrames;
                         lastFrameTime = currentTime - (elapsed % frameDelay);
                         
                         // Loop audio when animation loops
-                        if (frameIndex === 0 && this.audioTrack) {
+                        if (frameIndex === 0 && this.audioTracks.length > 0) {
                             this.stopAudioPlayback();
                             this.startAudioPlayback();
                         }
@@ -7526,6 +7754,8 @@
             
             stop() {
                 this.isPlaying = false;
+                this._activePlayMode = null;
+                this._playbackTimelinePos = undefined;
                 if (this.playbackInterval) {
                     clearInterval(this.playbackInterval);
                     this.playbackInterval = null;
@@ -7556,27 +7786,24 @@
                 try {
                     const ctx = this.getAudioContext();
                     const arrayBuffer = await file.arrayBuffer();
-                    
-                    // Keep a copy for save/load
                     const base64 = await this._arrayBufferToBase64(arrayBuffer);
-                    
                     const audioBuffer = await ctx.decodeAudioData(arrayBuffer.slice(0));
-                    
-                    // Generate waveform peaks
                     const waveformPeaks = this._generateWaveformPeaks(audioBuffer, 2000);
                     
-                    this.audioTrack = {
+                    const track = {
+                        id: ++this._audioTrackIdCounter,
                         name: file.name,
                         audioBuffer: audioBuffer,
                         base64: base64,
                         mimeType: file.type || 'audio/mpeg',
                         volume: 1.0,
+                        muted: false,
+                        startFrame: 0,
                         waveformPeaks: waveformPeaks
                     };
                     
-                    this.showAudioTimeline();
-                    this.renderAudioWaveform();
-                    this.syncAudioLabelWidth();
+                    this.audioTracks.push(track);
+                    this.renderAudioTracks();
                     this.renderLayers();
                 } catch (err) {
                     console.error('Audio import failed:', err);
@@ -7608,7 +7835,6 @@
                 const channel = audioBuffer.getChannelData(0);
                 const samplesPerPeak = Math.floor(channel.length / numPeaks);
                 const peaks = [];
-                
                 for (let i = 0; i < numPeaks; i++) {
                     let max = 0;
                     const start = i * samplesPerPeak;
@@ -7622,61 +7848,180 @@
                 return peaks;
             }
             
-            removeAudio() {
+            removeAudioTrack(trackId) {
                 this.stopAudioPlayback();
-                this.audioTrack = null;
-                this.audioMuted = false;
-                this.hideAudioTimeline();
+                this.audioTracks = this.audioTracks.filter(t => t.id !== trackId);
+                this.renderAudioTracks();
             }
             
-            showAudioTimeline() {
-                document.getElementById('audioTimeline').classList.add('visible');
-                if (this.audioTrack) {
-                    // Truncate filename for display
-                    let name = this.audioTrack.name;
-                    if (name.length > 18) name = name.substring(0, 15) + '…';
-                    document.getElementById('audioTrackName').textContent = name;
-                    document.getElementById('audioVolDisplay').textContent = Math.round(this.audioTrack.volume * 100) + '%';
-                }
+            removeAudio() {
+                // Legacy compat: remove all tracks
+                this.stopAudioPlayback();
+                this.audioTracks = [];
+                this.renderAudioTracks();
             }
             
-            hideAudioTimeline() {
-                document.getElementById('audioTimeline').classList.remove('visible');
-            }
-            
-            syncAudioLabelWidth() {
+            // Build the entire audio tracks UI
+            renderAudioTracks() {
+                const container = document.getElementById('audioTracksContainer');
+                container.innerHTML = '';
+                
+                if (this.audioTracks.length === 0) return;
+                
                 const layersSection = document.getElementById('layersSection');
-                const audioLabel = document.getElementById('audioTimelineLabel');
-                audioLabel.style.width = layersSection.offsetWidth + 'px';
+                const labelWidth = layersSection ? layersSection.offsetWidth : 180;
+                
+                const audioIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4v6M5 2.5v9M7 4.5v5M9 3v8M11 5v4"/></svg>';
+                const speakerIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5h2l3-3v10L4 9H2a1 1 0 01-1-1V6a1 1 0 011-1z"/><path d="M10 4.5c.7.7 1 1.6 1 2.5s-.3 1.8-1 2.5"/></svg>';
+                const mutedIcon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" width="10" height="10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5h2l3-3v10L4 9H2a1 1 0 01-1-1V6a1 1 0 011-1z"/><line x1="10" y1="4" x2="14" y2="10"/><line x1="14" y1="4" x2="10" y2="10"/></svg>';
+                
+                const colors = [
+                    { bg: '#1a1a2e', accent: 'rgba(100, 120, 220, 0.6)', headerColor: '#8888cc' },
+                    { bg: '#1a2e1a', accent: 'rgba(100, 220, 120, 0.6)', headerColor: '#88cc88' },
+                    { bg: '#2e1a1a', accent: 'rgba(220, 100, 120, 0.6)', headerColor: '#cc8888' },
+                    { bg: '#2e2e1a', accent: 'rgba(220, 200, 100, 0.6)', headerColor: '#cccc88' },
+                ];
+                
+                this.audioTracks.forEach((track, idx) => {
+                    const c = colors[idx % colors.length];
+                    
+                    const row = document.createElement('div');
+                    row.className = 'audio-timeline';
+                    
+                    // Label side
+                    const label = document.createElement('div');
+                    label.className = 'audio-timeline-label';
+                    label.style.width = labelWidth + 'px';
+                    label.style.background = c.bg;
+                    
+                    const header = document.createElement('div');
+                    header.className = 'audio-track-header';
+                    header.style.color = c.headerColor;
+                    let name = track.name;
+                    if (name.length > 18) name = name.substring(0, 15) + '…';
+                    header.innerHTML = audioIcon + `<span class="audio-track-name">${name}</span>`;
+                    label.appendChild(header);
+                    
+                    const controls = document.createElement('div');
+                    controls.className = 'audio-controls';
+                    
+                    // Volume down
+                    const volDown = document.createElement('button');
+                    volDown.textContent = '−';
+                    volDown.title = 'Decrease volume';
+                    volDown.addEventListener('click', () => {
+                        track.volume = Math.max(0, track.volume - 0.1);
+                        volDisplay.textContent = Math.round(track.volume * 100) + '%';
+                    });
+                    controls.appendChild(volDown);
+                    
+                    const volDisplay = document.createElement('span');
+                    volDisplay.className = 'audio-vol-display';
+                    volDisplay.textContent = Math.round(track.volume * 100) + '%';
+                    controls.appendChild(volDisplay);
+                    
+                    // Volume up
+                    const volUp = document.createElement('button');
+                    volUp.textContent = '+';
+                    volUp.title = 'Increase volume';
+                    volUp.addEventListener('click', () => {
+                        track.volume = Math.min(1.5, track.volume + 0.1);
+                        volDisplay.textContent = Math.round(track.volume * 100) + '%';
+                    });
+                    controls.appendChild(volUp);
+                    
+                    // Mute
+                    const muteBtn = document.createElement('button');
+                    muteBtn.className = 'audio-mute-btn' + (track.muted ? ' muted' : '');
+                    muteBtn.title = 'Mute/Unmute';
+                    muteBtn.innerHTML = track.muted ? mutedIcon : speakerIcon;
+                    muteBtn.addEventListener('click', () => {
+                        track.muted = !track.muted;
+                        muteBtn.classList.toggle('muted', track.muted);
+                        muteBtn.innerHTML = track.muted ? mutedIcon : speakerIcon;
+                        waveCanvas.style.opacity = track.muted ? '0.3' : '1';
+                    });
+                    controls.appendChild(muteBtn);
+                    
+                    // Remove
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'audio-remove-btn';
+                    removeBtn.title = 'Remove track';
+                    removeBtn.innerHTML = '✕';
+                    removeBtn.addEventListener('click', () => {
+                        this.removeAudioTrack(track.id);
+                    });
+                    controls.appendChild(removeBtn);
+                    
+                    label.appendChild(controls);
+                    row.appendChild(label);
+                    
+                    // Waveform side
+                    const waveWrap = document.createElement('div');
+                    waveWrap.className = 'audio-timeline-waveform';
+                    waveWrap.style.background = c.bg;
+                    
+                    const waveCanvas = document.createElement('canvas');
+                    waveCanvas.className = 'audio-waveform-canvas';
+                    waveCanvas.dataset.trackId = track.id;
+                    if (track.muted) waveCanvas.style.opacity = '0.3';
+                    waveWrap.appendChild(waveCanvas);
+                    
+                    const playhead = document.createElement('div');
+                    playhead.className = 'audio-playhead';
+                    playhead.dataset.trackId = track.id;
+                    waveWrap.appendChild(playhead);
+                    
+                    row.appendChild(waveWrap);
+                    container.appendChild(row);
+                    
+                    // Render waveform for this track
+                    this._renderTrackWaveform(track, waveCanvas, waveWrap, c.accent);
+                    
+                    // Drag-to-slide audio track on timeline
+                    const trackForDrag = track;
+                    const waveWrapRef = waveWrap;
+                    const colorRef = c.accent;
+                    waveCanvas.style.cursor = 'grab';
+                    waveCanvas.addEventListener('pointerdown', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        waveCanvas.style.cursor = 'grabbing';
+                        const startX = e.clientX;
+                        const startOffset = trackForDrag.startFrame || 0;
+                        const { cellW } = this.getTimelineMetrics();
+                        
+                        const onMove = (ev) => {
+                            const dx = ev.clientX - startX;
+                            const frameDelta = Math.round(dx / cellW);
+                            trackForDrag.startFrame = Math.max(0, startOffset + frameDelta);
+                            this._renderTrackWaveform(trackForDrag, waveCanvas, waveWrapRef, colorRef);
+                        };
+                        const onUp = () => {
+                            waveCanvas.style.cursor = 'grab';
+                            document.removeEventListener('pointermove', onMove);
+                            document.removeEventListener('pointerup', onUp);
+                            document.removeEventListener('pointercancel', onUp);
+                        };
+                        document.addEventListener('pointermove', onMove);
+                        document.addEventListener('pointerup', onUp);
+                        document.addEventListener('pointercancel', onUp);
+                    });
+                });
             }
             
-            updateAudioUI() {
-                if (!this.audioTrack) return;
-                document.getElementById('audioVolDisplay').textContent = Math.round(this.audioTrack.volume * 100) + '%';
-                if (this.audioGainNode) {
-                    this.audioGainNode.gain.value = this.audioMuted ? 0 : this.audioTrack.volume;
-                }
-            }
-            
-            renderAudioWaveform() {
-                if (!this.audioTrack) return;
+            _renderTrackWaveform(track, canvas, container, color) {
+                const peaks = track.waveformPeaks;
                 
-                const container = document.getElementById('audioWaveformContainer');
-                const canvas = document.getElementById('audioWaveformCanvas');
-                const peaks = this.audioTrack.waveformPeaks;
-                
-                // Calculate width to match frames grid
-                const numFrames = this._maxFrameCount || Math.max(...this.layers.map(l => l.frames.length), this.currentFrameIndex + 1);
+                const numFrames = this._maxFrameCount || this.getTimelineLength();
                 const { cellW: frameCellWidth, padding } = this.getTimelineMetrics();
-                const framesWidth = padding + numFrames * frameCellWidth + 40; // extra for add button
+                const framesWidth = padding + numFrames * frameCellWidth + 40;
                 
-                // Calculate how much of the waveform fits the animation duration
                 const animDuration = numFrames / this.fps;
-                const audioDuration = this.audioTrack.audioBuffer.duration;
-                const audioFraction = Math.min(1, audioDuration / animDuration);
-                const totalWidth = Math.max(framesWidth, (framesWidth / animDuration) * audioDuration);
+                const audioDuration = track.audioBuffer.duration;
+                const totalWidth = Math.max(framesWidth, (framesWidth / animDuration) * ((track.startFrame || 0) / this.fps + audioDuration));
                 
-                const height = container.clientHeight || 58;
+                const height = container.clientHeight || 52;
                 const dpr = window.devicePixelRatio || 1;
                 
                 canvas.width = totalWidth * dpr;
@@ -7688,127 +8033,167 @@
                 ctx.scale(dpr, dpr);
                 ctx.clearRect(0, 0, totalWidth, height);
                 
-                // Draw frame grid lines
+                // Grid lines
                 ctx.strokeStyle = 'rgba(255,255,255,0.06)';
                 ctx.lineWidth = 1;
                 for (let i = 0; i <= numFrames; i++) {
                     const x = padding + i * frameCellWidth;
-                    ctx.beginPath();
-                    ctx.moveTo(x, 0);
-                    ctx.lineTo(x, height);
-                    ctx.stroke();
+                    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
                 }
                 
-                // Draw waveform
-                const waveWidth = (audioDuration / Math.max(animDuration, audioDuration)) * totalWidth;
+                // Waveform — offset by startFrame
+                const trackOffsetPx = (track.startFrame || 0) * frameCellWidth;
+                const wavePixelsPerSec = framesWidth / animDuration;
+                const waveWidth = audioDuration * wavePixelsPerSec;
                 const mid = height / 2;
                 const amp = (height / 2) - 4;
                 
-                ctx.fillStyle = 'rgba(100, 120, 220, 0.6)';
+                ctx.fillStyle = color;
                 ctx.beginPath();
-                
                 const peaksPerPixel = peaks.length / waveWidth;
-                
                 for (let x = 0; x < waveWidth; x++) {
                     const peakIdx = Math.floor(x * peaksPerPixel);
                     const peak = peaks[Math.min(peakIdx, peaks.length - 1)];
                     const barH = peak * amp;
-                    
-                    ctx.rect(padding + x, mid - barH, 1, barH * 2);
+                    ctx.rect(padding + trackOffsetPx + x, mid - barH, 1, barH * 2);
                 }
                 ctx.fill();
                 
-                // Draw centerline
-                ctx.strokeStyle = 'rgba(100, 120, 220, 0.3)';
+                // Centerline
+                ctx.strokeStyle = color.replace('0.6', '0.3');
                 ctx.lineWidth = 1;
                 ctx.beginPath();
-                ctx.moveTo(padding, mid);
-                ctx.lineTo(padding + waveWidth, mid);
+                ctx.moveTo(padding + trackOffsetPx, mid);
+                ctx.lineTo(padding + trackOffsetPx + waveWidth, mid);
                 ctx.stroke();
-                
-                // Shade area beyond animation duration
-                if (audioDuration > animDuration) {
-                    const animWidth = (animDuration / audioDuration) * waveWidth;
-                    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-                    ctx.fillRect(padding + animWidth, 0, waveWidth - animWidth, height);
-                }
+            }
+            
+            syncAudioLabelWidth() {
+                const layersSection = document.getElementById('layersSection');
+                if (!layersSection) return;
+                const w = layersSection.offsetWidth + 'px';
+                document.querySelectorAll('.audio-timeline-label').forEach(el => {
+                    el.style.width = w;
+                });
+            }
+            
+            renderAudioWaveform() {
+                // Re-render all track waveforms
+                if (this.audioTracks.length === 0) return;
+                this.renderAudioTracks();
+            }
+            
+            showAudioTimeline() {
+                // No-op: tracks are shown by renderAudioTracks
+            }
+            
+            hideAudioTimeline() {
+                document.getElementById('audioTracksContainer').innerHTML = '';
+            }
+            
+            updateAudioUI() {
+                // Per-track volume is handled inline; nothing global needed
             }
             
             startAudioPlayback() {
-                if (!this.audioTrack) return;
+                if (this.audioTracks.length === 0) return;
                 const ctx = this.getAudioContext();
                 
-                const source = ctx.createBufferSource();
-                source.buffer = this.audioTrack.audioBuffer;
+                this._audioSourceNodes = [];
+                const playheadPos = this.getPlayheadPosition();
                 
-                const gain = ctx.createGain();
-                gain.gain.value = this.audioMuted ? 0 : this.audioTrack.volume;
-                
-                source.connect(gain);
-                gain.connect(ctx.destination);
-                source.start(0);
-                
-                this.audioSourceNode = source;
-                this.audioGainNode = gain;
+                for (const track of this.audioTracks) {
+                    if (track.muted) continue;
+                    
+                    const trackOffset = (track.startFrame || 0);
+                    const timeOffset = (playheadPos - trackOffset) / this.fps;
+                    
+                    // Skip if playhead is before this track starts
+                    if (timeOffset < 0) {
+                        // Schedule delayed start
+                        const delay = -timeOffset;
+                        const source = ctx.createBufferSource();
+                        source.buffer = track.audioBuffer;
+                        const gain = ctx.createGain();
+                        gain.gain.value = track.volume;
+                        source.connect(gain);
+                        gain.connect(ctx.destination);
+                        source.start(ctx.currentTime + delay, 0);
+                        this._audioSourceNodes.push({ trackId: track.id, source, gain });
+                        continue;
+                    }
+                    
+                    // Skip if past end
+                    if (timeOffset >= track.audioBuffer.duration) continue;
+                    
+                    const source = ctx.createBufferSource();
+                    source.buffer = track.audioBuffer;
+                    const gain = ctx.createGain();
+                    gain.gain.value = track.volume;
+                    source.connect(gain);
+                    gain.connect(ctx.destination);
+                    source.start(0, timeOffset);
+                    
+                    this._audioSourceNodes.push({ trackId: track.id, source, gain });
+                }
             }
             
             stopAudioPlayback() {
-                if (this.audioSourceNode) {
-                    try { this.audioSourceNode.stop(); } catch (e) {}
-                    this.audioSourceNode.disconnect();
-                    this.audioSourceNode = null;
+                for (const node of this._audioSourceNodes) {
+                    try { node.source.stop(); } catch (e) {}
+                    node.source.disconnect();
+                    node.gain.disconnect();
                 }
-                if (this.audioGainNode) {
-                    this.audioGainNode.disconnect();
-                    this.audioGainNode = null;
-                }
+                this._audioSourceNodes = [];
             }
             
             updateAudioPlayhead(frameIndex, totalFrames) {
-                if (!this.audioTrack) return;
-                const playhead = document.getElementById('audioPlayhead');
-                const container = document.getElementById('audioWaveformContainer');
-                
+                if (this.audioTracks.length === 0) return;
                 const { cellW: frameCellWidth, padding } = this.getTimelineMetrics();
                 const x = padding + frameIndex * frameCellWidth + frameCellWidth / 2;
                 
-                playhead.style.display = 'block';
-                playhead.style.left = (x - container.scrollLeft) + 'px';
+                document.querySelectorAll('.audio-playhead').forEach(ph => {
+                    const container = ph.parentElement;
+                    ph.style.display = 'block';
+                    ph.style.left = (x - container.scrollLeft) + 'px';
+                });
             }
             
             hideAudioPlayhead() {
-                document.getElementById('audioPlayhead').style.display = 'none';
+                document.querySelectorAll('.audio-playhead').forEach(ph => {
+                    ph.style.display = 'none';
+                });
             }
             
-            scrubAudio(frameIndex) {
-                if (!this.audioTrack || this.audioMuted) return;
-                
-                // Stop previous scrub snippet
+            scrubAudio(timelinePos) {
                 this.stopScrubAudio();
                 
+                if (this.audioTracks.length === 0) return;
                 const ctx = this.getAudioContext();
-                const timeOffset = frameIndex / this.fps;
-                
-                // Don't play if past end of audio
-                if (timeOffset >= this.audioTrack.audioBuffer.duration) return;
-                
-                // Play a short snippet (~80ms) from the frame's time position
                 const snippetDuration = 0.08;
-                const source = ctx.createBufferSource();
-                source.buffer = this.audioTrack.audioBuffer;
                 
-                const gain = ctx.createGain();
-                gain.gain.value = this.audioTrack.volume;
-                // Quick fade out to avoid click at end of snippet
-                gain.gain.setValueAtTime(this.audioTrack.volume, ctx.currentTime + snippetDuration * 0.7);
-                gain.gain.linearRampToValueAtTime(0, ctx.currentTime + snippetDuration);
+                this._scrubNodes = [];
                 
-                source.connect(gain);
-                gain.connect(ctx.destination);
-                source.start(0, timeOffset, snippetDuration);
-                
-                this._scrubSource = source;
-                this._scrubGain = gain;
+                for (const track of this.audioTracks) {
+                    if (track.muted) continue;
+                    const trackOffset = (track.startFrame || 0);
+                    const timeOffset = (timelinePos - trackOffset) / this.fps;
+                    if (timeOffset < 0 || timeOffset >= track.audioBuffer.duration) continue;
+                    
+                    const source = ctx.createBufferSource();
+                    source.buffer = track.audioBuffer;
+                    
+                    const gain = ctx.createGain();
+                    gain.gain.value = track.volume;
+                    gain.gain.setValueAtTime(track.volume, ctx.currentTime + snippetDuration * 0.7);
+                    gain.gain.linearRampToValueAtTime(0, ctx.currentTime + snippetDuration);
+                    
+                    source.connect(gain);
+                    gain.connect(ctx.destination);
+                    source.start(0, timeOffset, snippetDuration);
+                    
+                    this._scrubNodes.push({ source, gain });
+                }
             }
             
             stopScrubAudio() {
@@ -7820,6 +8205,14 @@
                 if (this._scrubGain) {
                     this._scrubGain.disconnect();
                     this._scrubGain = null;
+                }
+                if (this._scrubNodes) {
+                    for (const n of this._scrubNodes) {
+                        try { n.source.stop(); } catch (e) {}
+                        n.source.disconnect();
+                        n.gain.disconnect();
+                    }
+                    this._scrubNodes = [];
                 }
             }
             
@@ -7865,8 +8258,9 @@
                 }
                 
                 // Draw all visible layers for current frame ON THE MAIN CANVAS
+                const playheadPos = this.getPlayheadPosition();
                 for (const layer of this.layers) {
-                    this.drawLayerWithTransform(this.ctx, layer, this.currentFrameIndex);
+                    this.drawLayerWithTransform(this.ctx, layer, playheadPos);
                 }
                 
                 // Draw anchor point indicator
@@ -7904,11 +8298,10 @@
                     }
                 }
                 
+                const playheadPos = this.getPlayheadPosition();
                 for (const layer of this.layers) {
-                    this.drawLayerWithTransform(this.ctx, layer, this.currentFrameIndex);
+                    this.drawLayerWithTransform(this.ctx, layer, playheadPos);
                 }
-                
-                // Draw anchor point indicator
                 this.drawAnchorIndicator(this.ctx);
                 
                 if (this.selection) {
@@ -7954,8 +8347,8 @@
                     this._dropIndicator.style.display = 'none';
                 }
                 
-                // Find max frame count across all layers (for ruler width)
-                const maxFrameCount = Math.max(...this.layers.map(l => l.frames.length), this.currentFrameIndex + 1);
+                // Find max timeline length across all layers + audio (for ruler width)
+                const maxFrameCount = this.getTimelineLength();
                 
                 // Build each layer row (reversed: top layer = top of list)
                 const reversedLayers = [...this.layers].reverse();
@@ -8412,15 +8805,84 @@
                         for (const idx of indices) holdFrameSet.add(idx);
                     }
                     
-                    const layerMaxFrames = Math.max(layer.frames.length, isActive ? this.currentFrameIndex + 1 : 0);
+                    const offset = layer.startFrame || 0;
+                    const playheadPos = this.getPlayheadPosition();
+                    const layerLocalMax = Math.max(layer.frames.length, isActive ? this.currentFrameIndex + 1 : 0);
                     
-                    for (let i = 0; i < layerMaxFrames; i++) {
+                    // Spacer for offset
+                    if (offset > 0) {
+                        const spacer = document.createElement('div');
+                        spacer.className = 'frame-offset-spacer';
+                        const { cellW } = this.getTimelineMetrics();
+                        spacer.style.width = (offset * cellW) + 'px';
+                        spacer.style.flexShrink = '0';
+                        spacer.style.position = 'relative';
+                        row.appendChild(spacer);
+                    }
+                    
+                    // Frame block wrapper (for drag-to-slide)
+                    const blockWrap = document.createElement('div');
+                    blockWrap.className = 'frame-block';
+                    blockWrap.style.display = 'flex';
+                    blockWrap.style.position = 'relative';
+                    blockWrap.dataset.layerId = layer.id;
+                    
+                    // Slide handle on left edge
+                    const slideHandle = document.createElement('div');
+                    slideHandle.className = 'slide-handle';
+                    blockWrap.appendChild(slideHandle);
+                    
+                    // Slide drag interaction — use document listeners since renderTimeline destroys elements
+                    const layerForSlide = layer;
+                    const spacerForSlide = (offset > 0) ? row.querySelector('.frame-offset-spacer') : null;
+                    slideHandle.addEventListener('pointerdown', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const startX = e.clientX;
+                        const startOffset = layerForSlide.startFrame || 0;
+                        const { cellW } = this.getTimelineMetrics();
+                        blockWrap.classList.add('sliding');
+                        this._blockSliding = true;
+                        
+                        // Create or reuse a spacer for visual feedback
+                        let liveSpacer = spacerForSlide;
+                        if (!liveSpacer) {
+                            liveSpacer = document.createElement('div');
+                            liveSpacer.className = 'frame-offset-spacer';
+                            liveSpacer.style.flexShrink = '0';
+                            liveSpacer.style.position = 'relative';
+                            liveSpacer.style.width = '0px';
+                            row.insertBefore(liveSpacer, blockWrap);
+                        }
+                        
+                        const onMove = (ev) => {
+                            const dx = ev.clientX - startX;
+                            const frameDelta = Math.round(dx / cellW);
+                            const newOffset = Math.max(0, startOffset + frameDelta);
+                            layerForSlide.startFrame = newOffset;
+                            liveSpacer.style.width = (newOffset * cellW) + 'px';
+                        };
+                        const onUp = () => {
+                            this._blockSliding = false;
+                            document.removeEventListener('pointermove', onMove);
+                            document.removeEventListener('pointerup', onUp);
+                            document.removeEventListener('pointercancel', onUp);
+                            this.renderTimeline();
+                        };
+                        document.addEventListener('pointermove', onMove);
+                        document.addEventListener('pointerup', onUp);
+                        document.addEventListener('pointercancel', onUp);
+                    });
+                    
+                    for (let i = 0; i < layerLocalMax; i++) {
+                        const timelinePos = offset + i;
                         const frameDiv = document.createElement('div');
                         let cls = 'frame';
-                        if (isActive && i === this.currentFrameIndex) cls += ' active';
+                        if (isActive && timelinePos === playheadPos) cls += ' active';
                         if (holdFrameSet.has(i)) cls += ' hold-frame';
                         frameDiv.className = cls;
                         frameDiv.dataset.frameIndex = i;
+                        frameDiv.dataset.timelinePos = timelinePos;
                         frameDiv.dataset.layerId = layer.id;
                         
                         // Hold badge
@@ -8450,7 +8912,7 @@
                         
                         const frameNumber = document.createElement('div');
                         frameNumber.className = 'frame-number';
-                        frameNumber.textContent = i + 1;
+                        frameNumber.textContent = timelinePos + 1;
                         frameDiv.appendChild(frameNumber);
                         
                         // Frame interactions
@@ -8469,11 +8931,20 @@
                                 this.currentFrameIndex = frameIdx;
                                 this.initializeFrame();
                                 this.render();
-                                this.scrubAudio(frameIdx);
+                                this.scrubAudio(timelinePos);
                                 return;
                             }
                             
-                            // Active layer: support drag reorder
+                            // Active layer: navigate to local frame
+                            if (frameIdx !== this.currentFrameIndex) {
+                                this.currentFrameIndex = frameIdx;
+                                this.initializeFrame();
+                                this.render();
+                                this.scrubAudio(this.getPlayheadPosition());
+                                return;
+                            }
+                            
+                            // Same frame: support drag reorder
                             this._frameDragState = {
                                 index: frameIdx,
                                 startX: e.clientX,
@@ -8519,8 +8990,10 @@
                             if (menuRect.bottom > window.innerHeight) ctxMenu.style.top = (e.clientY - menuRect.height) + 'px';
                         });
                         
-                        row.appendChild(frameDiv);
+                        blockWrap.appendChild(frameDiv);
                     }
+                    
+                    row.appendChild(blockWrap);
                     
                     // Add frame button (only on active layer)
                     if (isActive) {
@@ -8540,33 +9013,6 @@
                     
                     container.appendChild(row);
                 });
-                
-                // Audio label in left column
-                if (this.audioTrack) {
-                    const audioLabel = document.createElement('div');
-                    audioLabel.className = 'tl-label' + (this.audioLayerSelected ? ' active-row' : '');
-                    audioLabel.style.minHeight = '58px';
-                    audioLabel.style.borderBottom = 'none';
-                    
-                    const audioIcon = document.createElement('span');
-                    audioIcon.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4v6M5 2.5v9M7 4.5v5M9 3v8M11 5v4"/></svg>';
-                    audioIcon.style.flexShrink = '0';
-                    
-                    const audioName = document.createElement('span');
-                    audioName.className = 'layer-name';
-                    let displayName = this.audioTrack.name;
-                    if (displayName.length > 18) displayName = displayName.substring(0, 15) + '…';
-                    audioName.textContent = '♪ ' + displayName;
-                    audioName.style.color = '#8888cc';
-                    
-                    audioLabel.appendChild(audioIcon);
-                    audioLabel.appendChild(audioName);
-                    audioLabel.addEventListener('click', () => {
-                        this.audioLayerSelected = true;
-                        this.renderTimeline();
-                    });
-                    layersList.appendChild(audioLabel);
-                }
                 
                 // Set up document-level drag handlers (only once)
                 if (!this._frameDragBound) {
@@ -8667,15 +9113,15 @@
                             this.currentFrameIndex = state.index;
                             this.initializeFrame();
                             this.render();
-                            this.scrubAudio(state.index);
+                            this.scrubAudio(this.getPlayheadPosition());
                         }
                         
                         this._frameDragState = null;
                     });
                 }
                 
-                // Sync audio waveform
-                if (this.audioTrack) {
+                // Sync audio waveforms
+                if (this.audioTracks.length) {
                     this.renderAudioWaveform();
                     this.syncAudioLabelWidth();
                 }
@@ -8711,7 +9157,7 @@
                 const ruler = document.getElementById('scrubRulerInner');
                 ruler.innerHTML = '';
                 
-                const numFrames = this._maxFrameCount || Math.max(...this.layers.map(l => l.frames.length), this.currentFrameIndex + 1);
+                const numFrames = this._maxFrameCount || this.getTimelineLength();
                 const { cellW, padding } = this.getTimelineMetrics();
                 const totalWidth = padding + numFrames * cellW + 40;
                 ruler.style.width = totalWidth + 'px';
@@ -8767,7 +9213,7 @@
             }
             
             timelineZoomFit() {
-                const numFrames = this._maxFrameCount || Math.max(...this.layers.map(l => l.frames.length), this.currentFrameIndex + 1);
+                const numFrames = this._maxFrameCount || this.getTimelineLength();
                 if (numFrames === 0) return;
                 
                 const framesSection = document.getElementById('timelineFramesSection');
@@ -8786,7 +9232,8 @@
                 const framesSection = document.getElementById('timelineFramesSection');
                 
                 const { cellW, padding } = this.getTimelineMetrics();
-                const x = padding + this.currentFrameIndex * cellW + cellW / 2;
+                const timelinePos = this.getPlayheadPosition();
+                const x = padding + timelinePos * cellW + cellW / 2;
                 const visibleX = x - framesSection.scrollLeft;
                 
                 playhead.style.left = visibleX + 'px';
@@ -8796,15 +9243,14 @@
             scrollPlayheadIntoView() {
                 const framesSection = document.getElementById('timelineFramesSection');
                 const { cellW, padding } = this.getTimelineMetrics();
-                const x = padding + this.currentFrameIndex * cellW + cellW / 2;
+                const timelinePos = this.getPlayheadPosition();
+                const x = padding + timelinePos * cellW + cellW / 2;
                 const viewW = framesSection.clientWidth;
                 const margin = viewW * 0.25;
                 
-                // If playhead is near the right edge, scroll forward
                 if (x > framesSection.scrollLeft + viewW - margin) {
                     framesSection.scrollLeft = x - margin;
                 }
-                // If playhead is near the left edge (after loop), scroll back
                 else if (x < framesSection.scrollLeft + margin) {
                     framesSection.scrollLeft = Math.max(0, x - margin);
                 }
@@ -8897,7 +9343,8 @@
                             visible: layer.visible,
                             opacity: layer.opacity,
                             frames: frames,
-                            transformKeyframes: layer.transformKeyframes || []
+                            transformKeyframes: layer.transformKeyframes || [],
+                            startFrame: layer.startFrame || 0
                         });
                     }
                     
@@ -8913,14 +9360,18 @@
                         layers: layerData
                     };
                     
-                    // Include audio track if present
-                    if (this.audioTrack) {
-                        project.audioTrack = {
-                            name: this.audioTrack.name,
-                            mimeType: this.audioTrack.mimeType,
-                            volume: this.audioTrack.volume,
-                            base64: this.audioTrack.base64
-                        };
+                    // Include audio tracks if present
+                    if (this.audioTracks.length > 0) {
+                        project.audioTracks = this.audioTracks.map(t => ({
+                            name: t.name,
+                            mimeType: t.mimeType,
+                            volume: t.volume,
+                            muted: t.muted,
+                            base64: t.base64,
+                            startFrame: t.startFrame || 0
+                        }));
+                        // Legacy compat: also save first track as audioTrack
+                        project.audioTrack = project.audioTracks[0];
                     }
                     
                     const json = JSON.stringify(project);
@@ -9060,7 +9511,8 @@
                             visible: layerData.visible,
                             opacity: layerData.opacity,
                             frames: frames,
-                            transformKeyframes: layerData.transformKeyframes || []
+                            transformKeyframes: layerData.transformKeyframes || [],
+                            startFrame: layerData.startFrame || 0
                         });
                     }
                     
@@ -9077,30 +9529,40 @@
                     this.selectionRedoStack = [];
                     this.updateUndoRedoButtons();
                     
-                    // Restore audio track if present
-                    if (project.audioTrack && project.audioTrack.base64) {
+                    // Restore audio tracks if present
+                    this.audioTracks = [];
+                    this._audioTrackIdCounter = 0;
+                    
+                    // Support both new multi-track format and legacy single-track
+                    const savedTracks = project.audioTracks || (project.audioTrack ? [project.audioTrack] : []);
+                    
+                    for (const saved of savedTracks) {
+                        if (!saved || !saved.base64) continue;
                         try {
                             const ctx = this.getAudioContext();
-                            const arrayBuffer = this._base64ToArrayBuffer(project.audioTrack.base64);
+                            const arrayBuffer = this._base64ToArrayBuffer(saved.base64);
                             const audioBuffer = await ctx.decodeAudioData(arrayBuffer);
                             const waveformPeaks = this._generateWaveformPeaks(audioBuffer, 2000);
                             
-                            this.audioTrack = {
-                                name: project.audioTrack.name || 'Audio',
+                            this.audioTracks.push({
+                                id: ++this._audioTrackIdCounter,
+                                name: saved.name || 'Audio',
                                 audioBuffer: audioBuffer,
-                                base64: project.audioTrack.base64,
-                                mimeType: project.audioTrack.mimeType || 'audio/mpeg',
-                                volume: project.audioTrack.volume || 1.0,
+                                base64: saved.base64,
+                                mimeType: saved.mimeType || 'audio/mpeg',
+                                volume: saved.volume || 1.0,
+                                muted: saved.muted || false,
+                                startFrame: saved.startFrame || 0,
                                 waveformPeaks: waveformPeaks
-                            };
-                            this.showAudioTimeline();
+                            });
                         } catch (audioErr) {
-                            console.warn('Could not restore audio:', audioErr);
-                            this.audioTrack = null;
-                            this.hideAudioTimeline();
+                            console.warn('Could not restore audio track:', audioErr);
                         }
+                    }
+                    
+                    if (this.audioTracks.length > 0) {
+                        this.renderAudioTracks();
                     } else {
-                        this.audioTrack = null;
                         this.hideAudioTimeline();
                     }
                     
@@ -9257,7 +9719,7 @@
                     const zip = new JSZip();
                     
                     // Calculate max frames
-                    const maxFrames = Math.max(...this.layers.map(l => l.frames.length));
+                    const maxFrames = this.getTimelineLength();
                     
                     if (maxFrames === 0) {
                         alert('No frames to export!');
@@ -9369,7 +9831,7 @@
                     exportBtn.disabled = true;
                     
                     // Calculate total frames
-                    const maxFrames = Math.max(...this.layers.map(l => l.frames.length));
+                    const maxFrames = this.getTimelineLength();
                     
                     if (maxFrames === 0) {
                         alert('No frames to export!');
@@ -9471,7 +9933,7 @@
                     exportBtn.textContent = 'Creating MP4...';
                     exportBtn.disabled = true;
                     
-                    const maxFrames = Math.max(...this.layers.map(l => l.frames.length));
+                    const maxFrames = this.getTimelineLength();
                     
                     if (maxFrames === 0) {
                         alert('No frames to export!');
