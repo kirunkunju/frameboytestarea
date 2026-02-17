@@ -1700,20 +1700,13 @@
         }
         
         .frame.hold-frame {
-            border-color: #111;
             border-style: solid;
-        }
-        
-        .frame.hold-frame.active {
-            border-color: #0066cc;
         }
         
         .hold-badge {
             position: absolute;
             top: 2px;
             left: 2px;
-            background: rgba(0, 0, 0, 0.7);
-            color: #999;
             font-size: 7px;
             font-weight: bold;
             padding: 1px 3px;
@@ -1721,6 +1714,14 @@
             pointer-events: none;
             z-index: 2;
             letter-spacing: 0.5px;
+        }
+        
+        .hold-tint {
+            position: absolute;
+            inset: 0;
+            border-radius: 2px;
+            pointer-events: none;
+            z-index: 1;
         }
 
         .frame canvas {
@@ -2603,7 +2604,7 @@
                 <div class="dropdown-container">
                     <button id="shapeTool" title="Shapes"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="1.5" width="6" height="6" rx="0.5"/><circle cx="11" cy="11" r="3.5"/></svg> <span class="btn-label">Shapes ▼</span></button>
                     <div class="dropdown-menu" id="shapeDropdown">
-                        <button class="dropdown-item" data-shape="line"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M3 13L13 3"/></svg> Line</button>
+                        <button class="dropdown-item" data-shape="pen"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M2 13C5 9 7 5 14 3"/><circle cx="2" cy="13" r="1.5" fill="currentColor" stroke="none"/><circle cx="14" cy="3" r="1.5" fill="currentColor" stroke="none"/></svg> Pen<span class="shortcut">P</span></button>
                         <button class="dropdown-item" data-shape="rect"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="2" y="3" width="10" height="8" rx="0.5"/></svg> Rectangle</button>
                         <button class="dropdown-item" data-shape="circle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><circle cx="7" cy="7.5" r="5"/></svg> Circle</button>
                         <button class="dropdown-item" data-shape="triangle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M7 2l6 11H1z"/></svg> Triangle</button>
@@ -2749,7 +2750,7 @@
                     <div class="layers-header">
                         <span>Layers</span>
                         <div class="layer-buttons">
-                            <button class="add-layer-btn-inline" id="addLayerBtn" title="Add Layer">+</button>
+                            <button class="add-layer-btn-inline" id="addLayerBtn" title="Add Layer (⌘⇧N)">+</button>
                             <button class="add-layer-btn-inline" id="duplicateLayerBtn" title="Duplicate Layer"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="1" y="4" width="7" height="7" rx="1"/><rect x="5" y="1" width="7" height="7" rx="1"/></svg></button>
                             <button class="delete-layer-btn-inline" id="deleteLayerBtn" title="Delete Layer">-</button>
                         </div>
@@ -2912,6 +2913,13 @@
                 this.canvasContainer = document.getElementById('canvasContainer');
                 
                 this.shapeStart = null;
+                
+                // Pen tool state
+                this._penPoints = [];
+                this._penActive = false;
+                this._penDragIdx = -1;
+                this._penDragType = null;
+                this._penMousePos = null;
                 
                 // Panning state
                 this.isPanning = false;
@@ -3873,6 +3881,10 @@
                     canvasEl.addEventListener('dblclick', (e) => {
                         e.preventDefault();
                         e.stopPropagation();
+                        // Pen tool: double-click finalizes open path
+                        if (this.tool === 'pen' && this._penActive) {
+                            this._penFinalize(false);
+                        }
                     });
                     
                     canvasEl.addEventListener('contextmenu', (e) => {
@@ -4108,12 +4120,13 @@
                         
                         // Update button text to show selected shape
                         const icons = {
-                            'line': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M3 13L13 3"/></svg>',
+                            'pen': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M2 13C5 9 7 5 14 3"/><circle cx="2" cy="13" r="1.5" fill="currentColor" stroke="none"/><circle cx="14" cy="3" r="1.5" fill="currentColor" stroke="none"/></svg>',
                             'rect': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="2" y="3" width="10" height="8" rx="0.5"/></svg>',
                             'circle': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><circle cx="7" cy="7.5" r="5"/></svg>',
                             'triangle': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M7 2l6 11H1z"/></svg>'
                         };
-                        shapeButton.innerHTML = `${icons[shape]} <span class="btn-label">${item.textContent.split(' ')[1]} ▼</span>`;
+                        const names = { 'pen': 'Pen', 'rect': 'Rect', 'circle': 'Circle', 'triangle': 'Triangle' };
+                        shapeButton.innerHTML = `${icons[shape]} <span class="btn-label">${names[shape]} ▼</span>`;
                     });
                 });
                 
@@ -4288,6 +4301,9 @@
                         } else if (this.copiedFrame) {
                             this.pasteFrame();
                         }
+                    } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'n' || e.key === 'N')) {
+                        e.preventDefault();
+                        this.addLayer();
                     } else if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
                         e.preventDefault();
                         this.duplicateFrame();
@@ -4300,6 +4316,12 @@
                     } else if ((e.ctrlKey || e.metaKey) && e.key === '0') {
                         e.preventDefault();
                         this.zoomFit();
+                    } else if (e.key === 'Enter' && this._penActive) {
+                        e.preventDefault();
+                        this._penFinalize(false);
+                    } else if (e.key === 'Escape' && this._penActive) {
+                        e.preventDefault();
+                        this._penCancel();
                     } else if (e.key === 'Enter' && this.selection) {
                         e.preventDefault();
                         this.applySelection();
@@ -4338,6 +4360,10 @@
                             case 'l':
                                 e.preventDefault();
                                 this.selectTool('lasso');
+                                break;
+                            case 'p':
+                                e.preventDefault();
+                                this.selectTool('pen');
                                 break;
                             case 'v':
                             case 't':
@@ -4803,6 +4829,11 @@
             }
             
             selectTool(tool) {
+                // Finalize pen path when switching away from pen tool
+                if (this._penActive && tool !== 'pen') {
+                    this._penFinalize(false);
+                }
+                
                 this.tool = tool;
                 document.querySelectorAll('.toolbar button').forEach(btn => btn.classList.remove('active'));
                 const toolButton = document.getElementById(tool + 'Tool');
@@ -4816,6 +4847,11 @@
                 // For transform sub-tools, highlight the transformTool dropdown button
                 if (tool === 'transform' || tool === 'scale' || tool === 'rotate' || tool === 'skew' || tool === 'distort') {
                     document.getElementById('transformTool').classList.add('active');
+                }
+                
+                // For shape sub-tools, highlight the shapeTool dropdown button
+                if (tool === 'pen' || tool === 'rect' || tool === 'circle' || tool === 'triangle') {
+                    document.getElementById('shapeTool').classList.add('active');
                 }
                 
                 // Sync pill pan button
@@ -4847,6 +4883,10 @@
                     this.canvas.style.cursor = 'none';
                     this.selectionCanvas.style.cursor = 'none';
                 } else if (tool === 'fill' || tool === 'lasso') {
+                    this.canvas.style.cursor = 'crosshair';
+                    this.selectionCanvas.style.cursor = 'crosshair';
+                    this.brushCursor.style.display = 'none';
+                } else if (tool === 'pen') {
                     this.canvas.style.cursor = 'crosshair';
                     this.selectionCanvas.style.cursor = 'crosshair';
                     this.brushCursor.style.display = 'none';
@@ -5290,6 +5330,66 @@
                     return;
                 }
                 
+                // === Pen Tool ===
+                if (this.tool === 'pen') {
+                    const rect = this.canvas.getBoundingClientRect();
+                    const scaleX = this.canvas.width / rect.width;
+                    const scaleY = this.canvas.height / rect.height;
+                    const x = (e.clientX - rect.left) * scaleX;
+                    const y = (e.clientY - rect.top) * scaleY;
+                    const hitRadius = 10 / (rect.width / this.canvas.width);
+                    
+                    if (!this._penActive) {
+                        // Save state before first pen point
+                        this.saveState();
+                    }
+                    
+                    // Check if clicking near first point to close path
+                    if (this._penPoints.length >= 2) {
+                        const fp = this._penPoints[0];
+                        if (Math.hypot(x - fp.x, y - fp.y) < hitRadius) {
+                            this._penFinalize(true);
+                            return;
+                        }
+                        // Tap last point to finalize as open path
+                        const lp = this._penPoints[this._penPoints.length - 1];
+                        if (Math.hypot(x - lp.x, y - lp.y) < hitRadius) {
+                            this._penFinalize(false);
+                            return;
+                        }
+                    }
+                    
+                    // Check if clicking an existing point/handle to drag
+                    for (let i = 0; i < this._penPoints.length; i++) {
+                        const pt = this._penPoints[i];
+                        if (Math.hypot(x - pt.x, y - pt.y) < hitRadius) {
+                            this._penDragIdx = i;
+                            this._penDragType = 'point';
+                            this._penDragStart = { x, y, origX: pt.x, origY: pt.y };
+                            return;
+                        }
+                        if (pt.handleOut && Math.hypot(x - pt.handleOut.x, y - pt.handleOut.y) < hitRadius) {
+                            this._penDragIdx = i;
+                            this._penDragType = 'handleOut';
+                            return;
+                        }
+                        if (pt.handleIn && Math.hypot(x - pt.handleIn.x, y - pt.handleIn.y) < hitRadius) {
+                            this._penDragIdx = i;
+                            this._penDragType = 'handleIn';
+                            return;
+                        }
+                    }
+                    
+                    // Add new point
+                    this._penActive = true;
+                    this._penPoints.push({ x, y, handleIn: null, handleOut: null });
+                    this._penDragIdx = this._penPoints.length - 1;
+                    this._penDragType = 'newHandle';
+                    this._penNewHandleOrigin = { x, y };
+                    this._penRenderPreview();
+                    return;
+                }
+                
                 // Draw FIRST for instant visual feedback (critical for iPad)
                 this.isDrawing = true;
                 const rect = this.canvas.getBoundingClientRect();
@@ -5339,6 +5439,55 @@
                 // Skew/Distort: show move cursor on handles
                 if ((this.tool === 'skew' || this.tool === 'distort') && this.selection && !this.isDrawing && !this.isTransforming) {
                     this._checkSkewDistortCursor(e);
+                }
+                
+                // Pen tool: handle drag and preview
+                if (this.tool === 'pen') {
+                    const rect = this.canvas.getBoundingClientRect();
+                    const scaleX = this.canvas.width / rect.width;
+                    const scaleY = this.canvas.height / rect.height;
+                    const x = (e.clientX - rect.left) * scaleX;
+                    const y = (e.clientY - rect.top) * scaleY;
+                    
+                    this._penMousePos = { x, y };
+                    
+                    if (this._penDragIdx >= 0) {
+                        const pt = this._penPoints[this._penDragIdx];
+                        if (this._penDragType === 'newHandle') {
+                            // Creating handles on new point by dragging
+                            const ox = this._penNewHandleOrigin.x;
+                            const oy = this._penNewHandleOrigin.y;
+                            const dx = x - ox, dy = y - oy;
+                            if (Math.hypot(dx, dy) > 3) {
+                                pt.handleOut = { x, y };
+                                pt.handleIn = { x: ox - dx, y: oy - dy };
+                            }
+                        } else if (this._penDragType === 'handleOut') {
+                            pt.handleOut = { x, y };
+                            pt.handleIn = { x: pt.x * 2 - x, y: pt.y * 2 - y };
+                        } else if (this._penDragType === 'handleIn') {
+                            pt.handleIn = { x, y };
+                            pt.handleOut = { x: pt.x * 2 - x, y: pt.y * 2 - y };
+                        } else if (this._penDragType === 'point') {
+                            const dx = x - this._penDragStart.x;
+                            const dy = y - this._penDragStart.y;
+                            pt.x = this._penDragStart.origX + dx;
+                            pt.y = this._penDragStart.origY + dy;
+                            if (pt.handleIn) {
+                                pt.handleIn.x += (x - (this._penDragStart.lastX || this._penDragStart.x));
+                                pt.handleIn.y += (y - (this._penDragStart.lastY || this._penDragStart.y));
+                            }
+                            if (pt.handleOut) {
+                                pt.handleOut.x += (x - (this._penDragStart.lastX || this._penDragStart.x));
+                                pt.handleOut.y += (y - (this._penDragStart.lastY || this._penDragStart.y));
+                            }
+                            this._penDragStart.lastX = x;
+                            this._penDragStart.lastY = y;
+                        }
+                    }
+                    
+                    this._penRenderPreview();
+                    return;
                 }
                 
                 if (!this.isDrawing && !this.isTransforming) return;
@@ -5565,6 +5714,14 @@
             }
             
             stopDrawing() {
+                // Pen tool: just stop dragging (don't finalize)
+                if (this.tool === 'pen') {
+                    this._penDragIdx = -1;
+                    this._penDragType = null;
+                    this._penDragStart = null;
+                    return;
+                }
+                
                 if (!this.isDrawing && !this.isTransforming) return;
                 
                 // Reset stroke state flag for next stroke
@@ -5594,7 +5751,7 @@
                     return;
                 }
                 
-                if (['line', 'rect', 'circle', 'triangle'].includes(this.tool) && this.shapeStart) {
+                if (['rect', 'circle', 'triangle'].includes(this.tool) && this.shapeStart) {
                     // Get current mouse position from last draw
                     const rect = this.canvas.getBoundingClientRect();
                     const scaleX = this.canvas.width / rect.width;
@@ -5724,13 +5881,9 @@
                     const absDx = Math.abs(dx);
                     const absDy = Math.abs(dy);
                     
-                    if (this.tool === 'line') {
-                        // Snap to nearest 45° angle
-                        const angle = Math.atan2(dy, dx);
-                        const snapAngle = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
-                        const dist = Math.sqrt(dx * dx + dy * dy);
-                        sx2 = x1 + Math.cos(snapAngle) * dist;
-                        sy2 = y1 + Math.sin(snapAngle) * dist;
+                    if (this.tool === 'pen') {
+                        // Pen tool handled separately
+                        return;
                     } else {
                         // Force square aspect ratio for rect, circle, triangle
                         const size = Math.max(absDx, absDy);
@@ -5740,7 +5893,7 @@
                 }
                 
                 // Draw from center when alt/option is held
-                if (altKey && this.tool !== 'line') {
+                if (altKey && this.tool !== 'pen') {
                     const dx = sx2 - sx1;
                     const dy = sy2 - sy1;
                     sx1 = x1 - dx;
@@ -5750,12 +5903,7 @@
                 }
                 
                 const drawShapeOnCtx = (ctx) => {
-                    if (this.tool === 'line') {
-                        ctx.beginPath();
-                        ctx.moveTo(sx1, sy1);
-                        ctx.lineTo(sx2, sy2);
-                        ctx.stroke();
-                    } else if (this.tool === 'rect') {
+                    if (this.tool === 'rect') {
                         ctx.strokeRect(sx1, sy1, sx2 - sx1, sy2 - sy1);
                     } else if (this.tool === 'circle') {
                         // Draw ellipse inscribed in bounding box (corner-to-corner)
@@ -5803,6 +5951,200 @@
                     frameCtx.globalCompositeOperation = 'source-over';
                     drawShapeOnCtx(frameCtx);
                 }
+            }
+            
+            // === Pen Tool Methods ===
+            
+            _penBuildPath(ctx, points, close) {
+                if (points.length < 1) return;
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y);
+                
+                for (let i = 1; i < points.length; i++) {
+                    const prev = points[i - 1];
+                    const curr = points[i];
+                    const cp1 = prev.handleOut || prev;
+                    const cp2 = curr.handleIn || curr;
+                    
+                    if (cp1 === prev && cp2 === curr) {
+                        ctx.lineTo(curr.x, curr.y);
+                    } else {
+                        ctx.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, curr.x, curr.y);
+                    }
+                }
+                
+                if (close && points.length > 1) {
+                    const last = points[points.length - 1];
+                    const first = points[0];
+                    const cp1 = last.handleOut || last;
+                    const cp2 = first.handleIn || first;
+                    if (cp1 === last && cp2 === first) {
+                        ctx.lineTo(first.x, first.y);
+                    } else {
+                        ctx.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, first.x, first.y);
+                    }
+                    ctx.closePath();
+                }
+            }
+            
+            _penRenderPreview() {
+                const points = this._penPoints;
+                if (points.length === 0) return;
+                
+                // Redraw canvas
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                const playheadPos = this.getPlayheadPosition();
+                for (const layer of this.layers) {
+                    this.drawLayerWithTransform(this.ctx, layer, playheadPos);
+                }
+                
+                // Draw the path
+                this.ctx.save();
+                this.ctx.strokeStyle = this.color;
+                this.ctx.lineWidth = this.brushSize;
+                this.ctx.lineCap = 'round';
+                this.ctx.lineJoin = 'round';
+                
+                this._penBuildPath(this.ctx, points, false);
+                
+                // Preview segment from last point to mouse
+                if (this._penMousePos && this._penDragIdx < 0 && points.length >= 1) {
+                    const last = points[points.length - 1];
+                    const first = points[0];
+                    const distLast = Math.hypot(this._penMousePos.x - last.x, this._penMousePos.y - last.y);
+                    const distFirst = points.length >= 2 ? Math.hypot(this._penMousePos.x - first.x, this._penMousePos.y - first.y) : Infinity;
+                    const hitR = 10 * (this.canvas.width / this.canvas.getBoundingClientRect().width);
+                    
+                    if (distLast > hitR) {
+                        // Near first point: show closing segment snapped to first point
+                        const target = (distFirst < hitR) ? first : this._penMousePos;
+                        const cp1 = last.handleOut || last;
+                        const cp2 = (distFirst < hitR && first.handleIn) ? first.handleIn : target;
+                        if (cp1 === last && cp2 === target) {
+                            this.ctx.lineTo(target.x, target.y);
+                        } else {
+                            this.ctx.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, target.x, target.y);
+                        }
+                    }
+                }
+                
+                this.ctx.stroke();
+                this.ctx.restore();
+                
+                // Draw control points overlay
+                const dpr = this.canvas.width / this.canvas.getBoundingClientRect().width;
+                const ptRadius = 4 * dpr;
+                const handleRadius = 3 * dpr;
+                
+                for (let i = 0; i < points.length; i++) {
+                    const pt = points[i];
+                    
+                    // Handle lines + dots
+                    this.ctx.save();
+                    this.ctx.lineWidth = 1;
+                    this.ctx.strokeStyle = 'rgba(0,180,255,0.7)';
+                    
+                    if (pt.handleIn) {
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(pt.x, pt.y);
+                        this.ctx.lineTo(pt.handleIn.x, pt.handleIn.y);
+                        this.ctx.stroke();
+                        // Handle dot
+                        this.ctx.fillStyle = '#0bf';
+                        this.ctx.beginPath();
+                        this.ctx.arc(pt.handleIn.x, pt.handleIn.y, handleRadius, 0, Math.PI * 2);
+                        this.ctx.fill();
+                    }
+                    
+                    if (pt.handleOut) {
+                        this.ctx.beginPath();
+                        this.ctx.moveTo(pt.x, pt.y);
+                        this.ctx.lineTo(pt.handleOut.x, pt.handleOut.y);
+                        this.ctx.stroke();
+                        this.ctx.fillStyle = '#0bf';
+                        this.ctx.beginPath();
+                        this.ctx.arc(pt.handleOut.x, pt.handleOut.y, handleRadius, 0, Math.PI * 2);
+                        this.ctx.fill();
+                    }
+                    this.ctx.restore();
+                    
+                    // Anchor point square
+                    this.ctx.save();
+                    this.ctx.fillStyle = i === 0 ? '#fff' : '#0bf';
+                    this.ctx.strokeStyle = '#000';
+                    this.ctx.lineWidth = 1;
+                    const s = ptRadius;
+                    this.ctx.fillRect(pt.x - s, pt.y - s, s * 2, s * 2);
+                    this.ctx.strokeRect(pt.x - s, pt.y - s, s * 2, s * 2);
+                    this.ctx.restore();
+                }
+                
+                // Close indicator: circle around first point when mouse is near
+                if (points.length >= 2 && this._penMousePos) {
+                    const fp = points[0];
+                    const lp = points[points.length - 1];
+                    const hitRadius = 10 * dpr;
+                    const distFirst = Math.hypot(this._penMousePos.x - fp.x, this._penMousePos.y - fp.y);
+                    const distLast = Math.hypot(this._penMousePos.x - lp.x, this._penMousePos.y - lp.y);
+                    
+                    if (distFirst < hitRadius) {
+                        // Green circle = close path
+                        this.ctx.save();
+                        this.ctx.strokeStyle = '#0f0';
+                        this.ctx.lineWidth = 2;
+                        this.ctx.beginPath();
+                        this.ctx.arc(fp.x, fp.y, ptRadius + 4, 0, Math.PI * 2);
+                        this.ctx.stroke();
+                        this.ctx.restore();
+                    } else if (distLast < hitRadius) {
+                        // Orange circle = finalize open path
+                        this.ctx.save();
+                        this.ctx.strokeStyle = '#f90';
+                        this.ctx.lineWidth = 2;
+                        this.ctx.beginPath();
+                        this.ctx.arc(lp.x, lp.y, ptRadius + 4, 0, Math.PI * 2);
+                        this.ctx.stroke();
+                        this.ctx.restore();
+                    }
+                }
+            }
+            
+            _penFinalize(close) {
+                if (this._penPoints.length < 2) {
+                    this._penCancel();
+                    return;
+                }
+                
+                const layer = this.getCurrentLayer();
+                const frame = layer.frames[this.currentFrameIndex];
+                if (!frame) return;
+                
+                const frameCtx = frame.getContext('2d');
+                frameCtx.strokeStyle = this.color;
+                frameCtx.lineWidth = this.brushSize;
+                frameCtx.lineCap = 'round';
+                frameCtx.lineJoin = 'round';
+                frameCtx.globalCompositeOperation = 'source-over';
+                
+                this._penBuildPath(frameCtx, this._penPoints, close);
+                frameCtx.stroke();
+                
+                this._penPoints = [];
+                this._penActive = false;
+                this._penDragIdx = -1;
+                this._penDragType = null;
+                this._penMousePos = null;
+                this.render();
+            }
+            
+            _penCancel() {
+                this._penPoints = [];
+                this._penActive = false;
+                this._penDragIdx = -1;
+                this._penDragType = null;
+                this._penMousePos = null;
+                this.undo(); // Revert the state save from pen start
+                this.render();
             }
             
             clearCurrentFrame() {
@@ -8798,11 +9140,25 @@
                     row.className = 'layer-frames-row ' + rowCls;
                     row.dataset.layerId = layer.id;
                     
-                    // Build hold frame set for this layer
+                    // Build hold frame set for this layer with per-group colors
                     const holdGroups = this.getHoldGroups(layer);
                     const holdFrameSet = new Set();
-                    for (const [, indices] of holdGroups) {
-                        for (const idx of indices) holdFrameSet.add(idx);
+                    const holdColorMap = new Map(); // frameIndex -> { color, isSource }
+                    const holdPalette = [
+                        '#6ea8fe', '#f7a072', '#7ee8a2', '#d4a0f5',
+                        '#f06292', '#ffe066', '#4dd0e1', '#ffab91',
+                    ];
+                    let groupIdx = 0;
+                    for (const [canvas, indices] of holdGroups) {
+                        const color = holdPalette[groupIdx % holdPalette.length];
+                        groupIdx++;
+                        // Find the source (earliest index)
+                        const sorted = [...indices].sort((a, b) => a - b);
+                        const sourceIdx = sorted[0];
+                        for (const idx of sorted) {
+                            holdFrameSet.add(idx);
+                            holdColorMap.set(idx, { color, isSource: idx === sourceIdx });
+                        }
                     }
                     
                     const offset = layer.startFrame || 0;
@@ -8885,12 +9241,33 @@
                         frameDiv.dataset.timelinePos = timelinePos;
                         frameDiv.dataset.layerId = layer.id;
                         
-                        // Hold badge
+                        // Hold badge + color coding
                         if (holdFrameSet.has(i)) {
-                            const badge = document.createElement('div');
-                            badge.className = 'hold-badge';
-                            badge.textContent = 'H';
-                            frameDiv.appendChild(badge);
+                            const hc = holdColorMap.get(i);
+                            const isActiveFrame = isActive && timelinePos === playheadPos;
+                            if (hc) {
+                                // Tinted border (unless this is the active frame)
+                                if (!isActiveFrame) {
+                                    frameDiv.style.borderColor = hc.color + '88';
+                                }
+                                // Source frame: colored left bar
+                                if (hc.isSource) {
+                                    frameDiv.style.borderLeftWidth = '4px';
+                                    frameDiv.style.borderLeftColor = hc.color;
+                                }
+                                // Badge with group color
+                                const badge = document.createElement('div');
+                                badge.className = 'hold-badge';
+                                badge.textContent = hc.isSource ? 'S' : 'H';
+                                badge.style.background = hc.color + 'cc';
+                                badge.style.color = '#111';
+                                frameDiv.appendChild(badge);
+                                // Subtle tint overlay
+                                const tint = document.createElement('div');
+                                tint.className = 'hold-tint';
+                                tint.style.background = hc.color + '18';
+                                frameDiv.appendChild(tint);
+                            }
                         }
                         
                         // Keyframe diamond
