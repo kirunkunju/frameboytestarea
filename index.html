@@ -1708,6 +1708,35 @@
             border-color: #0066cc;
         }
         
+        .frame-select-banner {
+            display: none;
+            background: #1a3a5a;
+            color: #7bb8f0;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 12px;
+            text-align: center;
+            border-bottom: 1px solid #4a9eff44;
+            letter-spacing: 0.3px;
+        }
+        
+        .frame-select-banner.show {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .frame-select-banner .done-btn {
+            background: #4a9eff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 2px 10px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
         .frame.hold-frame {
             border-style: solid;
         }
@@ -2772,6 +2801,10 @@
                         <div class="scrub-ruler-inner" id="scrubRulerInner"></div>
                     </div>
                     <div class="timeline-frames-section" id="timelineFramesSection">
+                        <div class="frame-select-banner" id="frameSelectBanner">
+                            <span id="frameSelectCount">Select frames</span>
+                            <button class="done-btn" id="frameSelectDone">Done</button>
+                        </div>
                         <div class="frames-container" id="framesContainer"></div>
                     </div>
                     <div class="curve-editor" id="curveEditor">
@@ -2979,6 +3012,8 @@
                 this.copiedFrame = null; // For frame copy/paste
                 this.copiedFrames = []; // For multi-frame copy/paste
                 this.selectedFrames = new Set(); // Multi-frame selection (indices)
+                this.frameSelectMode = false; // Long-press selection mode (iPad)
+                this._longPressTimer = null;
                 this.contextMenuFrameIndex = null; // Track which frame was right-clicked
                 this.selectionUndoStack = []; // Transform-level undo within floating selection
                 this.selectionRedoStack = []; // Transform-level redo within floating selection
@@ -4219,6 +4254,11 @@
                         this.copySelection();
                     } else {
                         this.copyFrame();
+                        if (this.frameSelectMode) {
+                            this.frameSelectMode = false;
+                            document.getElementById('frameSelectBanner').classList.remove('show');
+                            this.renderTimeline();
+                        }
                     }
                 });
                 document.getElementById('pasteBtn').addEventListener('click', () => {
@@ -4292,6 +4332,11 @@
                             this.copySelection();
                         } else {
                             this.copyFrame();
+                            if (this.frameSelectMode) {
+                                this.frameSelectMode = false;
+                                document.getElementById('frameSelectBanner').classList.remove('show');
+                                this.renderTimeline();
+                            }
                         }
                     } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'v' || e.key === 'V')) {
                         e.preventDefault();
@@ -4320,6 +4365,9 @@
                     } else if ((e.ctrlKey || e.metaKey) && e.key === '0') {
                         e.preventDefault();
                         this.zoomFit();
+                    } else if (e.key === 'Escape' && this.frameSelectMode) {
+                        e.preventDefault();
+                        this.exitFrameSelectMode();
                     } else if (e.key === 'Enter' && this._penActive) {
                         e.preventDefault();
                         this._penFinalize(false);
@@ -4563,6 +4611,7 @@
                 document.getElementById('holdFrame').addEventListener('click', () => this.holdFrame());
                 document.getElementById('duplicateFrame').addEventListener('click', () => this.duplicateFrame());
                 document.getElementById('deleteFrame').addEventListener('click', () => this.deleteCurrentFrame());
+                document.getElementById('frameSelectDone').addEventListener('click', () => this.exitFrameSelectMode());
                 document.getElementById('fpsInput').addEventListener('change', (e) => {
                     this.fps = parseInt(e.target.value);
                     if (this.audioTracks.length) this.renderAudioWaveform();
@@ -6336,9 +6385,39 @@
                 this.render();
             }
             
+            enterFrameSelectMode(initialFrameIdx) {
+                this.frameSelectMode = true;
+                this.selectedFrames.clear();
+                if (initialFrameIdx !== undefined) {
+                    this.selectedFrames.add(initialFrameIdx);
+                }
+                this._updateSelectBanner();
+                document.getElementById('frameSelectBanner').classList.add('show');
+                this.renderTimeline();
+            }
+            
+            exitFrameSelectMode() {
+                this.frameSelectMode = false;
+                this.selectedFrames.clear();
+                this._longPressTimer = null;
+                document.getElementById('frameSelectBanner').classList.remove('show');
+                this.renderTimeline();
+            }
+            
+            _updateSelectBanner() {
+                const count = this.selectedFrames.size;
+                const el = document.getElementById('frameSelectCount');
+                if (count === 0) {
+                    el.textContent = 'Tap frames to select';
+                } else {
+                    el.textContent = count + ' frame' + (count > 1 ? 's' : '') + ' selected';
+                }
+            }
+            
             previousFrame() {
                 this.commitSelection();
-                this.selectedFrames.clear();
+                if (this.frameSelectMode) this.exitFrameSelectMode();
+                else this.selectedFrames.clear();
                 if (this.currentFrameIndex > 0) {
                     this.currentFrameIndex--;
                     this.initializeFrame();
@@ -6349,7 +6428,8 @@
             
             goToNextFrame() {
                 this.commitSelection();
-                this.selectedFrames.clear();
+                if (this.frameSelectMode) this.exitFrameSelectMode();
+                else this.selectedFrames.clear();
                 const layer = this.getCurrentLayer();
                 if (this.currentFrameIndex < layer.frames.length - 1) {
                     this.currentFrameIndex++;
@@ -6361,7 +6441,8 @@
             
             nextFrame() {
                 this.commitSelection();
-                this.selectedFrames.clear();
+                if (this.frameSelectMode) this.exitFrameSelectMode();
+                else this.selectedFrames.clear();
                 const layer = this.getCurrentLayer();
                 if (this.currentFrameIndex < layer.frames.length - 1) {
                     this.currentFrameIndex++;
@@ -7048,6 +7129,10 @@
                     this.currentFrameIndex = Math.min(minDeleted, layer.frames.length - 1);
                     if (this.currentFrameIndex < 0) this.currentFrameIndex = 0;
                     this.selectedFrames.clear();
+                    if (this.frameSelectMode) {
+                        this.frameSelectMode = false;
+                        document.getElementById('frameSelectBanner').classList.remove('show');
+                    }
                     this.render();
                     return;
                 }
@@ -7067,6 +7152,10 @@
                 }
                 
                 this.selectedFrames.clear();
+                if (this.frameSelectMode) {
+                    this.frameSelectMode = false;
+                    document.getElementById('frameSelectBanner').classList.remove('show');
+                }
                 this.render();
             }
             
@@ -8227,7 +8316,8 @@
             play(modeOverride) {
                 if (this.isPlaying) return;
                 this.commitSelection();
-                this.selectedFrames.clear();
+                if (this.frameSelectMode) this.exitFrameSelectMode();
+                else this.selectedFrames.clear();
                 this.isPlaying = true;
                 
                 const mode = modeOverride || this.playbackMode;
@@ -9506,6 +9596,18 @@
                             if (e.button && e.button !== 0) return;
                             e.preventDefault();
                             
+                            // === Selection mode: tap toggles frames ===
+                            if (this.frameSelectMode && layerRef.id === this.currentLayerId) {
+                                if (this.selectedFrames.has(frameIdx)) {
+                                    this.selectedFrames.delete(frameIdx);
+                                } else {
+                                    this.selectedFrames.add(frameIdx);
+                                }
+                                this._updateSelectBanner();
+                                this.renderTimeline();
+                                return;
+                            }
+                            
                             // If clicking a non-active layer, switch to it
                             if (layerRef.id !== this.currentLayerId) {
                                 this.commitSelection();
@@ -9535,6 +9637,45 @@
                             if (this.selectedFrames.size > 0) {
                                 this.selectedFrames.clear();
                             }
+                            
+                            // --- Long-press detection for touch ---
+                            const lpStartX = e.clientX;
+                            const lpStartY = e.clientY;
+                            
+                            if (this._longPressTimer) {
+                                clearTimeout(this._longPressTimer);
+                                this._longPressTimer = null;
+                            }
+                            
+                            this._longPressTimer = setTimeout(() => {
+                                this._longPressTimer = null;
+                                // Enter selection mode with this frame
+                                this.currentFrameIndex = frameIdx;
+                                this.enterFrameSelectMode(frameIdx);
+                            }, 400);
+                            
+                            // Cancel long-press if pointer moves too much
+                            const lpMoveCancel = (ev) => {
+                                if (Math.abs(ev.clientX - lpStartX) > 8 || Math.abs(ev.clientY - lpStartY) > 8) {
+                                    if (this._longPressTimer) {
+                                        clearTimeout(this._longPressTimer);
+                                        this._longPressTimer = null;
+                                    }
+                                    document.removeEventListener('pointermove', lpMoveCancel);
+                                }
+                            };
+                            const lpUpCancel = () => {
+                                if (this._longPressTimer) {
+                                    clearTimeout(this._longPressTimer);
+                                    this._longPressTimer = null;
+                                }
+                                document.removeEventListener('pointermove', lpMoveCancel);
+                                document.removeEventListener('pointerup', lpUpCancel);
+                                document.removeEventListener('pointercancel', lpUpCancel);
+                            };
+                            document.addEventListener('pointermove', lpMoveCancel);
+                            document.addEventListener('pointerup', lpUpCancel);
+                            document.addEventListener('pointercancel', lpUpCancel);
                             
                             // Active layer: navigate to local frame
                             if (frameIdx !== this.currentFrameIndex) {
