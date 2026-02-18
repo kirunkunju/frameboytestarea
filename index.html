@@ -2979,6 +2979,7 @@
                 this.hasStylusInput = false; // True once we detect real pen/stylus pressure (for pressure detection)
                 this.strokeStateSaved = false; // Track if we've saved undo state for current stroke
                 this._pendingSaveTimer = null; // Track async saveState timer
+                this._pendingSnapshot = null; // Pre-stroke snapshot for undo
                 this.activePointerId = null; // Track which pointer is currently drawing
                 
                 // Audio system
@@ -5074,6 +5075,7 @@
                             name: layer.name,
                             visible: layer.visible,
                             opacity: layer.opacity,
+                            startFrame: layer.startFrame || 0,
                             frames: layer.frames.map((frame, fi) => {
                                 if (!frame) return null;
                                 if (canvasIdMap.has(frame)) {
@@ -5139,7 +5141,12 @@
                 if (this._pendingSaveTimer) {
                     clearTimeout(this._pendingSaveTimer);
                     this._pendingSaveTimer = null;
-                    this.saveState();
+                    if (this._pendingSnapshot) {
+                        this._pushUndo(this._pendingSnapshot);
+                        this._pendingSnapshot = null;
+                    } else {
+                        this.saveState();
+                    }
                 }
                 
                 if (this.selection && this.selectionUndoStack.length > 0) {
@@ -5165,7 +5172,12 @@
                 if (this._pendingSaveTimer) {
                     clearTimeout(this._pendingSaveTimer);
                     this._pendingSaveTimer = null;
-                    this.saveState();
+                    if (this._pendingSnapshot) {
+                        this._pushUndo(this._pendingSnapshot);
+                        this._pendingSnapshot = null;
+                    } else {
+                        this.saveState();
+                    }
                 }
                 
                 if (this.selection && this.selectionRedoStack.length > 0) {
@@ -5207,6 +5219,7 @@
                     name: layer.name,
                     visible: layer.visible,
                     opacity: layer.opacity,
+                    startFrame: layer.startFrame || 0,
                     transformKeyframes: (layer.transformKeyframes || []).map(kf => ({...kf})),
                     frames: (() => {
                         const canvasMap = new Map();
@@ -5413,6 +5426,12 @@
                 this.smoothY = this.lastY;
                 
                 if (this.tool === 'brush' || this.tool === 'eraser') {
+                    // Capture undo snapshot BEFORE the first mark goes down
+                    if (!this.strokeStateSaved) {
+                        this.strokeStateSaved = true;
+                        this._pendingSnapshot = this.snapshotFrame();
+                    }
+                    
                     // Shift+click = straight line from last stroke end (Photoshop-style)
                     if (e.shiftKey && this._lastStrokeEnd) {
                         this.drawLine(this._lastStrokeEnd.x, this._lastStrokeEnd.y, this.lastX, this.lastY);
@@ -5421,16 +5440,29 @@
                         this._lastStrokeEnd = { x: this.lastX, y: this.lastY };
                     }
                     this.drawPoint(this.lastX, this.lastY);
+                    
+                    // Push the pre-stroke snapshot to undo stack asynchronously
+                    // (the snapshot is already captured — this just defers the stack push)
+                    if (this._pendingSnapshot) {
+                        const snap = this._pendingSnapshot;
+                        this._pendingSnapshot = null;
+                        this._pendingSaveTimer = setTimeout(() => {
+                            this._pendingSaveTimer = null;
+                            this._pushUndo(snap);
+                            this.updateUndoRedoButtons();
+                        }, 0);
+                    }
                 }
                 
-                // THEN save state asynchronously (doesn't block drawing)
-                // This prevents the 20-50ms blocking that causes dropped strokes on iPad
-                if (!this.strokeStateSaved) {
-                    this.strokeStateSaved = true;
-                    this._pendingSaveTimer = setTimeout(() => {
-                        this._pendingSaveTimer = null;
-                        this.saveState();
-                    }, 0);
+                // For shape tools, save state asynchronously as before
+                if (this.tool !== 'brush' && this.tool !== 'eraser') {
+                    if (!this.strokeStateSaved) {
+                        this.strokeStateSaved = true;
+                        this._pendingSaveTimer = setTimeout(() => {
+                            this._pendingSaveTimer = null;
+                            this.saveState();
+                        }, 0);
+                    }
                 }
             }
             
@@ -6327,6 +6359,7 @@
             
             insertFrameAfterCurrent() {
                 this.commitSelection();
+                this.saveFullState();
                 const layer = this.getCurrentLayer();
                 const newFrame = this.createEmptyFrame();
                 const newFrameIndex = this.currentFrameIndex + 1;
@@ -7920,7 +7953,13 @@
                 if (this._pendingSaveTimer) {
                     clearTimeout(this._pendingSaveTimer);
                     this._pendingSaveTimer = null;
-                    this.saveState();
+                    // Push the pre-captured snapshot if available, otherwise take a new one
+                    if (this._pendingSnapshot) {
+                        this._pushUndo(this._pendingSnapshot);
+                        this._pendingSnapshot = null;
+                    } else {
+                        this.saveState();
+                    }
                 }
                 
                 const layer = this.getCurrentLayer();
@@ -9734,6 +9773,7 @@
             }
             
             reorderFrames(fromIndex, toIndex) {
+                this.saveFullState();
                 const layer = this.getCurrentLayer();
                 
                 // Remove the frame from its original position
