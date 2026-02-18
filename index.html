@@ -2895,6 +2895,7 @@
                 this.isDrawing = false;
                 this.lastX = 0;
                 this.lastY = 0;
+                this._lastStrokeEnd = null; // For shift+click straight line
                 this.onionSkinEnabled = true;
                 this.onionSkinOpacity = 0.30;
                 this.onionFramesBefore = 1;
@@ -5402,6 +5403,13 @@
                 this.smoothY = this.lastY;
                 
                 if (this.tool === 'brush' || this.tool === 'eraser') {
+                    // Shift+click = straight line from last stroke end (Photoshop-style)
+                    if (e.shiftKey && this._lastStrokeEnd) {
+                        this.drawLine(this._lastStrokeEnd.x, this._lastStrokeEnd.y, this.lastX, this.lastY);
+                        this._lastStrokeEnd = { x: this.lastX, y: this.lastY };
+                    } else {
+                        this._lastStrokeEnd = { x: this.lastX, y: this.lastY };
+                    }
                     this.drawPoint(this.lastX, this.lastY);
                 }
                 
@@ -5511,7 +5519,7 @@
                 
                 // Handle transform / scale / rotate
                 if (this.tool === 'transform' || this.tool === 'scale' || this.tool === 'rotate' || this.tool === 'skew' || this.tool === 'distort') {
-                    if (this.isTransforming) this.performTransform(x, y);
+                    if (this.isTransforming) this.performTransform(x, y, e);
                     return;
                 }
                 
@@ -5763,6 +5771,11 @@
                         const y = (mouseEvent.clientY - rect.top) * scaleY;
                         this.drawShape(this.shapeStart.x, this.shapeStart.y, x, y, false, mouseEvent.shiftKey, mouseEvent.altKey);
                     }
+                }
+                
+                // Save last position for shift+click straight line
+                if (this.tool === 'brush' || this.tool === 'eraser') {
+                    this._lastStrokeEnd = { x: this.lastX, y: this.lastY };
                 }
                 
                 this.isDrawing = false;
@@ -7349,11 +7362,13 @@
                 }
             }
             
-            performTransform(x, y) {
+            performTransform(x, y, e) {
                 if (!this.selection || !this.activeHandle || !this.transformStart) return;
                 
                 const dx = x - this.transformStart.x;
                 const dy = y - this.transformStart.y;
+                const shiftKey = e ? e.shiftKey : false;
+                const altKey = e ? e.altKey : false;
                 
                 if (this.activeHandle.type === 'move') {
                     // Move selection and anchor point together
@@ -7403,20 +7418,66 @@
                         this.transformStart = { x, y };
                     } else {
                         // Corner handles: resize as normal
-                        this._performResize(dx, dy);
+                        this._performResize(dx, dy, shiftKey, altKey, x, y);
                     }
                 } else {
                     // Resize selection
-                    this._performResize(dx, dy);
+                    this._performResize(dx, dy, shiftKey, altKey, x, y);
                 }
                 
                 this.showTransformHandles();
                 this.render();
             }
             
-            _performResize(dx, dy) {
+            _performResize(dx, dy, shiftKey, altKey, rawX, rawY) {
                 const b = this.selection.bounds;
                 const type = this.activeHandle.type;
+                
+                // Shift = proportional scaling (lock aspect ratio) for corner handles
+                if (shiftKey && (this.tool === 'scale' || this.tool === 'transform')) {
+                    const isCorner = (type === 'nw' || type === 'ne' || type === 'sw' || type === 'se');
+                    if (isCorner && b.width > 0 && b.height > 0) {
+                        const signX = type.includes('e') ? 1 : -1;
+                        const signY = type.includes('s') ? 1 : -1;
+                        const scaleW = (b.width + dx * signX) / b.width;
+                        const scaleH = (b.height + dy * signY) / b.height;
+                        const scale = Math.abs(scaleW - 1) > Math.abs(scaleH - 1) ? scaleW : scaleH;
+                        dx = (scale * b.width - b.width) * signX;
+                        dy = (scale * b.height - b.height) * signY;
+                    }
+                }
+                
+                // Alt (Option) = scale from center: apply resize symmetrically
+                if (altKey && (this.tool === 'scale' || this.tool === 'transform')) {
+                    if (type.includes('n')) {
+                        const g = -dy;
+                        if (b.height + g * 2 > 10) { b.y -= g; b.height += g * 2; }
+                    }
+                    if (type.includes('s')) {
+                        const g = dy;
+                        if (b.height + g * 2 > 10) { b.y -= g; b.height += g * 2; }
+                    }
+                    if (type.includes('w')) {
+                        const g = -dx;
+                        if (b.width + g * 2 > 10) { b.x -= g; b.width += g * 2; }
+                    }
+                    if (type.includes('e')) {
+                        const g = dx;
+                        if (b.width + g * 2 > 10) { b.x -= g; b.width += g * 2; }
+                    }
+                    this.selection.anchorX = b.x + b.width / 2;
+                    this.selection.anchorY = b.y + b.height / 2;
+                    if (this.selection.corners) {
+                        this.selection.corners = [
+                            { x: b.x, y: b.y },
+                            { x: b.x + b.width, y: b.y },
+                            { x: b.x + b.width, y: b.y + b.height },
+                            { x: b.x, y: b.y + b.height }
+                        ];
+                    }
+                    this.transformStart = { x: rawX, y: rawY };
+                    return;
+                }
                 
                 if (type.includes('n')) {
                     const newY = b.y + dy;
@@ -7453,7 +7514,7 @@
                     ];
                 }
                 
-                this.transformStart = { x: this.transformStart.x + dx, y: this.transformStart.y + dy };
+                this.transformStart = { x: rawX, y: rawY };
             }
             
             // Shared selection preview: handles rotation, skew, and distort
