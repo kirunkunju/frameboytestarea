@@ -7917,62 +7917,53 @@
             // Flood Fill (Paint Bucket) Algorithm
             floodFill(startX, startY) {
                 // Flush any pending async saveState from a previous brush stroke
-                // to prevent it from firing after the fill and corrupting undo history
                 if (this._pendingSaveTimer) {
                     clearTimeout(this._pendingSaveTimer);
                     this._pendingSaveTimer = null;
-                    this.saveState(); // flush it now synchronously (pre-fill state)
+                    this.saveState();
                 }
                 
                 const layer = this.getCurrentLayer();
                 const frame = layer.frames[this.currentFrameIndex];
-                const ctx = frame.getContext('2d');
+                const frameCtx = frame.getContext('2d');
                 const width = this.canvas.width;
                 const height = this.canvas.height;
                 
-                // Get image data
-                const imageData = ctx.getImageData(0, 0, width, height);
+                const imageData = frameCtx.getImageData(0, 0, width, height);
                 const data = imageData.data;
                 
-                // Bounds check
                 if (startX < 0 || startX >= width || startY < 0 || startY >= height) return;
                 
-                // Get target color (color at click point)
                 const startPos = (startY * width + startX) * 4;
                 const targetR = data[startPos];
                 const targetG = data[startPos + 1];
                 const targetB = data[startPos + 2];
                 const targetA = data[startPos + 3];
                 
-                // Get fill color
                 const fillColor = this.hexToRgb(this.color);
                 
-                // Don't fill if target is already the fill color
                 if (targetR === fillColor.r && targetG === fillColor.g && 
                     targetB === fillColor.b && targetA === 255) {
-                    return; // No saveState — no phantom undo entry
+                    return;
                 }
                 
-                // NOW save state, after confirming the fill will actually do something
                 this.saveState();
                 
                 const tolerance = 50;
                 
-                // Use Uint8Array bitmap instead of string Set — O(1) lookup, zero allocation
-                const visited = new Uint8Array(width * height); // 0 = unvisited, 1 = filled
+                // === PASS 1: Scanline flood fill → build region mask ===
+                const visited = new Uint8Array(width * height);
                 
-                // Color match check using bitmap index
                 const colorMatch = (idx) => {
                     const pos = idx * 4;
                     const a = data[pos + 3];
-                    if (a < 30) return true; // Transparent pixels match
+                    if (a < 30) return true;
                     return Math.abs(data[pos] - targetR) <= tolerance &&
                            Math.abs(data[pos + 1] - targetG) <= tolerance &&
                            Math.abs(data[pos + 2] - targetB) <= tolerance &&
                            Math.abs(a - targetA) <= tolerance;
                 };
                 
-                // Scanline flood fill — much faster than per-pixel stack
                 const stack = [startX + startY * width];
                 let filledCount = 0;
                 
@@ -7981,101 +7972,112 @@
                     let x = idx % width;
                     const y = (idx - x) / width;
                     
-                    // Scan left to find the start of this span
-                    while (x > 0 && !visited[(idx - 1)] && colorMatch(idx - 1)) {
-                        x--;
-                        idx--;
-                    }
+                    while (x > 0 && !visited[idx - 1] && colorMatch(idx - 1)) { x--; idx--; }
                     
-                    // Scan right, filling pixels and checking rows above and below
-                    let spanAbove = false;
-                    let spanBelow = false;
+                    let spanAbove = false, spanBelow = false;
                     
                     while (x < width && !visited[idx] && colorMatch(idx)) {
-                        // Fill this pixel
                         visited[idx] = 1;
-                        const pos = idx * 4;
-                        data[pos] = fillColor.r;
-                        data[pos + 1] = fillColor.g;
-                        data[pos + 2] = fillColor.b;
-                        data[pos + 3] = 255;
                         filledCount++;
                         
-                        // Check pixel above
                         if (y > 0) {
                             const aboveIdx = idx - width;
                             if (!visited[aboveIdx] && colorMatch(aboveIdx)) {
-                                if (!spanAbove) {
-                                    stack.push(aboveIdx);
-                                    spanAbove = true;
-                                }
-                            } else {
-                                spanAbove = false;
-                            }
+                                if (!spanAbove) { stack.push(aboveIdx); spanAbove = true; }
+                            } else { spanAbove = false; }
                         }
-                        
-                        // Check pixel below
                         if (y < height - 1) {
                             const belowIdx = idx + width;
                             if (!visited[belowIdx] && colorMatch(belowIdx)) {
-                                if (!spanBelow) {
-                                    stack.push(belowIdx);
-                                    spanBelow = true;
-                                }
-                            } else {
-                                spanBelow = false;
-                            }
+                                if (!spanBelow) { stack.push(belowIdx); spanBelow = true; }
+                            } else { spanBelow = false; }
                         }
-                        
-                        x++;
-                        idx++;
+                        x++; idx++;
                     }
                 }
                 
-                // Second pass: anti-alias edge blending
-                // Only check pixels adjacent to filled pixels that weren't filled themselves
-                if (filledCount > 0) {
-                    // Collect edge pixels efficiently using the bitmap
-                    const edgePixels = [];
+                if (filledCount === 0) return;
+                
+                // === PASS 2: Expand fill mask by 3px for fill-under-linework bleed ===
+                const expanded = new Uint8Array(visited);
+                for (let pass = 0; pass < 3; pass++) {
+                    const src = new Uint8Array(expanded);
                     for (let y = 0; y < height; y++) {
                         for (let x = 0; x < width; x++) {
                             const idx = y * width + x;
-                            if (visited[idx]) continue; // Skip filled pixels
-                            
-                            const pos = idx * 4;
-                            const a = data[pos + 3];
-                            if (a === 0 || a >= 200) continue; // Skip fully transparent or opaque
-                            
-                            // Check if any neighbor is filled (4-connected for speed)
-                            let adjacentToFill = false;
-                            if (x > 0 && visited[idx - 1]) adjacentToFill = true;
-                            else if (x < width - 1 && visited[idx + 1]) adjacentToFill = true;
-                            else if (y > 0 && visited[idx - width]) adjacentToFill = true;
-                            else if (y < height - 1 && visited[idx + width]) adjacentToFill = true;
-                            
-                            if (adjacentToFill) {
-                                edgePixels.push(pos);
+                            if (src[idx]) continue;
+                            if ((x > 0 && src[idx - 1]) ||
+                                (x < width - 1 && src[idx + 1]) ||
+                                (y > 0 && src[idx - width]) ||
+                                (y < height - 1 && src[idx + width])) {
+                                expanded[idx] = 1;
                             }
                         }
                     }
+                }
+                
+                // === PASS 3a: Strip old fill color from the region ===
+                // For re-fill support: pixels matching the target (previous fill) get
+                // their alpha zeroed so the new fill shows through them.
+                // Linework of ANY color is preserved because it won't match the target.
+                for (let i = 0; i < width * height; i++) {
+                    if (!expanded[i]) continue;
+                    const pos = i * 4;
+                    const a = data[pos + 3];
+                    if (a === 0) continue;
                     
-                    // Blend edge pixels
-                    for (const pos of edgePixels) {
-                        const oldR = data[pos];
-                        const oldG = data[pos + 1];
-                        const oldB = data[pos + 2];
-                        const oldA = data[pos + 3];
-                        
-                        const blendFactor = oldA / 255;
-                        data[pos] = Math.round(fillColor.r * (1 - blendFactor) + oldR * blendFactor);
-                        data[pos + 1] = Math.round(fillColor.g * (1 - blendFactor) + oldG * blendFactor);
-                        data[pos + 2] = Math.round(fillColor.b * (1 - blendFactor) + oldB * blendFactor);
-                        data[pos + 3] = 255;
+                    // Distance from target — includes alpha so transparent-target
+                    // doesn't accidentally match opaque content
+                    const diff = Math.max(
+                        Math.abs(data[pos] - targetR),
+                        Math.abs(data[pos + 1] - targetG),
+                        Math.abs(data[pos + 2] - targetB),
+                        Math.abs(a - targetA)
+                    );
+                    
+                    if (diff <= tolerance) {
+                        // Matches old fill → make transparent for new fill
+                        data[pos + 3] = 0;
+                    } else if (diff < tolerance * 2) {
+                        // Transition zone → smooth fade
+                        const t = (diff - tolerance) / tolerance;
+                        data[pos + 3] = Math.round(a * t);
                     }
                 }
                 
-                // Put modified image data back
-                ctx.putImageData(imageData, 0, 0);
+                // === PASS 3b: Paint fill behind remaining content ===
+                // Uses canvas compositing so the browser handles AA blending natively.
+                // Fill layer goes down first, then the stripped original on top.
+                const fillLayer = document.createElement('canvas');
+                fillLayer.width = width;
+                fillLayer.height = height;
+                const fillLayerCtx = fillLayer.getContext('2d');
+                const fillImgData = fillLayerCtx.createImageData(width, height);
+                const fd = fillImgData.data;
+                
+                for (let i = 0; i < width * height; i++) {
+                    if (expanded[i]) {
+                        const pos = i * 4;
+                        fd[pos]     = fillColor.r;
+                        fd[pos + 1] = fillColor.g;
+                        fd[pos + 2] = fillColor.b;
+                        fd[pos + 3] = 255;
+                    }
+                }
+                fillLayerCtx.putImageData(fillImgData, 0, 0);
+                
+                // Put the stripped original into a temp canvas
+                const strippedCanvas = document.createElement('canvas');
+                strippedCanvas.width = width;
+                strippedCanvas.height = height;
+                const strippedCtx = strippedCanvas.getContext('2d');
+                strippedCtx.putImageData(imageData, 0, 0);
+                
+                // Composite: fill on bottom, stripped original on top
+                frameCtx.clearRect(0, 0, width, height);
+                frameCtx.drawImage(fillLayer, 0, 0);
+                frameCtx.drawImage(strippedCanvas, 0, 0);
+                
                 this.render();
             }
             
