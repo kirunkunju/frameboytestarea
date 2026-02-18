@@ -6312,7 +6312,15 @@
                     transformKeyframes: [],
                     startFrame: 0
                 };
-                this.layers.push(newLayer);
+                
+                // Insert above (after in array) the current layer
+                const currentIdx = this.layers.findIndex(l => l.id === this.currentLayerId);
+                if (currentIdx >= 0) {
+                    this.layers.splice(currentIdx + 1, 0, newLayer);
+                } else {
+                    this.layers.push(newLayer);
+                }
+                
                 this.currentLayerId = newLayer.id;
                 this.initializeFrame();
                 this.render();
