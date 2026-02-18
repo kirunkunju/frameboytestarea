@@ -3667,14 +3667,6 @@
                         if (e.pointerType === 'pen' && e.pressure > 0) {
                             this.currentPressure = e.pressure;
                         }
-                        // Track when pointer leaves canvas bounds during a stroke
-                        if (this.isDrawing && (this.tool === 'brush' || this.tool === 'eraser')) {
-                            const cr = this.canvasWrapper.getBoundingClientRect();
-                            if (e.clientX < cr.left || e.clientX > cr.right || e.clientY < cr.top || e.clientY > cr.bottom) {
-                                this._pointerOffCanvas = true;
-                                return;
-                            }
-                        }
                         this.draw(e);
                     });
                     
@@ -3792,15 +3784,6 @@
                             this.currentPressure = touch.force;
                         }
                         
-                        // Track when touch leaves canvas bounds during a stroke
-                        if (this.isDrawing && (this.tool === 'brush' || this.tool === 'eraser')) {
-                            const cr = this.canvasWrapper.getBoundingClientRect();
-                            if (touch.clientX < cr.left || touch.clientX > cr.right || touch.clientY < cr.top || touch.clientY > cr.bottom) {
-                                this._pointerOffCanvas = true;
-                                return;
-                            }
-                        }
-                        
                         this.draw({
                             clientX: touch.clientX,
                             clientY: touch.clientY,
@@ -3840,13 +3823,14 @@
                 setupCanvasEvents(this.canvas);
                 setupCanvasEvents(this.selectionCanvas);
                 
-                // Document-level fallbacks — catch stylus lift outside canvas
-                // Track pointer leaving canvas during active stroke
+                // Document-level fallbacks — catch stylus/pointer outside canvas
+                // Continue drawing off-canvas so strokes extend to edge seamlessly
                 document.addEventListener('pointermove', (e) => {
                     if (this.isDrawing && (this.tool === 'brush' || this.tool === 'eraser')) {
                         const target = e.target;
                         if (target !== this.canvas && target !== this.selectionCanvas) {
-                            this._pointerOffCanvas = true;
+                            // Keep drawing with off-canvas coords — canvas clips at its edge naturally
+                            this.draw({ clientX: e.clientX, clientY: e.clientY, target: this.canvas });
                         }
                     }
                 }, true);
@@ -5503,7 +5487,7 @@
                 // Store last mouse event for shape finalization
                 this.lastMouseEvent = e;
                 
-                const canvas = e.target === this.selectionCanvas ? this.selectionCanvas : this.canvas;
+                const canvas = this.canvas;
                 const rect = canvas.getBoundingClientRect();
                 const scaleX = canvas.width / rect.width;
                 const scaleY = canvas.height / rect.height;
@@ -5524,16 +5508,6 @@
                 }
                 
                 if (this.tool === 'brush' || this.tool === 'eraser') {
-                    // If pointer just re-entered canvas, jump to new position without connecting line
-                    if (this._pointerOffCanvas) {
-                        this._pointerOffCanvas = false;
-                        this.lastX = x;
-                        this.lastY = y;
-                        this.smoothX = x;
-                        this.smoothY = y;
-                        this.drawPoint(x, y);
-                        return;
-                    }
                     const smoothing = this.getSmoothing();
                     if (smoothing > 0) {
                         // Exponential smoothing: higher smoothing = slower catch-up
@@ -5780,7 +5754,6 @@
                 
                 this.isDrawing = false;
                 this.shapeStart = null;
-                this._pointerOffCanvas = false;
                 this.render();
             }
             
