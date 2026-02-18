@@ -2896,6 +2896,8 @@
                 this.lastX = 0;
                 this.lastY = 0;
                 this._lastStrokeEnd = null; // For shift+click straight line
+                this._shiftAnchor = null;      // Anchor point for shift-constrain mid-stroke
+                this._shiftLockedAngle = null;  // Locked axis angle (null = not yet locked)
                 this.onionSkinEnabled = true;
                 this.onionSkinOpacity = 0.30;
                 this.onionFramesBefore = 1;
@@ -3954,8 +3956,6 @@
                     document.getElementById('shapeDropdown').classList.remove('show');
                     document.getElementById('fileMenuDropdown').classList.remove('show');
                     document.getElementById('onionSkinDropdown').classList.remove('show');
-                    document.getElementById('transformToolDropdown').classList.remove('show');
-                    document.getElementById('navToolDropdown').classList.remove('show');
                 });
                 
                 eraserBtn.addEventListener('click', (e) => {
@@ -3966,8 +3966,6 @@
                     document.getElementById('shapeDropdown').classList.remove('show');
                     document.getElementById('fileMenuDropdown').classList.remove('show');
                     document.getElementById('onionSkinDropdown').classList.remove('show');
-                    document.getElementById('transformToolDropdown').classList.remove('show');
-                    document.getElementById('navToolDropdown').classList.remove('show');
                 });
                 
                 // Prevent dropdown clicks from propagating
@@ -4038,12 +4036,6 @@
                 
                 xformButton.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    brushDropdown.classList.remove('show');
-                    eraserDropdown.classList.remove('show');
-                    document.getElementById('shapeDropdown').classList.remove('show');
-                    document.getElementById('fileMenuDropdown').classList.remove('show');
-                    document.getElementById('onionSkinDropdown').classList.remove('show');
-                    document.getElementById('navToolDropdown').classList.remove('show');
                     if (this.tool === 'transform' || this.tool === 'scale' || this.tool === 'rotate' || this.tool === 'skew' || this.tool === 'distort') {
                         xformDropdown.classList.toggle('show');
                     } else {
@@ -4119,7 +4111,6 @@
                     eraserDropdown.classList.remove('show');
                     document.getElementById('fileMenuDropdown').classList.remove('show');
                     document.getElementById('navToolDropdown').classList.remove('show');
-                    document.getElementById('transformToolDropdown').classList.remove('show');
                 });
                 
                 // Shape selection
@@ -4282,6 +4273,12 @@
                 
                 // Keyboard shortcuts for undo/redo
                 document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Shift') {
+                        if (this.isDrawing && (this.tool === 'brush' || this.tool === 'eraser') && !this._shiftAnchor) {
+                            this._shiftAnchor = { x: this.lastX, y: this.lastY };
+                            this._shiftLockedAngle = null;
+                        }
+                    }
                     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                         e.preventDefault();
                         this.saveProject();
@@ -4520,6 +4517,10 @@
                         const cur = this.tool === 'magnifier' ? 'zoom-in' : 'zoom-out';
                         this.canvas.style.cursor = cur;
                         this.selectionCanvas.style.cursor = cur;
+                    }
+                    if (e.key === 'Shift') {
+                        this._shiftAnchor = null;
+                        this._shiftLockedAngle = null;
                     }
                 });
                 
@@ -4982,6 +4983,24 @@
             
             getSmoothing() {
                 return this.tool === 'eraser' ? this.eraserSmoothing : this.brushSmoothing;
+            }
+            
+            // Constrain point to axis from anchor. Locks axis after threshold distance.
+            constrainToAxis(anchorX, anchorY, x, y) {
+                const dx = x - anchorX;
+                const dy = y - anchorY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                if (this._shiftLockedAngle === null) {
+                    if (dist < 8) return { x: anchorX, y: anchorY };
+                    const angle = Math.atan2(dy, dx);
+                    this._shiftLockedAngle = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
+                }
+                
+                const ax = Math.cos(this._shiftLockedAngle);
+                const ay = Math.sin(this._shiftLockedAngle);
+                const proj = dx * ax + dy * ay;
+                return { x: anchorX + ax * proj, y: anchorY + ay * proj };
             }
             
             selectAllInFrame() {
@@ -5545,19 +5564,27 @@
                         this.drawPoint(x, y);
                         return;
                     }
+                    
+                    // Shift-constrain: lock to axis from anchor point
+                    let tx = x, ty = y;
+                    if (this._shiftAnchor) {
+                        const c = this.constrainToAxis(this._shiftAnchor.x, this._shiftAnchor.y, x, y);
+                        tx = c.x;
+                        ty = c.y;
+                    }
+                    
                     const smoothing = this.getSmoothing();
                     if (smoothing > 0) {
-                        // Exponential smoothing: higher smoothing = slower catch-up
                         const factor = 1 - (smoothing / 100) * 0.95;
-                        this.smoothX += (x - this.smoothX) * factor;
-                        this.smoothY += (y - this.smoothY) * factor;
+                        this.smoothX += (tx - this.smoothX) * factor;
+                        this.smoothY += (ty - this.smoothY) * factor;
                         this.drawLine(this.lastX, this.lastY, this.smoothX, this.smoothY);
                         this.lastX = this.smoothX;
                         this.lastY = this.smoothY;
                     } else {
-                        this.drawLine(this.lastX, this.lastY, x, y);
-                        this.lastX = x;
-                        this.lastY = y;
+                        this.drawLine(this.lastX, this.lastY, tx, ty);
+                        this.lastX = tx;
+                        this.lastY = ty;
                     }
                 } else if (this.shapeStart) {
                     // Preview shape (line, rect, circle, triangle)
@@ -5792,6 +5819,8 @@
                 this.isDrawing = false;
                 this.shapeStart = null;
                 this._pointerOffCanvas = false;
+                this._shiftAnchor = null;
+                this._shiftLockedAngle = null;
                 this.render();
             }
             
