@@ -8018,16 +8018,24 @@
                 // Multi-frame copy if frames are selected
                 if (this.selectedFrames.size > 1) {
                     const sortedIndices = [...this.selectedFrames].sort((a, b) => a - b);
+                    // Preserve hold frame relationships: frames sharing a canvas
+                    // in the source should share a canvas in the copy
+                    const srcToCopy = new Map(); // source canvas → copied canvas
                     this.copiedFrames = sortedIndices.map(idx => {
                         const src = layer.frames[idx];
                         if (!src) return null;
+                        // If we already copied this canvas (hold frame), reuse the copy
+                        if (srcToCopy.has(src)) {
+                            return srcToCopy.get(src);
+                        }
                         const c = document.createElement('canvas');
                         c.width = src.width;
                         c.height = src.height;
                         c.getContext('2d').drawImage(src, 0, 0);
+                        srcToCopy.set(src, c);
                         return c;
                     }).filter(Boolean);
-                    this.copiedFrame = this.copiedFrames[0]; // Keep compat
+                    this.copiedFrame = this.copiedFrames[0];
                     return;
                 }
                 
@@ -8067,11 +8075,18 @@
                 
                 const framesToPaste = (this.copiedFrames.length > 1) ? this.copiedFrames : [this.copiedFrame];
                 
+                // Preserve hold frame relationships: if copied frames share a canvas,
+                // create one new canvas and reference it from all corresponding positions
+                const srcToPasted = new Map(); // copied canvas → new canvas
                 const newFrames = framesToPaste.map(src => {
+                    if (srcToPasted.has(src)) {
+                        return srcToPasted.get(src); // Same reference = hold frame
+                    }
                     const nf = document.createElement('canvas');
                     nf.width = src.width;
                     nf.height = src.height;
                     nf.getContext('2d').drawImage(src, 0, 0);
+                    srcToPasted.set(src, nf);
                     return nf;
                 });
                 
@@ -8080,9 +8095,7 @@
                 const targetBlank = this.isFrameBlank(layer.frames[idx]);
                 
                 if (targetBlank) {
-                    // Replace the blank frame
                     layer.frames[idx] = newFrames[0];
-                    // Insert remaining frames after it
                     if (newFrames.length > 1) {
                         layer.frames.splice(idx + 1, 0, ...newFrames.slice(1));
                     }
@@ -8093,7 +8106,6 @@
                     }
                     this.currentFrameIndex = idx + newFrames.length - 1;
                 } else {
-                    // Insert all frames after target
                     layer.frames.splice(idx + 1, 0, ...newFrames);
                     
                     this.selectedFrames.clear();
@@ -8109,23 +8121,60 @@
             duplicateFrame(frameIndex) {
                 this.commitSelection();
                 const layer = this.getCurrentLayer();
+                
+                // Multi-frame duplicate
+                if (this.selectedFrames.size > 1) {
+                    this.saveFullState();
+                    
+                    const sortedIndices = [...this.selectedFrames].sort((a, b) => a - b);
+                    const lastIdx = sortedIndices[sortedIndices.length - 1];
+                    
+                    // Preserve hold frame relationships
+                    const srcToDup = new Map();
+                    const newFrames = sortedIndices.map(idx => {
+                        const src = layer.frames[idx];
+                        if (!src) return null;
+                        if (srcToDup.has(src)) {
+                            return srcToDup.get(src); // Hold frame — same reference
+                        }
+                        const nf = document.createElement('canvas');
+                        nf.width = src.width;
+                        nf.height = src.height;
+                        nf.getContext('2d').drawImage(src, 0, 0);
+                        srcToDup.set(src, nf);
+                        return nf;
+                    }).filter(Boolean);
+                    
+                    // Insert after the last selected frame
+                    layer.frames.splice(lastIdx + 1, 0, ...newFrames);
+                    
+                    // Select the duplicated range
+                    this.selectedFrames.clear();
+                    for (let i = 0; i < newFrames.length; i++) {
+                        this.selectedFrames.add(lastIdx + 1 + i);
+                    }
+                    this.currentFrameIndex = lastIdx + newFrames.length;
+                    
+                    if (this.frameSelectMode) {
+                        this._updateSelectBanner();
+                    }
+                    this.render();
+                    return;
+                }
+                
+                // Single frame duplicate
                 const idx = (frameIndex !== undefined) ? frameIndex : this.currentFrameIndex;
                 const sourceFrame = layer.frames[idx];
                 if (!sourceFrame) return;
                 
                 this.saveFullState();
                 
-                // Deep copy the frame
                 const newFrame = document.createElement('canvas');
                 newFrame.width = sourceFrame.width;
                 newFrame.height = sourceFrame.height;
-                const newCtx = newFrame.getContext('2d');
-                newCtx.drawImage(sourceFrame, 0, 0);
+                newFrame.getContext('2d').drawImage(sourceFrame, 0, 0);
                 
-                // Insert right after the source frame
                 layer.frames.splice(idx + 1, 0, newFrame);
-                
-                // Navigate to the new duplicate
                 this.currentFrameIndex = idx + 1;
                 this.render();
             }
