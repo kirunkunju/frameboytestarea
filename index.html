@@ -1699,6 +1699,15 @@
             border-color: #0066cc;
         }
         
+        .frame.selected {
+            border-color: #4a9eff;
+            background: #1a3a5a;
+        }
+        
+        .frame.active.selected {
+            border-color: #0066cc;
+        }
+        
         .frame.hold-frame {
             border-style: solid;
         }
@@ -2968,6 +2977,8 @@
                 // Clipboard properties
                 this.copiedSelection = null; // For selection copy/paste
                 this.copiedFrame = null; // For frame copy/paste
+                this.copiedFrames = []; // For multi-frame copy/paste
+                this.selectedFrames = new Set(); // Multi-frame selection (indices)
                 this.contextMenuFrameIndex = null; // Track which frame was right-clicked
                 this.selectionUndoStack = []; // Transform-level undo within floating selection
                 this.selectionRedoStack = []; // Transform-level redo within floating selection
@@ -4213,7 +4224,7 @@
                 document.getElementById('pasteBtn').addEventListener('click', () => {
                     if (this.copiedSelection) {
                         this.pasteSelection();
-                    } else if (this.copiedFrame) {
+                    } else if (this.copiedFrame || this.copiedFrames.length > 0) {
                         this.pasteFrame();
                     }
                 });
@@ -4291,7 +4302,7 @@
                         e.preventDefault();
                         if (this.copiedSelection) {
                             this.pasteSelection();
-                        } else if (this.copiedFrame) {
+                        } else if (this.copiedFrame || this.copiedFrames.length > 0) {
                             this.pasteFrame();
                         }
                     } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'n' || e.key === 'N')) {
@@ -4569,7 +4580,7 @@
                     ctxMenu.classList.remove('show');
                 });
                 document.getElementById('ctxPasteFrame').addEventListener('click', () => {
-                    if (this.copiedFrame) {
+                    if (this.copiedFrame || this.copiedFrames.length > 0) {
                         this.pasteFrame(this.contextMenuFrameIndex);
                     }
                     ctxMenu.classList.remove('show');
@@ -6327,6 +6338,7 @@
             
             previousFrame() {
                 this.commitSelection();
+                this.selectedFrames.clear();
                 if (this.currentFrameIndex > 0) {
                     this.currentFrameIndex--;
                     this.initializeFrame();
@@ -6337,6 +6349,7 @@
             
             goToNextFrame() {
                 this.commitSelection();
+                this.selectedFrames.clear();
                 const layer = this.getCurrentLayer();
                 if (this.currentFrameIndex < layer.frames.length - 1) {
                     this.currentFrameIndex++;
@@ -6348,6 +6361,7 @@
             
             nextFrame() {
                 this.commitSelection();
+                this.selectedFrames.clear();
                 const layer = this.getCurrentLayer();
                 if (this.currentFrameIndex < layer.frames.length - 1) {
                     this.currentFrameIndex++;
@@ -7011,7 +7025,34 @@
                 this.commitSelection();
                 const layer = this.getCurrentLayer();
                 
-                // Don't delete if it's the only frame
+                // Multi-frame delete
+                if (this.selectedFrames.size > 1) {
+                    // Don't delete all frames
+                    if (this.selectedFrames.size >= layer.frames.length) {
+                        alert('Cannot delete all frames. At least one frame must remain.');
+                        return;
+                    }
+                    
+                    this.saveFullState();
+                    
+                    // Delete from highest index to lowest so indices stay valid
+                    const sortedDesc = [...this.selectedFrames].sort((a, b) => b - a);
+                    for (const idx of sortedDesc) {
+                        if (idx >= 0 && idx < layer.frames.length) {
+                            layer.frames.splice(idx, 1);
+                        }
+                    }
+                    
+                    // Navigate to frame before the first deleted, or 0
+                    const minDeleted = Math.min(...this.selectedFrames);
+                    this.currentFrameIndex = Math.min(minDeleted, layer.frames.length - 1);
+                    if (this.currentFrameIndex < 0) this.currentFrameIndex = 0;
+                    this.selectedFrames.clear();
+                    this.render();
+                    return;
+                }
+                
+                // Single frame delete
                 if (layer.frames.length <= 1) {
                     alert('Cannot delete the only frame. Create another frame first.');
                     return;
@@ -7019,14 +7060,13 @@
                 
                 this.saveFullState();
                 
-                // Remove the current frame
                 layer.frames.splice(this.currentFrameIndex, 1);
                 
-                // Adjust current frame index if needed
                 if (this.currentFrameIndex >= layer.frames.length) {
                     this.currentFrameIndex = layer.frames.length - 1;
                 }
                 
+                this.selectedFrames.clear();
                 this.render();
             }
             
@@ -7885,22 +7925,50 @@
             // Clipboard Methods - Frames
             copyFrame(frameIndex) {
                 const layer = this.getCurrentLayer();
+                
+                // Multi-frame copy if frames are selected
+                if (this.selectedFrames.size > 1) {
+                    const sortedIndices = [...this.selectedFrames].sort((a, b) => a - b);
+                    this.copiedFrames = sortedIndices.map(idx => {
+                        const src = layer.frames[idx];
+                        if (!src) return null;
+                        const c = document.createElement('canvas');
+                        c.width = src.width;
+                        c.height = src.height;
+                        c.getContext('2d').drawImage(src, 0, 0);
+                        return c;
+                    }).filter(Boolean);
+                    this.copiedFrame = this.copiedFrames[0]; // Keep compat
+                    return;
+                }
+                
+                // Single frame copy
                 const idx = (frameIndex !== undefined) ? frameIndex : this.currentFrameIndex;
                 const sourceFrame = layer.frames[idx];
                 if (!sourceFrame) return;
                 
-                // Deep copy the frame canvas
                 const copyCanvas = document.createElement('canvas');
                 copyCanvas.width = sourceFrame.width;
                 copyCanvas.height = sourceFrame.height;
-                const copyCtx = copyCanvas.getContext('2d');
-                copyCtx.drawImage(sourceFrame, 0, 0);
+                copyCanvas.getContext('2d').drawImage(sourceFrame, 0, 0);
                 
                 this.copiedFrame = copyCanvas;
+                this.copiedFrames = [copyCanvas];
+            }
+            
+            isFrameBlank(frame) {
+                if (!frame) return true;
+                const ctx = frame.getContext('2d');
+                const data = ctx.getImageData(0, 0, frame.width, frame.height).data;
+                // Check alpha channel only — any non-zero alpha means content exists
+                for (let i = 3; i < data.length; i += 4) {
+                    if (data[i] > 0) return false;
+                }
+                return true;
             }
             
             pasteFrame(afterIndex) {
-                if (!this.copiedFrame) return;
+                if (!this.copiedFrame && this.copiedFrames.length === 0) return;
                 
                 this.commitSelection();
                 this.saveFullState();
@@ -7908,18 +7976,44 @@
                 const layer = this.getCurrentLayer();
                 const idx = (afterIndex !== undefined) ? afterIndex : this.currentFrameIndex;
                 
-                // Create a new canvas with the copied content
-                const newFrame = document.createElement('canvas');
-                newFrame.width = this.copiedFrame.width;
-                newFrame.height = this.copiedFrame.height;
-                const newCtx = newFrame.getContext('2d');
-                newCtx.drawImage(this.copiedFrame, 0, 0);
+                const framesToPaste = (this.copiedFrames.length > 1) ? this.copiedFrames : [this.copiedFrame];
                 
-                // Insert after the target frame
-                layer.frames.splice(idx + 1, 0, newFrame);
+                const newFrames = framesToPaste.map(src => {
+                    const nf = document.createElement('canvas');
+                    nf.width = src.width;
+                    nf.height = src.height;
+                    nf.getContext('2d').drawImage(src, 0, 0);
+                    return nf;
+                });
                 
-                // Navigate to the pasted frame
-                this.currentFrameIndex = idx + 1;
+                // If the target frame is blank, replace it with the first pasted frame
+                // and insert the rest after it
+                const targetBlank = this.isFrameBlank(layer.frames[idx]);
+                
+                if (targetBlank) {
+                    // Replace the blank frame
+                    layer.frames[idx] = newFrames[0];
+                    // Insert remaining frames after it
+                    if (newFrames.length > 1) {
+                        layer.frames.splice(idx + 1, 0, ...newFrames.slice(1));
+                    }
+                    
+                    this.selectedFrames.clear();
+                    for (let i = 0; i < newFrames.length; i++) {
+                        this.selectedFrames.add(idx + i);
+                    }
+                    this.currentFrameIndex = idx + newFrames.length - 1;
+                } else {
+                    // Insert all frames after target
+                    layer.frames.splice(idx + 1, 0, ...newFrames);
+                    
+                    this.selectedFrames.clear();
+                    for (let i = 0; i < newFrames.length; i++) {
+                        this.selectedFrames.add(idx + 1 + i);
+                    }
+                    this.currentFrameIndex = idx + newFrames.length;
+                }
+                
                 this.render();
             }
             
@@ -8133,6 +8227,7 @@
             play(modeOverride) {
                 if (this.isPlaying) return;
                 this.commitSelection();
+                this.selectedFrames.clear();
                 this.isPlaying = true;
                 
                 const mode = modeOverride || this.playbackMode;
@@ -9345,6 +9440,7 @@
                         const frameDiv = document.createElement('div');
                         let cls = 'frame';
                         if (isActive && timelinePos === playheadPos) cls += ' active';
+                        if (isActive && this.selectedFrames.has(i)) cls += ' selected';
                         if (holdFrameSet.has(i)) cls += ' hold-frame';
                         frameDiv.className = cls;
                         frameDiv.dataset.frameIndex = i;
@@ -9415,11 +9511,29 @@
                                 this.commitSelection();
                                 this.currentLayerId = layerRef.id;
                                 this.audioLayerSelected = false;
+                                this.selectedFrames.clear();
                                 this.currentFrameIndex = frameIdx;
                                 this.initializeFrame();
                                 this.render();
                                 this.scrubAudio(timelinePos);
                                 return;
+                            }
+                            
+                            // Shift+click: range select
+                            if (e.shiftKey) {
+                                const from = Math.min(this.currentFrameIndex, frameIdx);
+                                const to = Math.max(this.currentFrameIndex, frameIdx);
+                                this.selectedFrames.clear();
+                                for (let si = from; si <= to; si++) {
+                                    this.selectedFrames.add(si);
+                                }
+                                this.renderTimeline();
+                                return;
+                            }
+                            
+                            // Regular click: clear multi-select
+                            if (this.selectedFrames.size > 0) {
+                                this.selectedFrames.clear();
                             }
                             
                             // Active layer: navigate to local frame
@@ -9458,7 +9572,7 @@
                             
                             const ctxMenu = document.getElementById('frameContextMenu');
                             const pasteItem = document.getElementById('ctxPasteFrame');
-                            if (this.copiedFrame) {
+                            if (this.copiedFrame || this.copiedFrames.length > 0) {
                                 pasteItem.classList.remove('disabled');
                             } else {
                                 pasteItem.classList.add('disabled');
