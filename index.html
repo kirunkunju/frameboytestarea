@@ -3545,6 +3545,7 @@
                 this.isPanning = true;
                 this._panStart = { x: clientX, y: clientY };
                 this._vpStart = { x: this.viewportX, y: this.viewportY };
+                this._panDidStart = false;
                 this.canvas.style.cursor = 'grabbing';
                 this.selectionCanvas.style.cursor = 'grabbing';
             }
@@ -3553,6 +3554,11 @@
                 if (!this.isPanning || !this._panStart) return;
                 const dx = clientX - this._panStart.x;
                 const dy = clientY - this._panStart.y;
+                // Require minimum drag distance to prevent accidental pans (esp. iPad 2-finger)
+                if (!this._panDidStart) {
+                    if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
+                    this._panDidStart = true;
+                }
                 // Convert screen pixels to canvas pixels (account for zoom)
                 const zoom = this.getEffectiveZoom();
                 this.viewportX = this._vpStart.x - dx / zoom;
@@ -3635,6 +3641,7 @@
             }
             
             // Auto-expand a frame canvas to cover a world-space point
+            // Returns {dx, dy} — the shift applied to frame-local coords (growLeft, growTop)
             ensureFrameCovers(frame, worldX, worldY) {
                 const margin = 256; // Expand in chunks to avoid per-pixel growth
                 const ox = frame._originX || 0;
@@ -3649,7 +3656,7 @@
                 if (localX >= frame.width) growRight = Math.ceil((localX - frame.width + 1 + margin) / margin) * margin;
                 if (localY >= frame.height) growBottom = Math.ceil((localY - frame.height + 1 + margin) / margin) * margin;
                 
-                if (growLeft === 0 && growTop === 0 && growRight === 0 && growBottom === 0) return;
+                if (growLeft === 0 && growTop === 0 && growRight === 0 && growBottom === 0) return { dx: 0, dy: 0 };
                 
                 const newWidth = growLeft + frame.width + growRight;
                 const newHeight = growTop + frame.height + growBottom;
@@ -3668,6 +3675,8 @@
                 // Shift origin
                 frame._originX = ox - growLeft;
                 frame._originY = oy - growTop;
+                
+                return { dx: growLeft, dy: growTop };
             }
             
             togglePasteboard() {
@@ -5740,7 +5749,13 @@
                 if (this.tool === 'brush' || this.tool === 'eraser') {
                     const layer = this.getCurrentLayer();
                     const frame = layer.frames[this.currentFrameIndex];
-                    if (frame) this.ensureFrameCovers(frame, worldX, worldY);
+                    if (frame) {
+                        const growth = this.ensureFrameCovers(frame, worldX, worldY);
+                        if ((growth.dx !== 0 || growth.dy !== 0) && this._lastStrokeEnd) {
+                            this._lastStrokeEnd.x += growth.dx;
+                            this._lastStrokeEnd.y += growth.dy;
+                        }
+                    }
                     const local = this.worldToLocal(worldX, worldY, frame);
                     this.lastX = local.x;
                     this.lastY = local.y;
@@ -5899,7 +5914,25 @@
                     const worldY = y + this.viewportY;
                     const layer = this.getCurrentLayer();
                     const frame = layer.frames[this.currentFrameIndex];
-                    if (frame) this.ensureFrameCovers(frame, worldX, worldY);
+                    // Expand frame if needed — shift stored coords by the growth amount
+                    if (frame) {
+                        const growth = this.ensureFrameCovers(frame, worldX, worldY);
+                        if (growth.dx !== 0 || growth.dy !== 0) {
+                            // Frame origin shifted: adjust all stored frame-local positions
+                            this.lastX += growth.dx;
+                            this.lastY += growth.dy;
+                            this.smoothX += growth.dx;
+                            this.smoothY += growth.dy;
+                            if (this._shiftAnchor) {
+                                this._shiftAnchor.x += growth.dx;
+                                this._shiftAnchor.y += growth.dy;
+                            }
+                            if (this._lastStrokeEnd) {
+                                this._lastStrokeEnd.x += growth.dx;
+                                this._lastStrokeEnd.y += growth.dy;
+                            }
+                        }
+                    }
                     const local = this.worldToLocal(worldX, worldY, frame);
                     let tx = local.x, ty = local.y;
                     
@@ -8775,9 +8808,11 @@
                     this.onionCanvas.height = this.projectHeight;
                     this.zoomLevel = null;
                     this.applyZoom();
+                    // Reset viewport to camera origin (pasteboard offset was for editing)
+                    this.viewportX = 0;
+                    this.viewportY = 0;
                 }
-                this.viewportX = 0;
-                this.viewportY = 0;
+                // When pasteboard is not active, keep current viewport — it IS the camera view
                 
                 this.isPlaying = true;
                 
