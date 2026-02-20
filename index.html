@@ -368,6 +368,7 @@
             font-size: 11px;
             user-select: none;
             -webkit-user-select: none;
+            cursor: text;
         }
         
         .layer-opacity-control {
@@ -2975,6 +2976,8 @@
                 this._scrollStart = null;
                 this._toolBeforeSpace = null;
                 this._spaceDidPan = false;
+                this._layerNameClickId = null;
+                this._layerNameClickTime = 0;
                 
                 // Viewport (infinite canvas) — position of the camera in world space
                 this.viewportX = 0;
@@ -9527,6 +9530,58 @@
                     name.className = 'layer-name';
                     name.textContent = layer.name;
                     
+                    // Click on name: first click selects layer, rapid second click renames
+                    name.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        if (e.target.closest('.layer-name-input')) return;
+                        
+                        // If this layer is already selected, start rename on second quick click
+                        if (this.currentLayerId === layer.id && this._layerNameClickId === layer.id && 
+                            Date.now() - this._layerNameClickTime < 500) {
+                            this._layerNameClickId = null;
+                            // Start inline rename
+                            const input = document.createElement('input');
+                            input.type = 'text';
+                            input.value = layer.name;
+                            input.className = 'layer-name-input';
+                            input.style.cssText = 'background:#2a2a2a;color:#fff;border:1px solid #5af;outline:none;font:inherit;padding:0 4px;width:100%;box-sizing:border-box;border-radius:3px;';
+                            
+                            const commit = () => {
+                                const newName = input.value.trim();
+                                if (newName && newName !== layer.name) {
+                                    layer.name = newName;
+                                }
+                                this.renderTimeline();
+                            };
+                            
+                            input.addEventListener('blur', commit);
+                            input.addEventListener('keydown', (ke) => {
+                                ke.stopPropagation();
+                                if (ke.key === 'Enter') { input.blur(); }
+                                else if (ke.key === 'Escape') { input.value = layer.name; input.blur(); }
+                            });
+                            
+                            name.textContent = '';
+                            name.appendChild(input);
+                            input.focus();
+                            input.select();
+                            return;
+                        }
+                        
+                        // Record click for double-click detection
+                        this._layerNameClickId = layer.id;
+                        this._layerNameClickTime = Date.now();
+                        
+                        // Select the layer
+                        if (this.currentLayerId !== layer.id) {
+                            this.commitSelection();
+                            this.currentLayerId = layer.id;
+                            this.audioLayerSelected = false;
+                            this.initializeFrame();
+                            this.render();
+                        }
+                    });
+                    
                     const topRow = document.createElement('div');
                     topRow.className = 'tl-label-row';
                     topRow.appendChild(twirl);
@@ -9852,6 +9907,8 @@
                         if (e.target.closest('.layer-drag-handle')) return;
                         if (e.target.closest('.tl-label-twirl')) return;
                         if (e.target.closest('.tl-props')) return;
+                        if (e.target.closest('.layer-name-input')) return;
+                        if (e.target.closest('.layer-name')) return; // Handled by name click
                         this.commitSelection();
                         this.currentLayerId = layer.id;
                         this.audioLayerSelected = false;
