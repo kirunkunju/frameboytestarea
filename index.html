@@ -3191,22 +3191,21 @@
                 const w = Math.round(this.canvas.width * zoom);
                 const h = Math.round(this.canvas.height * zoom);
                 const container = this.canvasContainer;
-                
-                // If zoomed content is smaller than container, center it with padding
-                const isFitting = w < container.clientWidth && h < container.clientHeight;
+                const cw = container.clientWidth;
+                const ch = container.clientHeight;
                 
                 // Set wrapper size
                 this.canvasWrapper.style.width = w + 'px';
                 this.canvasWrapper.style.height = h + 'px';
                 
-                if (isFitting) {
-                    // Center the wrapper using padding/margin
-                    const mx = Math.max(0, (container.clientWidth - w) / 2);
-                    const my = Math.max(0, (container.clientHeight - h) / 2);
-                    this.canvasWrapper.style.margin = my + 'px ' + mx + 'px';
-                } else {
-                    this.canvasWrapper.style.margin = '10px';
-                }
+                // Center each axis independently:
+                // If canvas fits on an axis → center with margin
+                // If canvas overflows on an axis → use small padding, scroll handles centering
+                const fitsH = w < cw;
+                const fitsV = h < ch;
+                const mx = fitsH ? Math.max(0, (cw - w) / 2) : 10;
+                const my = fitsV ? Math.max(0, (ch - h) / 2) : 10;
+                this.canvasWrapper.style.margin = my + 'px ' + mx + 'px';
                 
                 // Size all canvases to wrapper
                 const canvases = [this.canvas, this.onionCanvas, this.selectionCanvas];
@@ -3226,16 +3225,12 @@
                 document.getElementById('zoomLevel').textContent = pct + '%';
                 
                 // When pasteboard is visible, scroll so the project area is centered in the viewport
-                if (this.pasteboardVisible && !isFitting) {
+                if (this.pasteboardVisible && (!fitsH || !fitsV) && !this._skipPasteboardScroll) {
                     const pad = this.getPasteboardPadding();
-                    // Project area starts at (pad, pad) in canvas coords
-                    // In display pixels: pad * zoom. Center of project: pad * zoom + projectW/2 * zoom
                     const projCenterX = (pad + this.projectWidth / 2) * zoom;
                     const projCenterY = (pad + this.projectHeight / 2) * zoom;
-                    // Scroll so project center is at viewport center
-                    const margin = 10; // wrapper margin when scrollable
-                    container.scrollLeft = Math.max(0, projCenterX + margin - container.clientWidth / 2);
-                    container.scrollTop = Math.max(0, projCenterY + margin - container.clientHeight / 2);
+                    if (!fitsH) container.scrollLeft = Math.max(0, projCenterX + mx - cw / 2);
+                    if (!fitsV) container.scrollTop = Math.max(0, projCenterY + my - ch / 2);
                 }
             }
             
@@ -3248,39 +3243,39 @@
                 const container = this.canvasContainer;
                 const cw = container.clientWidth;
                 const ch = container.clientHeight;
-                const oldZoom = this._prevZoom || this.getEffectiveZoom();
                 
-                // Compute old margin mathematically
-                const oldW = Math.round(this.canvas.width * oldZoom);
-                const oldH = Math.round(this.canvas.height * oldZoom);
-                const oldFits = oldW < cw && oldH < ch;
-                const oldML = oldFits ? Math.max(0, (cw - oldW) / 2) : 10;
-                const oldMT = oldFits ? Math.max(0, (ch - oldH) / 2) : 10;
+                // Always center on the project/canvas center
+                let targetX, targetY;
+                if (this.pasteboardVisible) {
+                    const pad = this.getPasteboardPadding();
+                    targetX = pad + this.projectWidth / 2;
+                    targetY = pad + this.projectHeight / 2;
+                } else {
+                    targetX = this.canvas.width / 2;
+                    targetY = this.canvas.height / 2;
+                }
                 
-                // Canvas-space point at viewport center
-                const viewCX = container.scrollLeft + cw / 2;
-                const viewCY = container.scrollTop + ch / 2;
-                const canvasX = (viewCX - oldML) / oldZoom;
-                const canvasY = (viewCY - oldMT) / oldZoom;
-                
-                // Clamp to canvas bounds so we always center sensibly
-                const clampedX = Math.max(0, Math.min(this.canvas.width, canvasX));
-                const clampedY = Math.max(0, Math.min(this.canvas.height, canvasY));
-                
+                // Apply zoom — this updates wrapper size and margins
+                this._skipPasteboardScroll = true;
                 this.applyZoom();
+                this._skipPasteboardScroll = false;
                 
                 const newZoom = this.getEffectiveZoom();
+                const w = Math.round(this.canvas.width * newZoom);
+                const h = Math.round(this.canvas.height * newZoom);
                 
-                // Compute new margin mathematically
-                const newW = Math.round(this.canvas.width * newZoom);
-                const newH = Math.round(this.canvas.height * newZoom);
-                const newFits = newW < cw && newH < ch;
-                const newML = newFits ? Math.max(0, (cw - newW) / 2) : 10;
-                const newMT = newFits ? Math.max(0, (ch - newH) / 2) : 10;
+                // Read new margins from DOM
+                const newStyle = window.getComputedStyle(this.canvasWrapper);
+                const newML = parseFloat(newStyle.marginLeft) || 0;
+                const newMT = parseFloat(newStyle.marginTop) || 0;
                 
-                // Scroll so the same canvas point stays at viewport center
-                container.scrollLeft = newML + clampedX * newZoom - cw / 2;
-                container.scrollTop = newMT + clampedY * newZoom - ch / 2;
+                // Only scroll axes that overflow — margins already center fitting axes
+                if (w >= cw) {
+                    container.scrollLeft = newML + targetX * newZoom - cw / 2;
+                }
+                if (h >= ch) {
+                    container.scrollTop = newMT + targetY * newZoom - ch / 2;
+                }
                 
                 this._prevZoom = newZoom;
                 this.updateBrushCursor();
@@ -3314,7 +3309,8 @@
                 this.zoomLevel = null; // Back to fit-to-screen
                 this._prevZoom = null;
                 this.applyZoom();
-                // For non-pasteboard mode, reset scroll (centering is handled by margin)
+                // Reset scroll — margins handle centering for fitting content,
+                // applyZoom handles pasteboard scroll centering
                 if (!this.pasteboardVisible) {
                     this.canvasContainer.scrollLeft = 0;
                     this.canvasContainer.scrollTop = 0;
@@ -3517,7 +3513,9 @@
                 const max = this.zoomSteps[this.zoomSteps.length - 1];
                 this.zoomLevel = Math.max(min, Math.min(max, newZoomLevel));
                 
+                this._skipPasteboardScroll = true;
                 this.applyZoom();
+                this._skipPasteboardScroll = false;
                 
                 const newZoom = this.getEffectiveZoom();
                 
@@ -3544,7 +3542,10 @@
             startPan(clientX, clientY) {
                 this.isPanning = true;
                 this._panStart = { x: clientX, y: clientY };
-                this._vpStart = { x: this.viewportX, y: this.viewportY };
+                this._scrollStart = {
+                    x: this.canvasContainer.scrollLeft,
+                    y: this.canvasContainer.scrollTop
+                };
                 this._panDidStart = false;
                 this.canvas.style.cursor = 'grabbing';
                 this.selectionCanvas.style.cursor = 'grabbing';
@@ -3559,11 +3560,9 @@
                     if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
                     this._panDidStart = true;
                 }
-                // Convert screen pixels to canvas pixels (account for zoom)
-                const zoom = this.getEffectiveZoom();
-                this.viewportX = this._vpStart.x - dx / zoom;
-                this.viewportY = this._vpStart.y - dy / zoom;
-                this.renderCanvasOnly();
+                // Scroll the container (opposite direction of drag)
+                this.canvasContainer.scrollLeft = this._scrollStart.x - dx;
+                this.canvasContainer.scrollTop = this._scrollStart.y - dy;
             }
             
             stopPan() {
@@ -4662,16 +4661,11 @@
                                 break;
                             case 'Home':
                                 e.preventDefault();
-                                if (this.pasteboardVisible) {
-                                    const pad = this.getPasteboardPadding();
-                                    this.viewportX = -pad;
-                                    this.viewportY = -pad;
-                                } else {
-                                    this.viewportX = 0;
-                                    this.viewportY = 0;
-                                }
                                 this.zoomLevel = null;
                                 this.applyZoom();
+                                // Reset scroll to origin (centering handled by margins)
+                                this.canvasContainer.scrollLeft = 0;
+                                this.canvasContainer.scrollTop = 0;
                                 this.render();
                                 break;
                             case '\\':
@@ -8796,7 +8790,12 @@
                 else this.selectedFrames.clear();
                 
                 // Save viewport and pasteboard state, reset to camera view for playback
-                this._savedViewport = { x: this.viewportX, y: this.viewportY, pasteboard: this.pasteboardVisible };
+                this._savedViewport = {
+                    x: this.viewportX, y: this.viewportY,
+                    pasteboard: this.pasteboardVisible,
+                    scrollLeft: this.canvasContainer.scrollLeft,
+                    scrollTop: this.canvasContainer.scrollTop
+                };
                 if (this.pasteboardVisible) {
                     // Temporarily disable pasteboard for clean playback
                     this.pasteboardVisible = false;
@@ -8811,6 +8810,9 @@
                     // Reset viewport to camera origin (pasteboard offset was for editing)
                     this.viewportX = 0;
                     this.viewportY = 0;
+                    // Center scroll for clean playback view
+                    this.canvasContainer.scrollLeft = 0;
+                    this.canvasContainer.scrollTop = 0;
                 }
                 // When pasteboard is not active, keep current viewport — it IS the camera view
                 
@@ -8912,6 +8914,9 @@
                         this.viewportX = this._savedViewport.x;
                         this.viewportY = this._savedViewport.y;
                     }
+                    // Restore scroll position
+                    this.canvasContainer.scrollLeft = this._savedViewport.scrollLeft || 0;
+                    this.canvasContainer.scrollTop = this._savedViewport.scrollTop || 0;
                     this._savedViewport = null;
                 }
                 
