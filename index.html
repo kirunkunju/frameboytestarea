@@ -2746,6 +2746,8 @@
                 <span id="zoomLevel" class="zoom-label">100%</span>
                 <button id="zoomInBtn" title="Zoom In (+)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="7" r="5"/><path d="M7 5v4M5 7h4"/><path d="M11 11l3.5 3.5"/></svg></button>
                 <button id="zoomFitBtn" title="Fit to Screen (0)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 6V2h4M10 2h4v4M14 10v4h-4M6 14H2v-4"/></svg></button>
+                <div class="pill-divider"></div>
+                <button id="pasteboardToggle" title="Show Pasteboard (\)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="9" height="9" stroke-dasharray="2 1.5"/><rect x="1" y="1" width="14" height="14" rx="1" opacity="0.4"/></svg></button>
             </div>
         </div>
 
@@ -2973,6 +2975,18 @@
                 this._scrollStart = null;
                 this._toolBeforeSpace = null;
                 this._spaceDidPan = false;
+                
+                // Viewport (infinite canvas) — position of the camera in world space
+                this.viewportX = 0;
+                this.viewportY = 0;
+                this._savedViewport = null;
+                
+                // Project dimensions (the "camera frame" / export size)
+                this.projectWidth = this.canvas.width;
+                this.projectHeight = this.canvas.height;
+                
+                // Pasteboard: show content outside the camera frame
+                this.pasteboardVisible = false;
                 
                 // Magnifier state
                 this._magnifying = false;
@@ -3509,10 +3523,7 @@
             startPan(clientX, clientY) {
                 this.isPanning = true;
                 this._panStart = { x: clientX, y: clientY };
-                this._scrollStart = {
-                    left: this.canvasContainer.scrollLeft,
-                    top: this.canvasContainer.scrollTop
-                };
+                this._vpStart = { x: this.viewportX, y: this.viewportY };
                 this.canvas.style.cursor = 'grabbing';
                 this.selectionCanvas.style.cursor = 'grabbing';
             }
@@ -3521,8 +3532,11 @@
                 if (!this.isPanning || !this._panStart) return;
                 const dx = clientX - this._panStart.x;
                 const dy = clientY - this._panStart.y;
-                this.canvasContainer.scrollLeft = this._scrollStart.left - dx;
-                this.canvasContainer.scrollTop = this._scrollStart.top - dy;
+                // Convert screen pixels to canvas pixels (account for zoom)
+                const zoom = this.getEffectiveZoom();
+                this.viewportX = this._vpStart.x - dx / zoom;
+                this.viewportY = this._vpStart.y - dy / zoom;
+                this.renderCanvasOnly();
             }
             
             stopPan() {
@@ -3552,14 +3566,165 @@
             
             createEmptyFrame() {
                 const frameCanvas = document.createElement('canvas');
-                frameCanvas.width = this.canvas.width;
-                frameCanvas.height = this.canvas.height;
+                frameCanvas.width = this.projectWidth;
+                frameCanvas.height = this.projectHeight;
+                frameCanvas._originX = 0;
+                frameCanvas._originY = 0;
                 return frameCanvas;
             }
             
+            // === Infinite Canvas Helpers ===
+            
+            // Convert screen mouse event to world coordinates
+            screenToWorld(e) {
+                const rect = this.canvas.getBoundingClientRect();
+                const scaleX = this.canvas.width / rect.width;
+                const scaleY = this.canvas.height / rect.height;
+                return {
+                    x: (e.clientX - rect.left) * scaleX + this.viewportX,
+                    y: (e.clientY - rect.top) * scaleY + this.viewportY
+                };
+            }
+            
+            // Convert world coords to frame-local coords
+            worldToLocal(worldX, worldY, frame) {
+                return {
+                    x: worldX - (frame._originX || 0),
+                    y: worldY - (frame._originY || 0)
+                };
+            }
+            
+            // Get the offset to translate frame-local coords to display canvas coords
+            frameToDisplayOffset(frame) {
+                return {
+                    x: (frame._originX || 0) - this.viewportX,
+                    y: (frame._originY || 0) - this.viewportY
+                };
+            }
+            
+            // Auto-expand a frame canvas to cover a world-space point
+            ensureFrameCovers(frame, worldX, worldY) {
+                const margin = 256; // Expand in chunks to avoid per-pixel growth
+                const ox = frame._originX || 0;
+                const oy = frame._originY || 0;
+                const localX = worldX - ox;
+                const localY = worldY - oy;
+                
+                let growLeft = 0, growTop = 0, growRight = 0, growBottom = 0;
+                
+                if (localX < 0) growLeft = Math.ceil((-localX + margin) / margin) * margin;
+                if (localY < 0) growTop = Math.ceil((-localY + margin) / margin) * margin;
+                if (localX >= frame.width) growRight = Math.ceil((localX - frame.width + 1 + margin) / margin) * margin;
+                if (localY >= frame.height) growBottom = Math.ceil((localY - frame.height + 1 + margin) / margin) * margin;
+                
+                if (growLeft === 0 && growTop === 0 && growRight === 0 && growBottom === 0) return;
+                
+                const newWidth = growLeft + frame.width + growRight;
+                const newHeight = growTop + frame.height + growBottom;
+                
+                // Copy content to expanded canvas
+                const temp = document.createElement('canvas');
+                temp.width = newWidth;
+                temp.height = newHeight;
+                temp.getContext('2d').drawImage(frame, growLeft, growTop);
+                
+                // Resize in-place
+                frame.width = newWidth;
+                frame.height = newHeight;
+                frame.getContext('2d').drawImage(temp, 0, 0);
+                
+                // Shift origin
+                frame._originX = ox - growLeft;
+                frame._originY = oy - growTop;
+            }
+            
+            togglePasteboard() {
+                this.pasteboardVisible = !this.pasteboardVisible;
+                this.updatePasteboard();
+                // Update toggle button state
+                const btn = document.getElementById('pasteboardToggle');
+                if (btn) {
+                    btn.classList.toggle('pill-active', this.pasteboardVisible);
+                    btn.title = this.pasteboardVisible ? 'Hide Pasteboard (\\)' : 'Show Pasteboard (\\)';
+                }
+            }
+            
+            getPasteboardPadding() {
+                // Padding on each side — 50% of the project's largest dimension
+                return Math.round(Math.max(this.projectWidth, this.projectHeight) * 0.75);
+            }
+            
+            updatePasteboard() {
+                if (this.pasteboardVisible) {
+                    const pad = this.getPasteboardPadding();
+                    const newW = this.projectWidth + pad * 2;
+                    const newH = this.projectHeight + pad * 2;
+                    
+                    // Expand canvas
+                    this.canvas.width = newW;
+                    this.canvas.height = newH;
+                    this.selectionCanvas.width = newW;
+                    this.selectionCanvas.height = newH;
+                    this.onionCanvas.width = newW;
+                    this.onionCanvas.height = newH;
+                    
+                    // Set viewport so project area is centered in the canvas
+                    this.viewportX = -pad;
+                    this.viewportY = -pad;
+                } else {
+                    // Restore canvas to project dimensions
+                    this.canvas.width = this.projectWidth;
+                    this.canvas.height = this.projectHeight;
+                    this.selectionCanvas.width = this.projectWidth;
+                    this.selectionCanvas.height = this.projectHeight;
+                    this.onionCanvas.width = this.projectWidth;
+                    this.onionCanvas.height = this.projectHeight;
+                    
+                    this.viewportX = 0;
+                    this.viewportY = 0;
+                }
+                
+                // Reset zoom to fit
+                this.zoomLevel = null;
+                this.applyZoom();
+                this.render();
+            }
+            
+            // Draw darkened pasteboard overlay outside the project area
+            drawPasteboardOverlay(ctx) {
+                if (!this.pasteboardVisible) return;
+                
+                // Project rect in canvas coords
+                const px = -this.viewportX;
+                const py = -this.viewportY;
+                const pw = this.projectWidth;
+                const ph = this.projectHeight;
+                const cw = this.canvas.width;
+                const ch = this.canvas.height;
+                
+                ctx.save();
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+                
+                // Top strip
+                if (py > 0) ctx.fillRect(0, 0, cw, py);
+                // Bottom strip
+                if (py + ph < ch) ctx.fillRect(0, py + ph, cw, ch - py - ph);
+                // Left strip (between top and bottom)
+                if (px > 0) ctx.fillRect(0, py, px, ph);
+                // Right strip (between top and bottom)
+                if (px + pw < cw) ctx.fillRect(px + pw, py, cw - px - pw, ph);
+                
+                // Project boundary
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(px + 0.5, py + 0.5, pw - 1, ph - 1);
+                
+                ctx.restore();
+            }
+            
             resizeCanvas(newW, newH, mode) {
-                const oldW = this.canvas.width;
-                const oldH = this.canvas.height;
+                const oldW = this.projectWidth;
+                const oldH = this.projectHeight;
                 if (newW === oldW && newH === oldH) return;
                 
                 this.commitSelection();
@@ -3584,15 +3749,12 @@
                         const ctx = newFrame.getContext('2d');
                         
                         if (mode === 'scale') {
-                            // Scale content to fill new size
                             ctx.drawImage(oldFrame, 0, 0, newW, newH);
                         } else if (mode === 'crop-center') {
-                            // Place old content centered
                             const ox = Math.round((newW - oldW) / 2);
                             const oy = Math.round((newH - oldH) / 2);
                             ctx.drawImage(oldFrame, ox, oy);
                         } else {
-                            // crop-tl: anchor top-left
                             ctx.drawImage(oldFrame, 0, 0);
                         }
                         
@@ -3601,18 +3763,29 @@
                     }
                 }
                 
-                // Resize the main canvases
-                this.canvas.width = newW;
-                this.canvas.height = newH;
-                this.onionCanvas.width = newW;
-                this.onionCanvas.height = newH;
-                this.selectionCanvas.width = newW;
-                this.selectionCanvas.height = newH;
+                // Update project dimensions
+                this.projectWidth = newW;
+                this.projectHeight = newH;
                 
-                // Reset zoom to fit new canvas
-                this.zoomLevel = null;
-                this._prevZoom = null;
-                this.applyZoom();
+                // Reset viewport and apply pasteboard if active
+                this.viewportX = 0;
+                this.viewportY = 0;
+                
+                if (this.pasteboardVisible) {
+                    this.updatePasteboard();
+                } else {
+                    this.canvas.width = newW;
+                    this.canvas.height = newH;
+                    this.onionCanvas.width = newW;
+                    this.onionCanvas.height = newH;
+                    this.selectionCanvas.width = newW;
+                    this.selectionCanvas.height = newH;
+                    
+                    this.zoomLevel = null;
+                    this.applyZoom();
+                    this.render();
+                }
+                
                 this.canvasContainer.scrollLeft = 0;
                 this.canvasContainer.scrollTop = 0;
                 
@@ -4283,6 +4456,9 @@
                 document.getElementById('zoomOutBtn').addEventListener('click', () => this.zoomOut());
                 document.getElementById('zoomFitBtn').addEventListener('click', () => this.zoomFit());
                 
+                // Pasteboard toggle button
+                document.getElementById('pasteboardToggle').addEventListener('click', () => this.togglePasteboard());
+                
                 // Pill pan button
                 document.getElementById('pillPanBtn').addEventListener('click', () => {
                     if (this.tool === 'pan') {
@@ -4441,6 +4617,22 @@
                                 this._activeNavTool = 'pan';
                                 this._updateNavButton('pan');
                                 this.selectTool('pan');
+                                break;
+                            case 'Home':
+                                e.preventDefault();
+                                if (this.pasteboardVisible) {
+                                    const pad = this.getPasteboardPadding();
+                                    this.viewportX = -pad;
+                                    this.viewportY = -pad;
+                                } else {
+                                    this.viewportX = 0;
+                                    this.viewportY = 0;
+                                }
+                                this.render();
+                                break;
+                            case '\\':
+                                e.preventDefault();
+                                this.togglePasteboard();
                                 break;
                             case 'z':
                                 e.preventDefault();
@@ -4812,8 +5004,8 @@
                 const csUpdateInfo = () => {
                     const w = parseInt(csWidthIn.value) || 0;
                     const h = parseInt(csHeightIn.value) || 0;
-                    const curW = this.canvas.width;
-                    const curH = this.canvas.height;
+                    const curW = this.projectWidth;
+                    const curH = this.projectHeight;
                     if (w === curW && h === curH) {
                         csInfo.textContent = `Current size: ${curW} × ${curH}`;
                     } else {
@@ -4823,10 +5015,10 @@
                 
                 document.getElementById('canvasSizeBtn').addEventListener('click', () => {
                     fileMenuDropdown.classList.remove('show');
-                    csWidthIn.value = this.canvas.width;
-                    csHeightIn.value = this.canvas.height;
+                    csWidthIn.value = this.projectWidth;
+                    csHeightIn.value = this.projectHeight;
                     csPreset.value = 'custom';
-                    csAspect = this.canvas.width / this.canvas.height;
+                    csAspect = this.projectWidth / this.projectHeight;
                     csUpdateInfo();
                     csModal.classList.add('show');
                 });
@@ -4875,11 +5067,11 @@
                 });
                 
                 document.getElementById('canvasSizeApply').addEventListener('click', () => {
-                    const newW = Math.max(1, Math.min(7680, parseInt(csWidthIn.value) || this.canvas.width));
-                    const newH = Math.max(1, Math.min(7680, parseInt(csHeightIn.value) || this.canvas.height));
+                    const newW = Math.max(1, Math.min(7680, parseInt(csWidthIn.value) || this.projectWidth));
+                    const newH = Math.max(1, Math.min(7680, parseInt(csHeightIn.value) || this.projectHeight));
                     const mode = document.getElementById('canvasResizeMode').value;
                     csClose();
-                    if (newW !== this.canvas.width || newH !== this.canvas.height) {
+                    if (newW !== this.projectWidth || newH !== this.projectHeight) {
                         this.resizeCanvas(newW, newH, mode);
                     }
                 });
@@ -5112,6 +5304,8 @@
                     frameData = {
                         width: frame.width,
                         height: frame.height,
+                        originX: frame._originX || 0,
+                        originY: frame._originY || 0,
                         imageData: frame.getContext('2d').getImageData(0, 0, frame.width, frame.height)
                     };
                 }
@@ -5145,6 +5339,8 @@
                                 return {
                                     width: frame.width,
                                     height: frame.height,
+                                    originX: frame._originX || 0,
+                                    originY: frame._originY || 0,
                                     imageData: frame.getContext('2d').getImageData(0, 0, frame.width, frame.height)
                                 };
                             }),
@@ -5187,6 +5383,8 @@
                             frameData: {
                                 width: frame.width,
                                 height: frame.height,
+                                originX: frame._originX || 0,
+                                originY: frame._originY || 0,
                                 imageData: frame.getContext('2d').getImageData(0, 0, frame.width, frame.height)
                             }
                         };
@@ -5265,6 +5463,13 @@
                     const layer = this.layers.find(l => l.id === state.layerId);
                     if (layer && layer.frames[state.frameIndex] && state.frameData) {
                         const frame = layer.frames[state.frameIndex];
+                        // Resize frame if snapshot was different size (auto-expand undo)
+                        if (frame.width !== state.frameData.width || frame.height !== state.frameData.height) {
+                            frame.width = state.frameData.width;
+                            frame.height = state.frameData.height;
+                        }
+                        frame._originX = state.frameData.originX || 0;
+                        frame._originY = state.frameData.originY || 0;
                         const ctx = frame.getContext('2d');
                         ctx.clearRect(0, 0, frame.width, frame.height);
                         ctx.putImageData(state.frameData.imageData, 0, 0);
@@ -5291,6 +5496,8 @@
                             const c = document.createElement('canvas');
                             c.width = snapshot.width;
                             c.height = snapshot.height;
+                            c._originX = snapshot.originX || 0;
+                            c._originY = snapshot.originY || 0;
                             c.getContext('2d').putImageData(snapshot.imageData, 0, 0);
                             canvasMap.set(fi, c);
                             return c;
@@ -5329,9 +5536,17 @@
                     const rect = canvas.getBoundingClientRect();
                     const scaleX = canvas.width / rect.width;
                     const scaleY = canvas.height / rect.height;
-                    const x = Math.floor((e.clientX - rect.left) * scaleX);
-                    const y = Math.floor((e.clientY - rect.top) * scaleY);
-                    this.floodFill(x, y);
+                    const canvasX = (e.clientX - rect.left) * scaleX;
+                    const canvasY = (e.clientY - rect.top) * scaleY;
+                    // Convert to world then frame-local
+                    const worldX = canvasX + this.viewportX;
+                    const worldY = canvasY + this.viewportY;
+                    const layer = this.getCurrentLayer();
+                    const frame = layer.frames[this.currentFrameIndex];
+                    if (frame) {
+                        const local = this.worldToLocal(worldX, worldY, frame);
+                        this.floodFill(Math.floor(local.x), Math.floor(local.y));
+                    }
                     return;
                 }
                 
@@ -5479,11 +5694,28 @@
                 const rect = this.canvas.getBoundingClientRect();
                 const scaleX = this.canvas.width / rect.width;
                 const scaleY = this.canvas.height / rect.height;
-                this.lastX = (e.clientX - rect.left) * scaleX;
-                this.lastY = (e.clientY - rect.top) * scaleY;
+                const canvasX = (e.clientX - rect.left) * scaleX;
+                const canvasY = (e.clientY - rect.top) * scaleY;
+                
+                // Convert to world coords, then frame-local
+                const worldX = canvasX + this.viewportX;
+                const worldY = canvasY + this.viewportY;
+                
+                if (this.tool === 'brush' || this.tool === 'eraser') {
+                    const layer = this.getCurrentLayer();
+                    const frame = layer.frames[this.currentFrameIndex];
+                    if (frame) this.ensureFrameCovers(frame, worldX, worldY);
+                    const local = this.worldToLocal(worldX, worldY, frame);
+                    this.lastX = local.x;
+                    this.lastY = local.y;
+                    this.smoothX = local.x;
+                    this.smoothY = local.y;
+                } else {
+                    // Shape tools work in canvas-pixel space (viewport-relative)
+                    this.lastX = canvasX;
+                    this.lastY = canvasY;
+                }
                 this.shapeStart = { x: this.lastX, y: this.lastY };
-                this.smoothX = this.lastX;
-                this.smoothY = this.lastY;
                 
                 if (this.tool === 'brush' || this.tool === 'eraser') {
                     // Capture undo snapshot BEFORE the first mark goes down
@@ -5626,10 +5858,18 @@
                 }
                 
                 if (this.tool === 'brush' || this.tool === 'eraser') {
+                    // Convert to world, auto-expand, then frame-local
+                    const worldX = x + this.viewportX;
+                    const worldY = y + this.viewportY;
+                    const layer = this.getCurrentLayer();
+                    const frame = layer.frames[this.currentFrameIndex];
+                    if (frame) this.ensureFrameCovers(frame, worldX, worldY);
+                    const local = this.worldToLocal(worldX, worldY, frame);
+                    let tx = local.x, ty = local.y;
+                    
                     // Shift-constrain: lock to axis from anchor point
-                    let tx = x, ty = y;
                     if (this._shiftAnchor) {
-                        const c = this.constrainToAxis(this._shiftAnchor.x, this._shiftAnchor.y, x, y);
+                        const c = this.constrainToAxis(this._shiftAnchor.x, this._shiftAnchor.y, tx, ty);
                         tx = c.x;
                         ty = c.y;
                     }
@@ -5911,7 +6151,10 @@
                 }
                 frameCtx.globalCompositeOperation = 'source-over';
                 
-                // Also draw directly to main canvas for immediate feedback
+                // Draw on display canvas with viewport offset
+                const off = this.frameToDisplayOffset(frame);
+                this.ctx.save();
+                this.ctx.translate(off.x, off.y);
                 this.ctx.globalCompositeOperation = this.tool === 'eraser' ? 'destination-out' : 'source-over';
                 this.ctx.fillStyle = this.color;
                 if (shape === 'square') {
@@ -5930,6 +6173,7 @@
                     this.ctx.fill();
                 }
                 this.ctx.globalCompositeOperation = 'source-over';
+                this.ctx.restore();
             }
             
             drawLine(x1, y1, x2, y2) {
@@ -5938,9 +6182,9 @@
                 const frameCtx = frame.getContext('2d');
                 const shape = this.getCurrentBrushShape();
                 const size = this.getPressureBrushSize();
+                const off = this.frameToDisplayOffset(frame);
                 
                 if (shape === 'oval-h' || shape === 'oval-v') {
-                    // Stamp ellipses along the line path
                     const rx = shape === 'oval-h' ? size / 2 : size * 0.2;
                     const ry = shape === 'oval-v' ? size / 2 : size * 0.2;
                     const dist = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
@@ -5949,36 +6193,65 @@
                     
                     const compositeOp = this.tool === 'eraser' ? 'destination-out' : 'source-over';
                     
-                    for (const ctx of [frameCtx, this.ctx]) {
-                        ctx.globalCompositeOperation = compositeOp;
-                        ctx.fillStyle = this.color;
-                        for (let i = 0; i <= steps; i++) {
-                            const t = i / steps;
-                            const px = x1 + (x2 - x1) * t;
-                            const py = y1 + (y2 - y1) * t;
-                            ctx.beginPath();
-                            ctx.ellipse(px, py, rx, ry, 0, 0, Math.PI * 2);
-                            ctx.fill();
-                        }
-                        ctx.globalCompositeOperation = 'source-over';
+                    // Draw to frame canvas (frame-local coords)
+                    frameCtx.globalCompositeOperation = compositeOp;
+                    frameCtx.fillStyle = this.color;
+                    for (let i = 0; i <= steps; i++) {
+                        const t = i / steps;
+                        const px = x1 + (x2 - x1) * t;
+                        const py = y1 + (y2 - y1) * t;
+                        frameCtx.beginPath();
+                        frameCtx.ellipse(px, py, rx, ry, 0, 0, Math.PI * 2);
+                        frameCtx.fill();
                     }
+                    frameCtx.globalCompositeOperation = 'source-over';
+                    
+                    // Draw to display canvas (with viewport offset)
+                    this.ctx.save();
+                    this.ctx.translate(off.x, off.y);
+                    this.ctx.globalCompositeOperation = compositeOp;
+                    this.ctx.fillStyle = this.color;
+                    for (let i = 0; i <= steps; i++) {
+                        const t = i / steps;
+                        const px = x1 + (x2 - x1) * t;
+                        const py = y1 + (y2 - y1) * t;
+                        this.ctx.beginPath();
+                        this.ctx.ellipse(px, py, rx, ry, 0, 0, Math.PI * 2);
+                        this.ctx.fill();
+                    }
+                    this.ctx.globalCompositeOperation = 'source-over';
+                    this.ctx.restore();
                 } else {
                     const cap = shape === 'square' ? 'square' : 'round';
                     const join = shape === 'square' ? 'miter' : 'round';
                     const compositeOp = this.tool === 'eraser' ? 'destination-out' : 'source-over';
                     
-                    for (const ctx of [frameCtx, this.ctx]) {
-                        ctx.globalCompositeOperation = compositeOp;
-                        ctx.strokeStyle = this.color;
-                        ctx.lineWidth = size;
-                        ctx.lineCap = cap;
-                        ctx.lineJoin = join;
-                        ctx.beginPath();
-                        ctx.moveTo(x1, y1);
-                        ctx.lineTo(x2, y2);
-                        ctx.stroke();
-                        ctx.globalCompositeOperation = 'source-over';
-                    }
+                    // Draw to frame canvas
+                    frameCtx.globalCompositeOperation = compositeOp;
+                    frameCtx.strokeStyle = this.color;
+                    frameCtx.lineWidth = size;
+                    frameCtx.lineCap = cap;
+                    frameCtx.lineJoin = join;
+                    frameCtx.beginPath();
+                    frameCtx.moveTo(x1, y1);
+                    frameCtx.lineTo(x2, y2);
+                    frameCtx.stroke();
+                    frameCtx.globalCompositeOperation = 'source-over';
+                    
+                    // Draw to display canvas with viewport offset
+                    this.ctx.save();
+                    this.ctx.translate(off.x, off.y);
+                    this.ctx.globalCompositeOperation = compositeOp;
+                    this.ctx.strokeStyle = this.color;
+                    this.ctx.lineWidth = size;
+                    this.ctx.lineCap = cap;
+                    this.ctx.lineJoin = join;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(x1, y1);
+                    this.ctx.lineTo(x2, y2);
+                    this.ctx.stroke();
+                    this.ctx.globalCompositeOperation = 'source-over';
+                    this.ctx.restore();
                 }
             }
             
@@ -6054,15 +6327,29 @@
                     this.ctx.lineJoin = 'round';
                     this.ctx.globalCompositeOperation = 'source-over';
                     drawShapeOnCtx(this.ctx);
+                    this.drawPasteboardOverlay(this.ctx);
                 } else {
-                    // Draw final shape to frame
+                    // Draw final shape to frame — convert canvas-pixel coords to frame-local
+                    // Ensure frame covers all shape points (for pasteboard drawing)
+                    const worldX1 = sx1 + this.viewportX, worldY1 = sy1 + this.viewportY;
+                    const worldX2 = sx2 + this.viewportX, worldY2 = sy2 + this.viewportY;
+                    if (frame) {
+                        this.ensureFrameCovers(frame, Math.min(worldX1, worldX2), Math.min(worldY1, worldY2));
+                        this.ensureFrameCovers(frame, Math.max(worldX1, worldX2), Math.max(worldY1, worldY2));
+                    }
+                    
                     const frameCtx = frame.getContext('2d');
+                    const fOx = (frame._originX || 0) - this.viewportX;
+                    const fOy = (frame._originY || 0) - this.viewportY;
+                    frameCtx.save();
+                    frameCtx.translate(-fOx, -fOy);
                     frameCtx.strokeStyle = this.color;
                     frameCtx.lineWidth = this.brushSize;
                     frameCtx.lineCap = 'round';
                     frameCtx.lineJoin = 'round';
                     frameCtx.globalCompositeOperation = 'source-over';
                     drawShapeOnCtx(frameCtx);
+                    frameCtx.restore();
                 }
             }
             
@@ -6110,6 +6397,7 @@
                 for (const layer of this.layers) {
                     this.drawLayerWithTransform(this.ctx, layer, playheadPos);
                 }
+                this.drawPasteboardOverlay(this.ctx);
                 
                 // Draw the path
                 this.ctx.save();
@@ -6232,7 +6520,20 @@
                 const frame = layer.frames[this.currentFrameIndex];
                 if (!frame) return;
                 
+                // Auto-expand frame to cover all pen points
+                for (const pt of this._penPoints) {
+                    const wx = pt.x + this.viewportX;
+                    const wy = pt.y + this.viewportY;
+                    this.ensureFrameCovers(frame, wx, wy);
+                    if (pt.handleIn) this.ensureFrameCovers(frame, pt.handleIn.x + this.viewportX, pt.handleIn.y + this.viewportY);
+                    if (pt.handleOut) this.ensureFrameCovers(frame, pt.handleOut.x + this.viewportX, pt.handleOut.y + this.viewportY);
+                }
+                
                 const frameCtx = frame.getContext('2d');
+                const fOx = (frame._originX || 0) - this.viewportX;
+                const fOy = (frame._originY || 0) - this.viewportY;
+                frameCtx.save();
+                frameCtx.translate(-fOx, -fOy);
                 frameCtx.strokeStyle = this.color;
                 frameCtx.lineWidth = this.brushSize;
                 frameCtx.lineCap = 'round';
@@ -6241,6 +6542,7 @@
                 
                 this._penBuildPath(frameCtx, this._penPoints, close);
                 frameCtx.stroke();
+                frameCtx.restore();
                 
                 this._penPoints = [];
                 this._penActive = false;
@@ -6281,11 +6583,12 @@
                 tempCanvas.height = this.canvas.height;
                 const tempCtx = tempCanvas.getContext('2d');
                 
-                // Draw the frame artwork
-                tempCtx.drawImage(frame, 0, 0);
+                // Draw the frame artwork at viewport offset
+                const offX = (frame._originX || 0) - this.viewportX;
+                const offY = (frame._originY || 0) - this.viewportY;
+                tempCtx.drawImage(frame, offX, offY);
                 
                 // Apply a semi-transparent tint over only the artwork pixels
-                // source-atop draws only where existing pixels are opaque
                 tempCtx.globalCompositeOperation = 'source-atop';
                 tempCtx.globalAlpha = 0.5;
                 tempCtx.fillStyle = tintColor;
@@ -6341,6 +6644,8 @@
                         const copy = document.createElement('canvas');
                         copy.width = frame.width;
                         copy.height = frame.height;
+                        copy._originX = frame._originX || 0;
+                        copy._originY = frame._originY || 0;
                         copy.getContext('2d').drawImage(frame, 0, 0);
                         return copy;
                     }),
@@ -6643,19 +6948,24 @@
                 const tf = this.getLayerTransformAtFrame(layer, localIdx);
                 const hasTransform = tf.x !== 0 || tf.y !== 0 || tf.anchorX !== 0 || tf.anchorY !== 0 || tf.scaleX !== 1 || tf.scaleY !== 1 || tf.rotation !== 0;
                 
+                // Frame position relative to viewport
+                const offX = (frame._originX || 0) - this.viewportX;
+                const offY = (frame._originY || 0) - this.viewportY;
+                
                 ctx.save();
                 ctx.globalAlpha = tf.opacity;
                 
                 if (hasTransform) {
-                    const ax = this.canvas.width / 2 + tf.anchorX;
-                    const ay = this.canvas.height / 2 + tf.anchorY;
+                    // Anchor at project center in canvas coordinates
+                    const ax = -this.viewportX + this.projectWidth / 2 + tf.anchorX;
+                    const ay = -this.viewportY + this.projectHeight / 2 + tf.anchorY;
                     ctx.translate(ax + tf.x, ay + tf.y);
                     ctx.rotate(tf.rotation * Math.PI / 180);
                     ctx.scale(tf.scaleX, tf.scaleY);
                     ctx.translate(-ax, -ay);
                 }
                 
-                ctx.drawImage(frame, 0, 0);
+                ctx.drawImage(frame, offX, offY);
                 ctx.restore();
             }
             
@@ -6664,8 +6974,8 @@
                 const layer = this.getCurrentLayer();
                 
                 const tf = this.getLayerTransformAtFrame(layer, this.currentFrameIndex);
-                const ax = this.canvas.width / 2 + tf.anchorX;
-                const ay = this.canvas.height / 2 + tf.anchorY;
+                const ax = -this.viewportX + this.projectWidth / 2 + tf.anchorX;
+                const ay = -this.viewportY + this.projectHeight / 2 + tf.anchorY;
                 const r = 12; // crosshair radius
                 
                 ctx.save();
@@ -8039,6 +8349,8 @@
                         const c = document.createElement('canvas');
                         c.width = src.width;
                         c.height = src.height;
+                        c._originX = src._originX || 0;
+                        c._originY = src._originY || 0;
                         c.getContext('2d').drawImage(src, 0, 0);
                         srcToCopy.set(src, c);
                         return c;
@@ -8055,6 +8367,8 @@
                 const copyCanvas = document.createElement('canvas');
                 copyCanvas.width = sourceFrame.width;
                 copyCanvas.height = sourceFrame.height;
+                copyCanvas._originX = sourceFrame._originX || 0;
+                copyCanvas._originY = sourceFrame._originY || 0;
                 copyCanvas.getContext('2d').drawImage(sourceFrame, 0, 0);
                 
                 this.copiedFrame = copyCanvas;
@@ -8093,6 +8407,8 @@
                     const nf = document.createElement('canvas');
                     nf.width = src.width;
                     nf.height = src.height;
+                    nf._originX = src._originX || 0;
+                    nf._originY = src._originY || 0;
                     nf.getContext('2d').drawImage(src, 0, 0);
                     srcToPasted.set(src, nf);
                     return nf;
@@ -8148,6 +8464,8 @@
                         const nf = document.createElement('canvas');
                         nf.width = src.width;
                         nf.height = src.height;
+                        nf._originX = src._originX || 0;
+                        nf._originY = src._originY || 0;
                         nf.getContext('2d').drawImage(src, 0, 0);
                         srcToDup.set(src, nf);
                         return nf;
@@ -8180,6 +8498,8 @@
                 const newFrame = document.createElement('canvas');
                 newFrame.width = sourceFrame.width;
                 newFrame.height = sourceFrame.height;
+                newFrame._originX = sourceFrame._originX || 0;
+                newFrame._originY = sourceFrame._originY || 0;
                 newFrame.getContext('2d').drawImage(sourceFrame, 0, 0);
                 
                 layer.frames.splice(idx + 1, 0, newFrame);
@@ -8205,8 +8525,8 @@
                 const layer = this.getCurrentLayer();
                 const frame = layer.frames[this.currentFrameIndex];
                 const frameCtx = frame.getContext('2d');
-                const width = this.canvas.width;
-                const height = this.canvas.height;
+                const width = frame.width;
+                const height = frame.height;
                 
                 const imageData = frameCtx.getImageData(0, 0, width, height);
                 const data = imageData.data;
@@ -8375,6 +8695,24 @@
                 this.commitSelection();
                 if (this.frameSelectMode) this.exitFrameSelectMode();
                 else this.selectedFrames.clear();
+                
+                // Save viewport and pasteboard state, reset to camera view for playback
+                this._savedViewport = { x: this.viewportX, y: this.viewportY, pasteboard: this.pasteboardVisible };
+                if (this.pasteboardVisible) {
+                    // Temporarily disable pasteboard for clean playback
+                    this.pasteboardVisible = false;
+                    this.canvas.width = this.projectWidth;
+                    this.canvas.height = this.projectHeight;
+                    this.selectionCanvas.width = this.projectWidth;
+                    this.selectionCanvas.height = this.projectHeight;
+                    this.onionCanvas.width = this.projectWidth;
+                    this.onionCanvas.height = this.projectHeight;
+                    this.zoomLevel = null;
+                    this.applyZoom();
+                }
+                this.viewportX = 0;
+                this.viewportY = 0;
+                
                 this.isPlaying = true;
                 
                 const mode = modeOverride || this.playbackMode;
@@ -8460,6 +8798,22 @@
                 }
                 this.stopAudioPlayback();
                 this.hideAudioPlayhead();
+                
+                // Restore viewport and pasteboard from before playback
+                if (this._savedViewport) {
+                    if (this._savedViewport.pasteboard && !this.pasteboardVisible) {
+                        this.pasteboardVisible = true;
+                        this.updatePasteboard(); // This sets viewport too
+                        // Override viewport to saved pan position
+                        this.viewportX = this._savedViewport.x;
+                        this.viewportY = this._savedViewport.y;
+                    } else {
+                        this.viewportX = this._savedViewport.x;
+                        this.viewportY = this._savedViewport.y;
+                    }
+                    this._savedViewport = null;
+                }
+                
                 this.render(); // Full render to restore timeline + onion skin
             }
             
@@ -8960,6 +9314,20 @@
                 // Draw anchor point indicator
                 this.drawAnchorIndicator(this.ctx);
                 
+                // Draw pasteboard overlay (darkens area outside project bounds)
+                this.drawPasteboardOverlay(this.ctx);
+                
+                // Draw viewport boundary guide when panned away from home
+                // (skip when pasteboard is visible — overlay already shows the boundary)
+                if (!this.pasteboardVisible && (this.viewportX !== 0 || this.viewportY !== 0)) {
+                    this.ctx.save();
+                    this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+                    this.ctx.lineWidth = 1;
+                    this.ctx.setLineDash([6, 4]);
+                    this.ctx.strokeRect(-this.viewportX, -this.viewportY, this.projectWidth, this.projectHeight);
+                    this.ctx.restore();
+                }
+                
                 // Draw selection if it exists (with rotation, skew, distort)
                 if (this.selection) {
                     this._drawSelectionPreview(this.ctx);
@@ -8997,6 +9365,7 @@
                     this.drawLayerWithTransform(this.ctx, layer, playheadPos);
                 }
                 this.drawAnchorIndicator(this.ctx);
+                this.drawPasteboardOverlay(this.ctx);
                 
                 if (this.selection) {
                     this._drawSelectionPreview(this.ctx);
@@ -10131,7 +10500,12 @@
                                     frames.push({ holdRef: canvasIdMap.get(frame) });
                                 } else {
                                     canvasIdMap.set(frame, fi);
-                                    frames.push(frame.toDataURL('image/png'));
+                                    const fData = { data: frame.toDataURL('image/png') };
+                                    if (frame._originX || frame._originY) {
+                                        fData.originX = frame._originX || 0;
+                                        fData.originY = frame._originY || 0;
+                                    }
+                                    frames.push(fData);
                                 }
                             } else {
                                 frames.push(null);
@@ -10151,8 +10525,8 @@
                     const project = {
                         format: 'FrameBoy',
                         version: 1,
-                        canvasWidth: this.canvas.width,
-                        canvasHeight: this.canvas.height,
+                        canvasWidth: this.projectWidth,
+                        canvasHeight: this.projectHeight,
                         fps: this.fps,
                         currentLayerId: this.currentLayerId,
                         currentFrameIndex: this.currentFrameIndex,
@@ -10258,12 +10632,19 @@
                     
                     // Restore canvas dimensions
                     if (project.canvasWidth && project.canvasHeight) {
-                        this.canvas.width = project.canvasWidth;
-                        this.canvas.height = project.canvasHeight;
-                        this.onionCanvas.width = project.canvasWidth;
-                        this.onionCanvas.height = project.canvasHeight;
-                        this.selectionCanvas.width = project.canvasWidth;
-                        this.selectionCanvas.height = project.canvasHeight;
+                        this.projectWidth = project.canvasWidth;
+                        this.projectHeight = project.canvasHeight;
+                        
+                        if (this.pasteboardVisible) {
+                            // Will be applied after load via updatePasteboard
+                        } else {
+                            this.canvas.width = project.canvasWidth;
+                            this.canvas.height = project.canvasHeight;
+                            this.onionCanvas.width = project.canvasWidth;
+                            this.onionCanvas.height = project.canvasHeight;
+                            this.selectionCanvas.width = project.canvasWidth;
+                            this.selectionCanvas.height = project.canvasHeight;
+                        }
                     }
                     
                     // Restore FPS
@@ -10273,13 +10654,15 @@
                     }
                     
                     // Load layers and frames from base64
-                    const loadImage = (dataUrl) => {
+                    const loadImage = (dataUrl, originX, originY) => {
                         return new Promise((resolve, reject) => {
                             const img = new Image();
                             img.onload = () => {
                                 const c = document.createElement('canvas');
-                                c.width = this.canvas.width;
-                                c.height = this.canvas.height;
+                                c.width = img.naturalWidth || this.canvas.width;
+                                c.height = img.naturalHeight || this.canvas.height;
+                                c._originX = originX || 0;
+                                c._originY = originY || 0;
                                 c.getContext('2d').drawImage(img, 0, 0);
                                 resolve(c);
                             };
@@ -10298,7 +10681,11 @@
                                 // Hold frame: reuse the canvas from the referenced index
                                 frames.push(holdCanvasMap.get(frameData.holdRef) || null);
                             } else if (frameData) {
-                                const canvas = await loadImage(frameData);
+                                // Support both old format (plain string) and new format (object with data + origin)
+                                const dataUrl = (typeof frameData === 'string') ? frameData : frameData.data;
+                                const originX = (typeof frameData === 'object') ? (frameData.originX || 0) : 0;
+                                const originY = (typeof frameData === 'object') ? (frameData.originY || 0) : 0;
+                                const canvas = await loadImage(dataUrl, originX, originY);
                                 holdCanvasMap.set(fi, canvas);
                                 frames.push(canvas);
                             } else {
@@ -10327,7 +10714,14 @@
                     this.redoStack = [];
                     this.selectionUndoStack = [];
                     this.selectionRedoStack = [];
+                    this.viewportX = 0;
+                    this.viewportY = 0;
                     this.updateUndoRedoButtons();
+                    
+                    // Apply pasteboard if visible
+                    if (this.pasteboardVisible) {
+                        this.updatePasteboard();
+                    }
                     
                     // Restore audio tracks if present
                     this.audioTracks = [];
@@ -10530,8 +10924,8 @@
                     
                     // Create a temporary canvas for compositing
                     const compositeCanvas = document.createElement('canvas');
-                    compositeCanvas.width = this.canvas.width;
-                    compositeCanvas.height = this.canvas.height;
+                    compositeCanvas.width = this.projectWidth;
+                    compositeCanvas.height = this.projectHeight;
                     const compositeCtx = compositeCanvas.getContext('2d');
                     
                     // Create folders for each layer and composite
@@ -10561,6 +10955,9 @@
                     }
                     
                     // Export composite frames (all visible layers combined)
+                    // Render at home viewport for export
+                    const _savedVpX = this.viewportX, _savedVpY = this.viewportY;
+                    this.viewportX = 0; this.viewportY = 0;
                     for (let i = 0; i < maxFrames; i++) {
                         // Clear canvas with white background
                         compositeCtx.fillStyle = 'white';
@@ -10584,6 +10981,7 @@
                         const totalProgress = Math.round((i / maxFrames) * 100);
                         exportBtn.textContent = `Creating composite... ${totalProgress}%`;
                     }
+                    this.viewportX = _savedVpX; this.viewportY = _savedVpY;
                     
                     // Generate zip file
                     exportBtn.textContent = 'Generating ZIP file...';
@@ -10647,13 +11045,15 @@
                     
                     // Create temporary canvas for rendering
                     const tempCanvas = document.createElement('canvas');
-                    tempCanvas.width = this.canvas.width;
-                    tempCanvas.height = this.canvas.height;
+                    tempCanvas.width = this.projectWidth;
+                    tempCanvas.height = this.projectHeight;
                     const tempCtx = tempCanvas.getContext('2d');
                     
                     // Render all frames as data URLs
                     exportBtn.textContent = 'Rendering frames...';
                     const frameImages = [];
+                    const _svpX2 = this.viewportX, _svpY2 = this.viewportY;
+                    this.viewportX = 0; this.viewportY = 0;
                     
                     for (let i = 0; i < maxFrames; i++) {
                         // White background for GIF export
@@ -10672,6 +11072,7 @@
                         const progress = Math.round((i / maxFrames) * 50);
                         exportBtn.textContent = `Rendering frames... ${progress}%`;
                     }
+                    this.viewportX = _svpX2; this.viewportY = _svpY2;
                     
                     // Create GIF from frames
                     exportBtn.textContent = 'Creating GIF... 50%';
@@ -10748,8 +11149,8 @@
                     
                     // Create a temporary canvas for recording
                     const recordCanvas = document.createElement('canvas');
-                    recordCanvas.width = this.canvas.width;
-                    recordCanvas.height = this.canvas.height;
+                    recordCanvas.width = this.projectWidth;
+                    recordCanvas.height = this.projectHeight;
                     const recordCtx = recordCanvas.getContext('2d');
                     
                     // Try best available video format
@@ -10809,6 +11210,10 @@
                     
                     const drawNextFrame = () => {
                         if (currentFrame < maxFrames) {
+                            // Export at home viewport
+                            const _rvpx = this.viewportX, _rvpy = this.viewportY;
+                            this.viewportX = 0; this.viewportY = 0;
+                            
                             // White background
                             recordCtx.fillStyle = '#ffffff';
                             recordCtx.fillRect(0, 0, recordCanvas.width, recordCanvas.height);
@@ -10817,6 +11222,8 @@
                             for (const layer of this.layers) {
                                 this.drawLayerWithTransform(recordCtx, layer, currentFrame);
                             }
+                            
+                            this.viewportX = _rvpx; this.viewportY = _rvpy;
                             
                             const progress = Math.round((currentFrame / maxFrames) * 100);
                             exportBtn.textContent = `Recording MP4... ${progress}%`;
@@ -10911,10 +11318,12 @@
                 ctx.fillStyle = 'white';
                 ctx.fillRect(0, 0, spriteSheet.width, spriteSheet.height);
                 
-                // Draw each frame
+                // Draw each frame (accounting for frame origin in infinite canvas)
                 layer.frames.forEach((frame, index) => {
                     if (frame) {
-                        ctx.drawImage(frame, index * frameWidth, 0);
+                        const offX = frame._originX || 0;
+                        const offY = frame._originY || 0;
+                        ctx.drawImage(frame, offX + index * frameWidth, offY);
                     }
                 });
                 
