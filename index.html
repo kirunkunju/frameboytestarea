@@ -3175,8 +3175,11 @@
                 const availW = container.clientWidth - padX;
                 const availH = container.clientHeight - padY;
                 if (availW <= 0 || availH <= 0) return 1;
-                const scaleW = availW / this.canvas.width;
-                const scaleH = availH / this.canvas.height;
+                // When pasteboard is visible, zoom to fit the PROJECT area (not the entire pasteboard)
+                const fitW = this.pasteboardVisible ? this.projectWidth : this.canvas.width;
+                const fitH = this.pasteboardVisible ? this.projectHeight : this.canvas.height;
+                const scaleW = availW / fitW;
+                const scaleH = availH / fitH;
                 return Math.min(scaleW, scaleH, 1); // Don't upscale past 100% in fit mode
             }
             
@@ -3215,9 +3218,22 @@
                 this.selectionCanvas.style.left = '0px';
                 this.selectionCanvas.style.top = '0px';
                 
-                // Update zoom label
+                // Update zoom label — show zoom relative to project, not pasteboard
                 const pct = Math.round(zoom * 100);
                 document.getElementById('zoomLevel').textContent = pct + '%';
+                
+                // When pasteboard is visible, scroll so the project area is centered in the viewport
+                if (this.pasteboardVisible && !isFitting) {
+                    const pad = this.getPasteboardPadding();
+                    // Project area starts at (pad, pad) in canvas coords
+                    // In display pixels: pad * zoom. Center of project: pad * zoom + projectW/2 * zoom
+                    const projCenterX = (pad + this.projectWidth / 2) * zoom;
+                    const projCenterY = (pad + this.projectHeight / 2) * zoom;
+                    // Scroll so project center is at viewport center
+                    const margin = 10; // wrapper margin when scrollable
+                    container.scrollLeft = Math.max(0, projCenterX + margin - container.clientWidth / 2);
+                    container.scrollTop = Math.max(0, projCenterY + margin - container.clientHeight / 2);
+                }
             }
             
             setZoom(level, centerOnMouse) {
@@ -3295,9 +3311,11 @@
                 this.zoomLevel = null; // Back to fit-to-screen
                 this._prevZoom = null;
                 this.applyZoom();
-                // Reset scroll to top-left (centering is handled by margin)
-                this.canvasContainer.scrollLeft = 0;
-                this.canvasContainer.scrollTop = 0;
+                // For non-pasteboard mode, reset scroll (centering is handled by margin)
+                if (!this.pasteboardVisible) {
+                    this.canvasContainer.scrollLeft = 0;
+                    this.canvasContainer.scrollTop = 0;
+                }
                 this.updateBrushCursor();
             }
             
@@ -3602,6 +3620,17 @@
                 };
             }
             
+            // Get the display offset for the current frame (used by selection/transform system)
+            getSelectionDisplayOffset() {
+                const layer = this.getCurrentLayer();
+                const frame = layer.frames[this.currentFrameIndex];
+                if (!frame) return { x: -this.viewportX, y: -this.viewportY };
+                return {
+                    x: (frame._originX || 0) - this.viewportX,
+                    y: (frame._originY || 0) - this.viewportY
+                };
+            }
+            
             // Auto-expand a frame canvas to cover a world-space point
             ensureFrameCovers(frame, worldX, worldY) {
                 const margin = 256; // Expand in chunks to avoid per-pixel growth
@@ -3746,6 +3775,8 @@
                         const newFrame = document.createElement('canvas');
                         newFrame.width = newW;
                         newFrame.height = newH;
+                        newFrame._originX = 0;
+                        newFrame._originY = 0;
                         const ctx = newFrame.getContext('2d');
                         
                         if (mode === 'scale') {
@@ -3784,10 +3815,9 @@
                     this.zoomLevel = null;
                     this.applyZoom();
                     this.render();
+                    this.canvasContainer.scrollLeft = 0;
+                    this.canvasContainer.scrollTop = 0;
                 }
-                
-                this.canvasContainer.scrollLeft = 0;
-                this.canvasContainer.scrollTop = 0;
                 
                 // Reset undo (frames have changed structure)
                 this.undoStack = [];
@@ -4628,6 +4658,8 @@
                                     this.viewportX = 0;
                                     this.viewportY = 0;
                                 }
+                                this.zoomLevel = null;
+                                this.applyZoom();
                                 this.render();
                                 break;
                             case '\\':
@@ -5591,8 +5623,9 @@
                                 this.activeHandle = {type: 'rotate', corner: handle.type};
                                 this.isRotating = true;
                                 this.initialRotation = this.selection.rotation || 0;
-                                const anchorX = this.selection.anchorX;
-                                const anchorY = this.selection.anchorY;
+                                const off = this.getSelectionDisplayOffset();
+                                const anchorX = this.selection.anchorX + off.x;
+                                const anchorY = this.selection.anchorY + off.y;
                                 this.startAngle = Math.atan2(y - anchorY, x - anchorX);
                                 this.updateRotationCursor(handle.type, true);
                             } else if (this.tool !== 'rotate') {
@@ -7504,20 +7537,32 @@
                     return;
                 }
                 
-                // Calculate lasso path bounds (used as initial working area)
+                // Convert lasso path from display canvas coords to frame-local coords
+                const off = this.getSelectionDisplayOffset();
+                const localPath = this.lassoPath.map(p => ({
+                    x: p.x - off.x,
+                    y: p.y - off.y
+                }));
+                
+                // Calculate lasso path bounds in frame-local coords
                 let lassoMinX = Infinity, lassoMinY = Infinity, lassoMaxX = -Infinity, lassoMaxY = -Infinity;
-                for (let point of this.lassoPath) {
+                for (let point of localPath) {
                     lassoMinX = Math.min(lassoMinX, point.x);
                     lassoMinY = Math.min(lassoMinY, point.y);
                     lassoMaxX = Math.max(lassoMaxX, point.x);
                     lassoMaxY = Math.max(lassoMaxY, point.y);
                 }
                 
-                // Clamp to canvas bounds
+                // Get frame for bounds clamping
+                const layer = this.getCurrentLayer();
+                const frame = layer.frames[this.currentFrameIndex];
+                const frameCtx = frame.getContext('2d');
+                
+                // Clamp to frame bounds
                 lassoMinX = Math.max(0, Math.floor(lassoMinX));
                 lassoMinY = Math.max(0, Math.floor(lassoMinY));
-                lassoMaxX = Math.min(this.canvas.width, Math.ceil(lassoMaxX));
-                lassoMaxY = Math.min(this.canvas.height, Math.ceil(lassoMaxY));
+                lassoMaxX = Math.min(frame.width, Math.ceil(lassoMaxX));
+                lassoMaxY = Math.min(frame.height, Math.ceil(lassoMaxY));
                 
                 const lassoWidth = lassoMaxX - lassoMinX;
                 const lassoHeight = lassoMaxY - lassoMinY;
@@ -7527,23 +7572,18 @@
                     return;
                 }
                 
-                // Get image data from current frame
-                const layer = this.getCurrentLayer();
-                const frame = layer.frames[this.currentFrameIndex];
-                const frameCtx = frame.getContext('2d');
-                
-                // Create a mask for the lasso selection (full canvas size)
+                // Create a mask for the lasso selection (frame-local coords)
                 const maskCanvas = document.createElement('canvas');
-                maskCanvas.width = this.canvas.width;
-                maskCanvas.height = this.canvas.height;
+                maskCanvas.width = frame.width;
+                maskCanvas.height = frame.height;
                 const maskCtx = maskCanvas.getContext('2d');
                 
-                // Draw lasso path as mask
+                // Draw lasso path as mask using frame-local coords
                 maskCtx.fillStyle = 'white';
                 maskCtx.beginPath();
-                maskCtx.moveTo(this.lassoPath[0].x, this.lassoPath[0].y);
-                for (let i = 1; i < this.lassoPath.length; i++) {
-                    maskCtx.lineTo(this.lassoPath[i].x, this.lassoPath[i].y);
+                maskCtx.moveTo(localPath[0].x, localPath[0].y);
+                for (let i = 1; i < localPath.length; i++) {
+                    maskCtx.lineTo(localPath[i].x, localPath[i].y);
                 }
                 maskCtx.closePath();
                 maskCtx.fill();
@@ -7587,7 +7627,7 @@
                     return;
                 }
                 
-                // Calculate tight bounds in canvas coordinates
+                // Calculate tight bounds in frame-local coordinates
                 const tightWidth = tightMaxX - tightMinX + 1;
                 const tightHeight = tightMaxY - tightMinY + 1;
                 const finalX = lassoMinX + tightMinX;
@@ -7602,20 +7642,20 @@
                 // Copy only the tight region from the masked canvas
                 selectedCtx.drawImage(maskedCanvas, tightMinX, tightMinY, tightWidth, tightHeight, 0, 0, tightWidth, tightHeight);
                 
-                // Store selection with tight bounds
+                // Store selection with tight bounds (frame-local coords)
                 this.selection = {
                     imageData: selectedCanvas,
                     bounds: { x: finalX, y: finalY, width: tightWidth, height: tightHeight },
                     originalBounds: { x: finalX, y: finalY, width: tightWidth, height: tightHeight }
                 };
                 
-                // Erase selected area from original frame (using lasso path shape)
+                // Erase selected area from original frame (using frame-local lasso path)
                 frameCtx.save();
                 frameCtx.globalCompositeOperation = 'destination-out';
                 frameCtx.beginPath();
-                frameCtx.moveTo(this.lassoPath[0].x, this.lassoPath[0].y);
-                for (let i = 1; i < this.lassoPath.length; i++) {
-                    frameCtx.lineTo(this.lassoPath[i].x, this.lassoPath[i].y);
+                frameCtx.moveTo(localPath[0].x, localPath[0].y);
+                for (let i = 1; i < localPath.length; i++) {
+                    frameCtx.lineTo(localPath[i].x, localPath[i].y);
                 }
                 frameCtx.closePath();
                 frameCtx.fill();
@@ -7633,13 +7673,18 @@
             isPointInSelection(x, y) {
                 if (!this.selection) return false;
                 
+                // Convert display canvas coords to frame-local
+                const off = this.getSelectionDisplayOffset();
+                const lx = x - off.x;
+                const ly = y - off.y;
+                
                 // Distort mode: point-in-quad test
                 if (this.tool === 'distort' && this.selection.corners) {
-                    return this._pointInPolygon(x, y, this.selection.corners);
+                    return this._pointInPolygon(lx, ly, this.selection.corners);
                 }
                 
                 const b = this.selection.bounds;
-                return x >= b.x && x <= b.x + b.width && y >= b.y && y <= b.y + b.height;
+                return lx >= b.x && lx <= b.x + b.width && ly >= b.y && ly <= b.y + b.height;
             }
             
             _pointInPolygon(px, py, poly) {
@@ -7736,6 +7781,13 @@
                     this.transformHandles.push({ x: anchorX, y: anchorY, type: 'anchor' });
                 }
                 
+                // Offset all handles from frame-local to display canvas coords
+                const off = this.getSelectionDisplayOffset();
+                for (const h of this.transformHandles) {
+                    h.x += off.x;
+                    h.y += off.y;
+                }
+                
                 this.drawTransformHandles();
             }
             
@@ -7751,20 +7803,21 @@
                 
                 const b = this.selection.bounds;
                 const rotation = this.selection.rotation || 0;
-                const anchorX = this.selection.anchorX || (b.x + b.width / 2);
-                const anchorY = this.selection.anchorY || (b.y + b.height / 2);
+                const off = this.getSelectionDisplayOffset();
+                const anchorX = (this.selection.anchorX || (b.x + b.width / 2)) + off.x;
+                const anchorY = (this.selection.anchorY || (b.y + b.height / 2)) + off.y;
                 
                 if (this.tool === 'distort' && this.selection.corners) {
-                    // Draw distort quad outline
+                    // Draw distort quad outline (offset corners to display space)
                     const c = this.selection.corners;
                     this.selectionCtx.strokeStyle = '#cc44ff';
                     this.selectionCtx.lineWidth = 2;
                     this.selectionCtx.setLineDash([5, 5]);
                     this.selectionCtx.beginPath();
-                    this.selectionCtx.moveTo(c[0].x, c[0].y);
-                    this.selectionCtx.lineTo(c[1].x, c[1].y);
-                    this.selectionCtx.lineTo(c[2].x, c[2].y);
-                    this.selectionCtx.lineTo(c[3].x, c[3].y);
+                    this.selectionCtx.moveTo(c[0].x + off.x, c[0].y + off.y);
+                    this.selectionCtx.lineTo(c[1].x + off.x, c[1].y + off.y);
+                    this.selectionCtx.lineTo(c[2].x + off.x, c[2].y + off.y);
+                    this.selectionCtx.lineTo(c[3].x + off.x, c[3].y + off.y);
                     this.selectionCtx.closePath();
                     this.selectionCtx.stroke();
                     this.selectionCtx.setLineDash([]);
@@ -7797,7 +7850,7 @@
                     this.selectionCtx.strokeStyle = skewColor;
                     this.selectionCtx.lineWidth = 2;
                     this.selectionCtx.setLineDash([5, 5]);
-                    this.selectionCtx.strokeRect(b.x, b.y, b.width, b.height);
+                    this.selectionCtx.strokeRect(b.x + off.x, b.y + off.y, b.width, b.height);
                     this.selectionCtx.setLineDash([]);
                     
                     this.selectionCtx.restore();
@@ -7858,6 +7911,9 @@
                 const shiftKey = e ? e.shiftKey : false;
                 const altKey = e ? e.altKey : false;
                 
+                // Offset for converting display ↔ frame-local coords
+                const off = this.getSelectionDisplayOffset();
+                
                 if (this.activeHandle.type === 'move') {
                     // Move selection and anchor point together
                     this.selection.bounds.x += dx;
@@ -7873,9 +7929,9 @@
                     }
                     this.transformStart = { x, y };
                 } else if (this.activeHandle.type === 'anchor') {
-                    // Move anchor point independently
-                    this.selection.anchorX = x;
-                    this.selection.anchorY = y;
+                    // Move anchor point independently — convert display to frame-local
+                    this.selection.anchorX = x - off.x;
+                    this.selection.anchorY = y - off.y;
                 } else if (this.activeHandle.type.startsWith('distort-')) {
                     // Distort: move individual corner freely
                     const idx = this.activeHandle.cornerIdx;
@@ -7883,9 +7939,9 @@
                     this.selection.corners[idx].y += dy;
                     this.transformStart = { x, y };
                 } else if (this.activeHandle.type === 'rotate' || this.isRotating) {
-                    // Calculate rotation angle from anchor point
-                    const anchorX = this.selection.anchorX;
-                    const anchorY = this.selection.anchorY;
+                    // Calculate rotation angle from anchor point (offset anchor to display space)
+                    const anchorX = this.selection.anchorX + off.x;
+                    const anchorY = this.selection.anchorY + off.y;
                     const currentAngle = Math.atan2(y - anchorY, x - anchorX);
                     const angleDelta = currentAngle - this.startAngle;
                     this.selection.rotation = this.initialRotation + angleDelta;
@@ -8013,15 +8069,22 @@
                 const skewX = this.selection.skewX || 0;
                 const skewY = this.selection.skewY || 0;
                 
+                // Offset from frame-local coords to display canvas coords
+                const off = this.getSelectionDisplayOffset();
+                
                 // Distort mode: draw image mapped to free quad
                 if (this.tool === 'distort' && this.selection.corners) {
-                    this._drawImageToQuad(ctx, this.selection.imageData, this.selection.corners);
+                    // Offset corners to display space
+                    const displayCorners = this.selection.corners.map(c => ({
+                        x: c.x + off.x, y: c.y + off.y
+                    }));
+                    this._drawImageToQuad(ctx, this.selection.imageData, displayCorners);
                     return;
                 }
                 
                 const rotation = this.selection.rotation || 0;
-                const anchorX = this.selection.anchorX || (b.x + b.width / 2);
-                const anchorY = this.selection.anchorY || (b.y + b.height / 2);
+                const anchorX = (this.selection.anchorX || (b.x + b.width / 2)) + off.x;
+                const anchorY = (this.selection.anchorY || (b.y + b.height / 2)) + off.y;
                 
                 ctx.save();
                 ctx.translate(anchorX, anchorY);
@@ -8030,7 +8093,7 @@
                     ctx.transform(1, skewY, skewX, 1, 0, 0);
                 }
                 ctx.translate(-anchorX, -anchorY);
-                ctx.drawImage(this.selection.imageData, b.x, b.y, b.width, b.height);
+                ctx.drawImage(this.selection.imageData, b.x + off.x, b.y + off.y, b.width, b.height);
                 ctx.restore();
             }
             
@@ -8261,9 +8324,9 @@
                 const pasteCtx = pasteCanvas.getContext('2d');
                 pasteCtx.drawImage(this.copiedSelection.imageData, 0, 0);
                 
-                // Paste centered on canvas
-                const centerX = Math.round((this.canvas.width - this.copiedSelection.width) / 2);
-                const centerY = Math.round((this.canvas.height - this.copiedSelection.height) / 2);
+                // Paste centered on project area (frame-local coords)
+                const centerX = Math.round((this.projectWidth - this.copiedSelection.width) / 2);
+                const centerY = Math.round((this.projectHeight - this.copiedSelection.height) / 2);
                 
                 this.selection = {
                     imageData: pasteCanvas,
