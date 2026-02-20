@@ -3075,6 +3075,7 @@
                 // Handle window resize
                 window.addEventListener('resize', () => {
                     this.applyZoom();
+                    if (this.pasteboardVisible) this._centerScrollOnProject();
                     this.render();
                 });
                 
@@ -3223,15 +3224,6 @@
                 // Update zoom label — show zoom relative to project, not pasteboard
                 const pct = Math.round(zoom * 100);
                 document.getElementById('zoomLevel').textContent = pct + '%';
-                
-                // When pasteboard is visible, scroll so the project area is centered in the viewport
-                if (this.pasteboardVisible && (!fitsH || !fitsV) && !this._skipPasteboardScroll) {
-                    const pad = this.getPasteboardPadding();
-                    const projCenterX = (pad + this.projectWidth / 2) * zoom;
-                    const projCenterY = (pad + this.projectHeight / 2) * zoom;
-                    if (!fitsH) container.scrollLeft = Math.max(0, projCenterX + mx - cw / 2);
-                    if (!fitsV) container.scrollTop = Math.max(0, projCenterY + my - ch / 2);
-                }
             }
             
             setZoom(level, centerOnMouse) {
@@ -3256,9 +3248,7 @@
                 }
                 
                 // Apply zoom — this updates wrapper size and margins
-                this._skipPasteboardScroll = true;
                 this.applyZoom();
-                this._skipPasteboardScroll = false;
                 
                 const newZoom = this.getEffectiveZoom();
                 const w = Math.round(this.canvas.width * newZoom);
@@ -3513,9 +3503,7 @@
                 const max = this.zoomSteps[this.zoomSteps.length - 1];
                 this.zoomLevel = Math.max(min, Math.min(max, newZoomLevel));
                 
-                this._skipPasteboardScroll = true;
                 this.applyZoom();
-                this._skipPasteboardScroll = false;
                 
                 const newZoom = this.getEffectiveZoom();
                 
@@ -3727,7 +3715,37 @@
                 // Reset zoom to fit
                 this.zoomLevel = null;
                 this.applyZoom();
+                
+                // Center scroll on project area when pasteboard is active
+                if (this.pasteboardVisible) {
+                    this._centerScrollOnProject();
+                } else {
+                    this.canvasContainer.scrollLeft = 0;
+                    this.canvasContainer.scrollTop = 0;
+                }
+                
                 this.render();
+            }
+            
+            _centerScrollOnProject() {
+                const container = this.canvasContainer;
+                const zoom = this.getEffectiveZoom();
+                const pad = this.getPasteboardPadding();
+                const w = Math.round(this.canvas.width * zoom);
+                const h = Math.round(this.canvas.height * zoom);
+                const cw = container.clientWidth;
+                const ch = container.clientHeight;
+                
+                // Read actual margins from DOM
+                const style = window.getComputedStyle(this.canvasWrapper);
+                const mx = parseFloat(style.marginLeft) || 0;
+                const my = parseFloat(style.marginTop) || 0;
+                
+                const projCenterX = (pad + this.projectWidth / 2) * zoom;
+                const projCenterY = (pad + this.projectHeight / 2) * zoom;
+                
+                if (w >= cw) container.scrollLeft = Math.max(0, projCenterX + mx - cw / 2);
+                if (h >= ch) container.scrollTop = Math.max(0, projCenterY + my - ch / 2);
             }
             
             // Draw darkened pasteboard overlay outside the project area
@@ -11498,6 +11516,10 @@
         // Initialize the app
         const app = new FrameBoy();
         
+        // Helper: safely check e.target.closest (e.target may be a text node without .closest)
+        const _cl = (el, sel) => el && typeof el.closest === 'function' ? el.closest(sel) : null;
+        const _isCanvas = (el) => (el && el.tagName === 'CANVAS') || _cl(el, 'canvas') || _cl(el, '.canvas-container');
+        
         // Apple Pencil tap fix:
         // iPadOS Safari sometimes delays or fails to fire click events from stylus.
         // Solution: fire click on pointerdown for pen, then suppress the delayed native click.
@@ -11505,6 +11527,7 @@
         
         document.addEventListener('pointerdown', (e) => {
             if (e.pointerType !== 'pen') return;
+            if (!e.target || !e.target.closest) return;
             // Explicitly exclude canvas elements
             if (e.target.tagName === 'CANVAS') return;
             if (e.target.closest('canvas')) return;
@@ -11528,6 +11551,7 @@
             // Don't suppress if this is our own manual click
             if (penTapState.isManualClick) return;
             
+            if (!e.target || !e.target.closest) return;
             // Explicitly exclude canvas clicks
             if (e.target.tagName === 'CANVAS') return;
             if (e.target.closest('canvas')) return;
@@ -11548,6 +11572,7 @@
         // Mobile: close dropdown overlays when tapping outside
         document.addEventListener('pointerdown', (e) => {
             if (window.innerWidth > 768) return;
+            if (!e.target || !e.target.closest) return;
             // Don't close dropdowns when interacting with canvas
             if (e.target.tagName === 'CANVAS') return;
             if (e.target.closest('canvas')) return;
@@ -11562,7 +11587,7 @@
         
         // Prevent iOS double-tap selection menu and context menu globally for canvas
         document.addEventListener('dblclick', (e) => {
-            if (e.target.tagName === 'CANVAS' || e.target.closest('canvas') || e.target.closest('.canvas-container')) {
+            if (_isCanvas(e.target)) {
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation();
@@ -11570,7 +11595,7 @@
         }, true);
         
         document.addEventListener('contextmenu', (e) => {
-            if (e.target.tagName === 'CANVAS' || e.target.closest('canvas') || e.target.closest('.canvas-container')) {
+            if (_isCanvas(e.target)) {
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation();
@@ -11581,7 +11606,7 @@
         // This stops the Export button text from being selected during fast drawing
         document.addEventListener('selectstart', (e) => {
             // Always prevent selection on canvas
-            if (e.target.tagName === 'CANVAS' || e.target.closest('canvas') || e.target.closest('.canvas-container')) {
+            if (_isCanvas(e.target)) {
                 e.preventDefault();
                 e.stopPropagation();
                 e.stopImmediatePropagation();
@@ -11608,7 +11633,7 @@
         // Prevent drag gestures from interfering with drawing
         document.addEventListener('dragstart', (e) => {
             // Prevent drag on canvas
-            if (e.target.tagName === 'CANVAS' || e.target.closest('canvas') || e.target.closest('.canvas-container')) {
+            if (_isCanvas(e.target)) {
                 e.preventDefault();
                 e.stopPropagation();
                 return;
@@ -11623,19 +11648,19 @@
         
         // Prevent iOS gesture-based selection (like pinch-to-select)
         document.addEventListener('gesturestart', (e) => {
-            if (e.target.tagName === 'CANVAS' || e.target.closest('canvas') || e.target.closest('.canvas-container')) {
+            if (_isCanvas(e.target)) {
                 e.preventDefault();
             }
         }, { passive: false });
         
         document.addEventListener('gesturechange', (e) => {
-            if (e.target.tagName === 'CANVAS' || e.target.closest('canvas') || e.target.closest('.canvas-container')) {
+            if (_isCanvas(e.target)) {
                 e.preventDefault();
             }
         }, { passive: false });
         
         document.addEventListener('gestureend', (e) => {
-            if (e.target.tagName === 'CANVAS' || e.target.closest('canvas') || e.target.closest('.canvas-container')) {
+            if (_isCanvas(e.target)) {
                 e.preventDefault();
             }
         }, { passive: false });
