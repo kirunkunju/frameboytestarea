@@ -3140,6 +3140,7 @@
                 this._openTransformLayers = new Set();
                 this._copiedKeyframe = null; // clipboard for copy/paste keyframes
                 this._thumbCache = new WeakMap(); // frame canvas → {canvas, version}
+                this._timelineDirty = true; // flag to avoid unnecessary timeline DOM rebuilds
                 this._showAnchorIndicator = false;
                 this._curveEditorActive = false;
                 this._curveEditorProp = 'x';
@@ -5574,6 +5575,7 @@
             
             saveFullState() {
                 // Slow path — full snapshot for structural changes
+                this._timelineDirty = true; // Structural change — timeline needs rebuild
                 // Wrapped in try-catch because snapshotting many large frames
                 // can exceed memory limits (especially on iPad)
                 try {
@@ -5702,6 +5704,7 @@
                 }
                 
                 // Full restore — rebuild all layers (preserving hold frame relationships)
+                this._timelineDirty = true;
                 this.layers = state.layers.map(layer => ({
                     id: layer.id,
                     name: layer.name,
@@ -6813,9 +6816,10 @@
                 const layer = this.getCurrentLayer();
                 // If this is a hold frame, clearing breaks the link — need full state save
                 if (this.isHoldFrame(layer, this.currentFrameIndex)) {
-                    this.saveFullState();
+                    this.saveFullState(); // marks dirty
                 } else {
                     this.saveState();
+                    this._timelineDirty = true; // new canvas replaces old
                 }
                 layer.frames[this.currentFrameIndex] = this.createEmptyFrame();
                 this.initializeFrame();
@@ -7028,6 +7032,7 @@
                 if (this.selection) { this._dismissTransform(); }
                 else { this.commitSelection(); }
                 this.saveFullState();
+                this._timelineDirty = true;
                 const layer = this.getCurrentLayer();
                 const newFrame = this.createEmptyFrame();
                 const newFrameIndex = this.currentFrameIndex + 1;
@@ -7045,14 +7050,22 @@
                 
                 this.saveFullState();
                 
+                // Number of holds to insert = number of selected frames, or 1
+                const count = this.selectedFrames.size > 1 ? this.selectedFrames.size : 1;
+                
                 // Insert the SAME canvas reference — they share pixel data
                 const newIndex = this.currentFrameIndex + 1;
-                layer.frames.splice(newIndex, 0, currentCanvas);
-                this.currentFrameIndex = newIndex;
+                const holds = new Array(count).fill(currentCanvas);
+                layer.frames.splice(newIndex, 0, ...holds);
+                this.currentFrameIndex = newIndex + count - 1;
+                this.selectedFrames.clear();
                 this.render();
             }
             
             getHoldGroups(layer) {
+                // Use cached result if available (cleared when _timelineDirty is set)
+                if (layer._holdGroupsCache) return layer._holdGroupsCache;
+                
                 // Returns a Map: canvas -> Set of frame indices sharing that canvas
                 const canvasToIndices = new Map();
                 for (let i = 0; i < layer.frames.length; i++) {
@@ -7070,6 +7083,7 @@
                         groups.set(canvas, indices);
                     }
                 }
+                layer._holdGroupsCache = groups;
                 return groups;
             }
             
@@ -9719,16 +9733,21 @@
                     this._drawSelectionPreview(this.ctx);
                 }
                 
-                this.renderTimeline();
+                // Only rebuild timeline DOM when structure changed; otherwise lightweight update
+                // Force rebuild if properties panel is open (slider values need updating)
+                if (this._timelineDirty || (this._openTransformLayers && this._openTransformLayers.size > 0)) {
+                    this.renderTimeline();
+                } else {
+                    this._updateTimelineActive();
+                }
             }
             
             renderCanvasOnly() {
                 // Lightweight: redraws canvas composite without rebuilding timeline DOM
-                this.positionOnionCanvas();
                 this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-                this.onionCtx.clearRect(0, 0, this.onionCanvas.width, this.onionCanvas.height);
                 
                 if (this.onionSkinEnabled && !this.isPlaying) {
+                    this.onionCtx.clearRect(0, 0, this.onionCanvas.width, this.onionCanvas.height);
                     const curLayer = this.getCurrentLayer();
                     for (let offset = 1; offset <= this.onionFramesBefore; offset++) {
                         const frameIdx = this.currentFrameIndex - offset;
@@ -9760,7 +9779,54 @@
             
             renderLayers() {
                 // Shim — renderTimeline builds both labels and frames
+                this._timelineDirty = true;
                 this.renderTimeline();
+            }
+            
+            // Mark timeline for full DOM rebuild on next render()
+            _markTimelineDirty() {
+                this._timelineDirty = true;
+            }
+            
+            // Lightweight timeline update: swap active frame highlight + update playhead
+            // Avoids full DOM rebuild — used when only the current frame index changed
+            _updateTimelineActive() {
+                const container = document.getElementById('framesContainer');
+                if (!container) return;
+                
+                const playheadPos = this.getPlayheadPosition();
+                
+                // Remove active class from previously tracked element
+                if (this._activeFrameEl) {
+                    this._activeFrameEl.classList.remove('active');
+                }
+                
+                // Find and activate the new current frame via data attributes
+                // Use a targeted selector instead of iterating all frames
+                const newActive = container.querySelector(
+                    `.frame[data-layer-id="${this.currentLayerId}"][data-timeline-pos="${playheadPos}"]`
+                );
+                if (newActive) {
+                    newActive.classList.add('active');
+                    this._activeFrameEl = newActive;
+                    
+                    // Update current frame thumbnail (it may have been drawn on)
+                    const layer = this.getCurrentLayer();
+                    const frame = layer.frames[this.currentFrameIndex];
+                    if (frame) {
+                        const oldThumb = newActive.querySelector('canvas');
+                        if (oldThumb) {
+                            const ctx = oldThumb.getContext('2d');
+                            ctx.clearRect(0, 0, 20, 15);
+                            ctx.drawImage(frame, 0, 0, 20, 15);
+                        }
+                    }
+                } else {
+                    this._activeFrameEl = null;
+                }
+                
+                // Update playhead position
+                this.updatePlayheadPosition();
             }
             
             _reorderLayer(dragId, targetId, position) {
@@ -9786,10 +9852,22 @@
             }
             
             renderTimeline() {
+                this._timelineDirty = false; // Clear flag — we're doing a full rebuild
+                this._activeFrameEl = null; // Old DOM elements destroyed
+                
+                // Invalidate holdGroups caches
+                for (const layer of this.layers) {
+                    layer._holdGroupsCache = null;
+                }
+                
                 const container = document.getElementById('framesContainer');
                 const layersList = document.getElementById('layersList');
                 container.innerHTML = '';
                 layersList.innerHTML = '';
+                
+                // Use DocumentFragments to batch DOM insertions (avoids reflow per append)
+                const containerFrag = document.createDocumentFragment();
+                const labelsFrag = document.createDocumentFragment();
                 
                 // Re-append the drop indicator if it exists
                 if (this._dropIndicator) {
@@ -9843,6 +9921,7 @@
                     vis.addEventListener('click', (e) => {
                         e.stopPropagation();
                         layer.visible = !layer.visible;
+                        this._timelineDirty = true;
                         this.render();
                     });
                     
@@ -9897,6 +9976,7 @@
                             this.commitSelection();
                             this.currentLayerId = layer.id;
                             this.audioLayerSelected = false;
+                            this._timelineDirty = true;
                             this.initializeFrame();
                             this.render();
                         }
@@ -10391,7 +10471,7 @@
                         document.addEventListener('pointercancel', onUp);
                     });
                     
-                    layersList.appendChild(label);
+                    labelsFrag.appendChild(label);
                     
                     // === RIGHT FRAME ROW ===
                     const row = document.createElement('div');
@@ -10519,8 +10599,14 @@
                                 const badge = document.createElement('div');
                                 badge.className = 'hold-badge';
                                 badge.textContent = hc.isSource ? 'S' : 'H';
-                                badge.style.background = hc.color + 'cc';
-                                badge.style.color = '#111';
+                                if (hc.isSource) {
+                                    badge.style.background = hc.color + 'cc';
+                                    badge.style.color = '#111';
+                                } else {
+                                    badge.style.background = 'transparent';
+                                    badge.style.color = hc.color;
+                                    badge.style.border = '1px solid ' + hc.color + 'aa';
+                                }
                                 frameDiv.appendChild(badge);
                                 // Subtle tint overlay
                                 const tint = document.createElement('div');
@@ -10562,156 +10648,6 @@
                         frameNumber.textContent = timelinePos + 1;
                         frameDiv.appendChild(frameNumber);
                         
-                        // Frame interactions
-                        const layerRef = layer;
-                        const frameIdx = i;
-                        
-                        frameDiv.addEventListener('pointerdown', (e) => {
-                            if (e.button && e.button !== 0) return;
-                            e.preventDefault();
-                            
-                            // === Selection mode: tap toggles frames ===
-                            if (this.frameSelectMode && layerRef.id === this.currentLayerId) {
-                                if (this.selectedFrames.has(frameIdx)) {
-                                    this.selectedFrames.delete(frameIdx);
-                                } else {
-                                    this.selectedFrames.add(frameIdx);
-                                }
-                                this._updateSelectBanner();
-                                this.renderTimeline();
-                                return;
-                            }
-                            
-                            // If clicking a non-active layer, switch to it
-                            if (layerRef.id !== this.currentLayerId) {
-                                if (this.selection) { this._dismissTransform(); }
-                                else { this.commitSelection(); }
-                                this.currentLayerId = layerRef.id;
-                                this.audioLayerSelected = false;
-                                this.selectedFrames.clear();
-                                this.currentFrameIndex = frameIdx;
-                                this.initializeFrame();
-                                this.render();
-                                this.scrubAudio(timelinePos);
-                                return;
-                            }
-                            
-                            // Shift+click: range select
-                            if (e.shiftKey) {
-                                const from = Math.min(this.currentFrameIndex, frameIdx);
-                                const to = Math.max(this.currentFrameIndex, frameIdx);
-                                this.selectedFrames.clear();
-                                for (let si = from; si <= to; si++) {
-                                    this.selectedFrames.add(si);
-                                }
-                                this.renderTimeline();
-                                return;
-                            }
-                            
-                            // Regular click: clear multi-select
-                            if (this.selectedFrames.size > 0) {
-                                this.selectedFrames.clear();
-                            }
-                            
-                            // --- Long-press detection for touch ---
-                            const lpStartX = e.clientX;
-                            const lpStartY = e.clientY;
-                            
-                            if (this._longPressTimer) {
-                                clearTimeout(this._longPressTimer);
-                                this._longPressTimer = null;
-                            }
-                            
-                            this._longPressTimer = setTimeout(() => {
-                                this._longPressTimer = null;
-                                // Enter selection mode with this frame
-                                this.currentFrameIndex = frameIdx;
-                                this.enterFrameSelectMode(frameIdx);
-                            }, 400);
-                            
-                            // Cancel long-press if pointer moves too much
-                            const lpMoveCancel = (ev) => {
-                                if (Math.abs(ev.clientX - lpStartX) > 8 || Math.abs(ev.clientY - lpStartY) > 8) {
-                                    if (this._longPressTimer) {
-                                        clearTimeout(this._longPressTimer);
-                                        this._longPressTimer = null;
-                                    }
-                                    document.removeEventListener('pointermove', lpMoveCancel);
-                                }
-                            };
-                            const lpUpCancel = () => {
-                                if (this._longPressTimer) {
-                                    clearTimeout(this._longPressTimer);
-                                    this._longPressTimer = null;
-                                }
-                                document.removeEventListener('pointermove', lpMoveCancel);
-                                document.removeEventListener('pointerup', lpUpCancel);
-                                document.removeEventListener('pointercancel', lpUpCancel);
-                            };
-                            document.addEventListener('pointermove', lpMoveCancel);
-                            document.addEventListener('pointerup', lpUpCancel);
-                            document.addEventListener('pointercancel', lpUpCancel);
-                            
-                            // Active layer: navigate to local frame
-                            if (frameIdx !== this.currentFrameIndex) {
-                                // Commit any active selection to current frame before navigating
-                                if (this.selection) {
-                                    this._dismissTransform();
-                                }
-                                this.currentFrameIndex = frameIdx;
-                                this.initializeFrame();
-                                this.render();
-                                this.scrubAudio(this.getPlayheadPosition());
-                                return;
-                            }
-                            
-                            // Same frame: support drag reorder
-                            this._frameDragState = {
-                                index: frameIdx,
-                                startX: e.clientX,
-                                startY: e.clientY,
-                                started: false,
-                                element: frameDiv,
-                                layerId: layerRef.id
-                            };
-                        });
-                        
-                        // Right-click context menu
-                        frameDiv.addEventListener('contextmenu', (e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            // Switch to this layer if needed
-                            if (layerRef.id !== this.currentLayerId) {
-                                if (this.selection) { this._dismissTransform(); }
-                                else { this.commitSelection(); }
-                                this.currentLayerId = layerRef.id;
-                                this.audioLayerSelected = false;
-                                this.currentFrameIndex = frameIdx;
-                                this.initializeFrame();
-                            }
-                            this.contextMenuFrameIndex = frameIdx;
-                            
-                            const ctxMenu = document.getElementById('frameContextMenu');
-                            const pasteItem = document.getElementById('ctxPasteFrame');
-                            if (this.copiedFrame || this.copiedFrames.length > 0) {
-                                pasteItem.classList.remove('disabled');
-                            } else {
-                                pasteItem.classList.add('disabled');
-                            }
-                            const releaseItem = document.getElementById('ctxReleaseHold');
-                            if (this.isHoldFrame(layerRef, frameIdx)) {
-                                releaseItem.style.display = '';
-                            } else {
-                                releaseItem.style.display = 'none';
-                            }
-                            ctxMenu.style.left = e.clientX + 'px';
-                            ctxMenu.style.top = e.clientY + 'px';
-                            ctxMenu.classList.add('show');
-                            const menuRect = ctxMenu.getBoundingClientRect();
-                            if (menuRect.right > window.innerWidth) ctxMenu.style.left = (e.clientX - menuRect.width) + 'px';
-                            if (menuRect.bottom > window.innerHeight) ctxMenu.style.top = (e.clientY - menuRect.height) + 'px';
-                        });
-                        
                         blockWrap.appendChild(frameDiv);
                     }
                     
@@ -10733,8 +10669,12 @@
                         row.appendChild(this._dropIndicator);
                     }
                     
-                    container.appendChild(row);
+                    containerFrag.appendChild(row);
                 });
+                
+                // Flush fragments to DOM in one batch (minimizes reflow)
+                layersList.appendChild(labelsFrag);
+                container.appendChild(containerFrag);
                 
                 // Set up document-level drag handlers (only once)
                 if (!this._frameDragBound) {
@@ -10839,6 +10779,165 @@
                         }
                         
                         this._frameDragState = null;
+                    });
+                    
+                    // === DELEGATED FRAME EVENT HANDLERS (set up once) ===
+                    // Instead of per-frame listeners, one listener on the container handles all frames
+                    container.addEventListener('pointerdown', (e) => {
+                        const frameDiv = e.target.closest('.frame');
+                        if (!frameDiv) return;
+                        if (e.button && e.button !== 0) return;
+                        e.preventDefault();
+                        
+                        const frameIdx = parseInt(frameDiv.dataset.frameIndex, 10);
+                        const layerId = parseInt(frameDiv.dataset.layerId, 10);
+                        const timelinePos = parseInt(frameDiv.dataset.timelinePos, 10);
+                        
+                        // === Selection mode: tap toggles frames ===
+                        if (this.frameSelectMode && layerId === this.currentLayerId) {
+                            if (this.selectedFrames.has(frameIdx)) {
+                                this.selectedFrames.delete(frameIdx);
+                            } else {
+                                this.selectedFrames.add(frameIdx);
+                            }
+                            this._updateSelectBanner();
+                            this.renderTimeline();
+                            return;
+                        }
+                        
+                        // If clicking a non-active layer, switch to it
+                        if (layerId !== this.currentLayerId) {
+                            if (this.selection) { this._dismissTransform(); }
+                            else { this.commitSelection(); }
+                            this.currentLayerId = layerId;
+                            this.audioLayerSelected = false;
+                            this.selectedFrames.clear();
+                            this._timelineDirty = true;
+                            this.currentFrameIndex = frameIdx;
+                            this.initializeFrame();
+                            this.render();
+                            this.scrubAudio(timelinePos);
+                            return;
+                        }
+                        
+                        // Shift+click: range select
+                        if (e.shiftKey) {
+                            const from = Math.min(this.currentFrameIndex, frameIdx);
+                            const to = Math.max(this.currentFrameIndex, frameIdx);
+                            this.selectedFrames.clear();
+                            for (let si = from; si <= to; si++) {
+                                this.selectedFrames.add(si);
+                            }
+                            this.renderTimeline();
+                            return;
+                        }
+                        
+                        // Regular click: clear multi-select
+                        if (this.selectedFrames.size > 0) {
+                            this.selectedFrames.clear();
+                        }
+                        
+                        // --- Long-press detection for touch ---
+                        const lpStartX = e.clientX;
+                        const lpStartY = e.clientY;
+                        
+                        if (this._longPressTimer) {
+                            clearTimeout(this._longPressTimer);
+                            this._longPressTimer = null;
+                        }
+                        
+                        this._longPressTimer = setTimeout(() => {
+                            this._longPressTimer = null;
+                            this.currentFrameIndex = frameIdx;
+                            this.enterFrameSelectMode(frameIdx);
+                        }, 400);
+                        
+                        const lpMoveCancel = (ev) => {
+                            if (Math.abs(ev.clientX - lpStartX) > 8 || Math.abs(ev.clientY - lpStartY) > 8) {
+                                if (this._longPressTimer) {
+                                    clearTimeout(this._longPressTimer);
+                                    this._longPressTimer = null;
+                                }
+                                document.removeEventListener('pointermove', lpMoveCancel);
+                            }
+                        };
+                        const lpUpCancel = () => {
+                            if (this._longPressTimer) {
+                                clearTimeout(this._longPressTimer);
+                                this._longPressTimer = null;
+                            }
+                            document.removeEventListener('pointermove', lpMoveCancel);
+                            document.removeEventListener('pointerup', lpUpCancel);
+                            document.removeEventListener('pointercancel', lpUpCancel);
+                        };
+                        document.addEventListener('pointermove', lpMoveCancel);
+                        document.addEventListener('pointerup', lpUpCancel);
+                        document.addEventListener('pointercancel', lpUpCancel);
+                        
+                        // Active layer: navigate to local frame
+                        if (frameIdx !== this.currentFrameIndex) {
+                            if (this.selection) {
+                                this._dismissTransform();
+                            }
+                            this.currentFrameIndex = frameIdx;
+                            this.initializeFrame();
+                            this.render();
+                            this.scrubAudio(this.getPlayheadPosition());
+                            return;
+                        }
+                        
+                        // Same frame: support drag reorder
+                        this._frameDragState = {
+                            index: frameIdx,
+                            startX: e.clientX,
+                            startY: e.clientY,
+                            started: false,
+                            element: frameDiv,
+                            layerId: layerId
+                        };
+                    });
+                    
+                    // Delegated context menu handler
+                    container.addEventListener('contextmenu', (e) => {
+                        const frameDiv = e.target.closest('.frame');
+                        if (!frameDiv) return;
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        const frameIdx = parseInt(frameDiv.dataset.frameIndex, 10);
+                        const layerId = parseInt(frameDiv.dataset.layerId, 10);
+                        const layerRef = this.layers.find(l => l.id === layerId);
+                        if (!layerRef) return;
+                        
+                        if (layerId !== this.currentLayerId) {
+                            if (this.selection) { this._dismissTransform(); }
+                            else { this.commitSelection(); }
+                            this.currentLayerId = layerId;
+                            this.audioLayerSelected = false;
+                            this.currentFrameIndex = frameIdx;
+                            this.initializeFrame();
+                        }
+                        this.contextMenuFrameIndex = frameIdx;
+                        
+                        const ctxMenu = document.getElementById('frameContextMenu');
+                        const pasteItem = document.getElementById('ctxPasteFrame');
+                        if (this.copiedFrame || this.copiedFrames.length > 0) {
+                            pasteItem.classList.remove('disabled');
+                        } else {
+                            pasteItem.classList.add('disabled');
+                        }
+                        const releaseItem = document.getElementById('ctxReleaseHold');
+                        if (this.isHoldFrame(layerRef, frameIdx)) {
+                            releaseItem.style.display = '';
+                        } else {
+                            releaseItem.style.display = 'none';
+                        }
+                        ctxMenu.style.left = e.clientX + 'px';
+                        ctxMenu.style.top = e.clientY + 'px';
+                        ctxMenu.classList.add('show');
+                        const menuRect = ctxMenu.getBoundingClientRect();
+                        if (menuRect.right > window.innerWidth) ctxMenu.style.left = (e.clientX - menuRect.width) + 'px';
+                        if (menuRect.bottom > window.innerHeight) ctxMenu.style.top = (e.clientY - menuRect.height) + 'px';
                     });
                 }
                 
@@ -11317,6 +11416,7 @@
                     }
                     
                     // Render
+                    this._timelineDirty = true;
                     this.positionOnionCanvas();
                     this.render();
                     
