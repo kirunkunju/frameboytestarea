@@ -371,12 +371,41 @@
             cursor: text;
         }
         
-        .layer-parent-indicator {
-            font-size: 10px;
-            color: #5588cc;
-            margin-left: 2px;
+        .parent-select-inline {
             flex-shrink: 0;
-            opacity: 0.7;
+            max-width: 64px;
+            height: 18px;
+            background: transparent;
+            border: 1px solid transparent;
+            border-radius: 3px;
+            color: #777;
+            font-size: 9px;
+            padding: 0 2px;
+            outline: none;
+            cursor: pointer;
+            margin-left: auto;
+            text-overflow: ellipsis;
+            transition: border-color 0.15s, color 0.15s;
+        }
+        .parent-select-inline:hover {
+            border-color: #444;
+            color: #bbb;
+        }
+        .parent-select-inline:focus {
+            border-color: #5588cc;
+            color: #ccc;
+        }
+        .parent-select-inline.has-parent {
+            color: #5588cc;
+            border-color: #334;
+        }
+        .parent-select-inline.has-parent:hover {
+            border-color: #5588cc;
+            color: #88bbee;
+        }
+        .parent-select-inline option {
+            background: #1e1e1e;
+            color: #ccc;
         }
         
         .layer-opacity-control {
@@ -814,22 +843,6 @@
             flex-shrink: 0;
         }
         
-        .parent-select {
-            flex: 1;
-            height: 20px;
-            background: #1a1a24;
-            border: 1px solid #333;
-            border-radius: 4px;
-            color: #ccc;
-            font-size: 10px;
-            padding: 0 4px;
-            outline: none;
-            cursor: pointer;
-            min-width: 60px;
-        }
-        .parent-select:hover { border-color: #4a4a5a; }
-        .parent-select:focus { border-color: #5588cc; }
-        
         /* Scrub slider — the main control */
         .scrub-slider {
             flex: 1;
@@ -941,6 +954,7 @@
         /* Keyframe action buttons */
         .tl-key-actions {
             display: flex;
+            flex-wrap: wrap;
             gap: 5px;
             padding-top: 4px;
             margin-top: 2px;
@@ -980,6 +994,32 @@
         .tl-key-actions .act-del:hover {
             background: #3a1a1a;
         }
+        
+        .tl-key-actions .act-copy {
+            border-color: #3a5a7a;
+            color: #88bbdd;
+        }
+        .tl-key-actions .act-copy:hover { background: #1a2a3a; }
+        .tl-key-actions .act-copy:disabled {
+            opacity: 0.35;
+            cursor: default;
+            border-color: #333;
+            color: #666;
+        }
+        .tl-key-actions .act-copy:disabled:hover { background: #2a2a2a; }
+        
+        .tl-key-actions .act-paste {
+            border-color: #3a6a3a;
+            color: #88cc88;
+        }
+        .tl-key-actions .act-paste:hover { background: #1a3a1a; }
+        .tl-key-actions .act-paste:disabled {
+            opacity: 0.35;
+            cursor: default;
+            border-color: #333;
+            color: #666;
+        }
+        .tl-key-actions .act-paste:disabled:hover { background: #2a2a2a; }
         
         /* Curve Editor (Graph Editor overlay) */
         .curve-editor {
@@ -1299,6 +1339,25 @@
             align-items: center;
             gap: 6px;
         }
+        
+        .quick-key-btn {
+            margin-left: auto;
+            flex-shrink: 0;
+            width: 18px;
+            height: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border: none;
+            background: none;
+            padding: 0;
+            color: #555;
+            transition: color 0.15s;
+        }
+        .quick-key-btn:hover { color: #eebb00; }
+        .quick-key-btn.has-key { color: #dda520; }
+        .quick-key-btn.has-key:hover { color: #eedd44; }
         
         .tl-label.active-row {
             background: #2a2a3a;
@@ -3079,6 +3138,8 @@
                 this.audioLayerSelected = false;
                 this.timelineScale = 1.0;
                 this._openTransformLayers = new Set();
+                this._copiedKeyframe = null; // clipboard for copy/paste keyframes
+                this._thumbCache = new WeakMap(); // frame canvas → {canvas, version}
                 this._showAnchorIndicator = false;
                 this._curveEditorActive = false;
                 this._curveEditorProp = 'x';
@@ -3089,7 +3150,7 @@
                 this.initializeFrame();
                 this.setupEventListeners();
                 this.updateUndoRedoButtons();
-                this.positionOnionCanvas();
+                this.applyZoom(); // Set initial fit-to-screen zoom
                 this.render();
                 
                 // Set initial cursor for brush tool
@@ -3191,8 +3252,13 @@
             }
             
             positionOnionCanvas() {
-                // Delegates to applyZoom which handles both sizing and positioning
-                this.applyZoom();
+                // No-op — onion canvas positioning is handled by CSS (absolute, left:0, top:0)
+                // and sizing is done by applyZoom() which is called explicitly on zoom changes.
+            }
+            
+            // Mark a frame's thumbnail as stale so it gets re-rendered next timeline draw
+            _dirtyThumb(frame) {
+                if (frame) frame._thumbVer = (frame._thumbVer || 0) + 1;
             }
             
             getEffectiveZoom() {
@@ -4130,6 +4196,18 @@
                 setupCanvasEvents(this.canvas);
                 setupCanvasEvents(this.selectionCanvas);
                 
+                // Dismiss active free transform when clicking outside the canvas
+                // (e.g. timeline, layers panel, toolbar, etc.)
+                document.addEventListener('pointerdown', (e) => {
+                    if (!this.selection) return;
+                    const isTransformTool = this.tool === 'transform' || this.tool === 'scale' || 
+                                           this.tool === 'rotate' || this.tool === 'skew' || this.tool === 'distort';
+                    if (!isTransformTool) return;
+                    // If click is on canvas or selection canvas, startDrawing handles it
+                    if (e.target === this.canvas || e.target === this.selectionCanvas) return;
+                    this._dismissTransform();
+                });
+                
                 // Document-level fallbacks — catch stylus lift outside canvas
                 // Continue drawing off-canvas so strokes extend to edge seamlessly
                 document.addEventListener('pointermove', (e) => {
@@ -4617,6 +4695,9 @@
                     } else if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
                         e.preventDefault();
                         this.duplicateFrame();
+                    } else if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+                        e.preventDefault();
+                        this.selectTool('transform');
                     } else if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+')) {
                         e.preventDefault();
                         this.zoomIn();
@@ -4637,9 +4718,7 @@
                         this._penCancel();
                     } else if (e.key === 'Enter' && this.selection) {
                         e.preventDefault();
-                        this.applySelection();
-                        this.clearSelection();
-                        this.selectTool('brush');
+                        this._dismissTransform();
                     } else if (e.key === 'Escape' && this.selection) {
                         e.preventDefault();
                         this.clearSelection();
@@ -5045,6 +5124,7 @@
                     const maxLocal = layer.frames.length - 1;
                     const newIdx = Math.max(0, Math.min(maxLocal, localIdx));
                     if (newIdx !== this.currentFrameIndex) {
+                        if (this.selection) { this._dismissTransform(); }
                         this.currentFrameIndex = newIdx;
                         this.render();
                         this.scrubAudio(this.getPlayheadPosition());
@@ -5474,8 +5554,15 @@
             }
             
             _pushUndo(entry) {
+                // Dynamically limit undo stack based on project complexity
+                // to prevent out-of-memory on large projects (especially iPad)
+                const totalFrames = this.layers.reduce((sum, l) => sum + l.frames.filter(f => f).length, 0);
+                const effectiveMax = totalFrames > 50 ? Math.max(5, Math.floor(this.maxHistorySize / 3))
+                                   : totalFrames > 20 ? Math.max(10, Math.floor(this.maxHistorySize / 2))
+                                   : this.maxHistorySize;
+                
                 this.undoStack.push(entry);
-                if (this.undoStack.length > this.maxHistorySize) this.undoStack.shift();
+                while (this.undoStack.length > effectiveMax) this.undoStack.shift();
                 this.redoStack = [];
                 this.updateUndoRedoButtons();
             }
@@ -5487,7 +5574,23 @@
             
             saveFullState() {
                 // Slow path — full snapshot for structural changes
-                this._pushUndo(this.snapshotState());
+                // Wrapped in try-catch because snapshotting many large frames
+                // can exceed memory limits (especially on iPad)
+                try {
+                    this._pushUndo(this.snapshotState());
+                } catch(e) {
+                    console.warn('Full undo snapshot failed (likely memory):', e.message);
+                    // Trim undo stack to free memory and retry once
+                    if (this.undoStack.length > 2) {
+                        this.undoStack.splice(0, Math.floor(this.undoStack.length / 2));
+                        try {
+                            this._pushUndo(this.snapshotState());
+                        } catch(e2) {
+                            console.warn('Undo snapshot skipped after retry:', e2.message);
+                        }
+                    }
+                    this.updateUndoRedoButtons();
+                }
             }
             
             // Snapshot current state matching the type of entry about to be restored
@@ -5741,12 +5844,10 @@
                         return;
                     }
                     
-                    // Clicked outside selection — apply and deselect
+                    // Clicked outside selection — apply, deselect, switch to lasso
                     if (this.selection) {
-                        this.applySelection();
-                        this.clearSelection();
-                        this.selectTool('brush');
-                        this.render();
+                        this._dismissTransform();
+                        return;
                     }
                     return;
                 }
@@ -6723,11 +6824,15 @@
             
             // Render a tinted version of a frame onto the onion canvas
             drawOnionFrame(frame, tintColor, opacity) {
-                // Create a temp canvas to composite the tint
-                const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = this.canvas.width;
-                tempCanvas.height = this.canvas.height;
-                const tempCtx = tempCanvas.getContext('2d');
+                // Reuse a temp canvas for tinting (avoids allocation every render)
+                if (!this._onionTemp || this._onionTemp.width !== this.canvas.width || this._onionTemp.height !== this.canvas.height) {
+                    this._onionTemp = document.createElement('canvas');
+                    this._onionTemp.width = this.canvas.width;
+                    this._onionTemp.height = this.canvas.height;
+                    this._onionTempCtx = this._onionTemp.getContext('2d');
+                }
+                const tempCtx = this._onionTempCtx;
+                tempCtx.clearRect(0, 0, this._onionTemp.width, this._onionTemp.height);
                 
                 // Draw the frame artwork at viewport offset
                 const offX = (frame._originX || 0) - this.viewportX;
@@ -6738,13 +6843,13 @@
                 tempCtx.globalCompositeOperation = 'source-atop';
                 tempCtx.globalAlpha = 0.5;
                 tempCtx.fillStyle = tintColor;
-                tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+                tempCtx.fillRect(0, 0, this._onionTemp.width, this._onionTemp.height);
                 tempCtx.globalAlpha = 1;
                 tempCtx.globalCompositeOperation = 'source-over';
                 
                 // Draw the tinted result onto the onion canvas
                 this.onionCtx.globalAlpha = opacity;
-                this.onionCtx.drawImage(tempCanvas, 0, 0);
+                this.onionCtx.drawImage(this._onionTemp, 0, 0);
                 this.onionCtx.globalAlpha = 1;
             }
             
@@ -6882,7 +6987,7 @@
             }
             
             previousFrame() {
-                this.commitSelection();
+                if (this.selection) { this._dismissTransform(); }
                 if (this.frameSelectMode) this.exitFrameSelectMode();
                 else this.selectedFrames.clear();
                 if (this.currentFrameIndex > 0) {
@@ -6894,7 +6999,7 @@
             }
             
             goToNextFrame() {
-                this.commitSelection();
+                if (this.selection) { this._dismissTransform(); }
                 if (this.frameSelectMode) this.exitFrameSelectMode();
                 else this.selectedFrames.clear();
                 const layer = this.getCurrentLayer();
@@ -6907,7 +7012,7 @@
             }
             
             nextFrame() {
-                this.commitSelection();
+                if (this.selection) { this._dismissTransform(); }
                 if (this.frameSelectMode) this.exitFrameSelectMode();
                 else this.selectedFrames.clear();
                 const layer = this.getCurrentLayer();
@@ -6920,7 +7025,8 @@
             }
             
             insertFrameAfterCurrent() {
-                this.commitSelection();
+                if (this.selection) { this._dismissTransform(); }
+                else { this.commitSelection(); }
                 this.saveFullState();
                 const layer = this.getCurrentLayer();
                 const newFrame = this.createEmptyFrame();
@@ -6931,7 +7037,8 @@
             }
             
             holdFrame() {
-                this.commitSelection();
+                if (this.selection) { this._dismissTransform(); }
+                else { this.commitSelection(); }
                 const layer = this.getCurrentLayer();
                 const currentCanvas = layer.frames[this.currentFrameIndex];
                 if (!currentCanvas) return;
@@ -7967,6 +8074,19 @@
                 this.selectionCtx.clearRect(0, 0, this.selectionCanvas.width, this.selectionCanvas.height);
             }
             
+            // Commit active free transform, clear selection, switch to lasso
+            _dismissTransform() {
+                if (!this.selection) return;
+                this.applySelection();
+                this.clearSelection();
+                this.hideTransformHandles();
+                this.isTransforming = false;
+                this.isRotating = false;
+                this.activeHandle = null;
+                this.selectTool('lasso');
+                this.render();
+            }
+            
             drawTransformHandles() {
                 this.selectionCtx.clearRect(0, 0, this.selectionCanvas.width, this.selectionCanvas.height);
                 
@@ -8926,7 +9046,26 @@
             
             play(modeOverride) {
                 if (this.isPlaying) return;
-                this.commitSelection();
+                
+                // Fully dismiss any active free transform / selection
+                if (this.selection) {
+                    this.applySelection();
+                    this.selection = null;
+                    this.transformHandles = [];
+                    this.selectionUndoStack = [];
+                    this.selectionRedoStack = [];
+                }
+                this.selectionCtx.clearRect(0, 0, this.selectionCanvas.width, this.selectionCanvas.height);
+                this.hideTransformHandles();
+                this.isTransforming = false;
+                this.isRotating = false;
+                this.activeHandle = null;
+                // Switch to lasso
+                const transformTools = ['transform', 'scale', 'rotate', 'skew', 'distort'];
+                if (transformTools.includes(this.tool)) {
+                    this.selectTool('lasso');
+                }
+                
                 if (this.frameSelectMode) this.exitFrameSelectMode();
                 else this.selectedFrames.clear();
                 
@@ -9614,7 +9753,7 @@
                 this.drawAnchorIndicator(this.ctx);
                 this.drawPasteboardOverlay(this.ctx);
                 
-                if (this.selection) {
+                if (this.selection && !this.isPlaying) {
                     this._drawSelectionPreview(this.ctx);
                 }
             }
@@ -9770,17 +9909,58 @@
                     topRow.appendChild(vis);
                     topRow.appendChild(name);
                     
-                    // Show parent indicator if this layer is parented
-                    if (layer.parentId != null) {
-                        const parentLayer = this.layers.find(l => l.id === layer.parentId);
-                        if (parentLayer) {
-                            const parInd = document.createElement('span');
-                            parInd.className = 'layer-parent-indicator';
-                            parInd.title = 'Parented to: ' + parentLayer.name;
-                            parInd.textContent = '⤴';
-                            topRow.appendChild(parInd);
-                        }
+                    // Inline parent dropdown (compact, right-aligned before quick-key button)
+                    const parSelect = document.createElement('select');
+                    parSelect.className = 'parent-select-inline';
+                    parSelect.title = 'Parent layer';
+                    const noneOpt = document.createElement('option');
+                    noneOpt.value = '';
+                    noneOpt.textContent = '—';
+                    parSelect.appendChild(noneOpt);
+                    for (const otherLayer of this.layers) {
+                        if (otherLayer.id === layer.id) continue;
+                        if (this._wouldCreateCycle(layer.id, otherLayer.id)) continue;
+                        const opt = document.createElement('option');
+                        opt.value = otherLayer.id;
+                        opt.textContent = otherLayer.name;
+                        if (layer.parentId === otherLayer.id) opt.selected = true;
+                        parSelect.appendChild(opt);
                     }
+                    if (layer.parentId != null) parSelect.classList.add('has-parent');
+                    parSelect.addEventListener('change', (e) => {
+                        e.stopPropagation();
+                        this.saveFullState();
+                        const val = parSelect.value;
+                        layer.parentId = val ? parseInt(val) : null;
+                        this.render();
+                    });
+                    parSelect.addEventListener('keydown', (e) => e.stopPropagation());
+                    parSelect.addEventListener('click', (e) => e.stopPropagation());
+                    topRow.appendChild(parSelect);
+                    
+                    // Quick keyframe button (right-aligned)
+                    const hasKeyHereQuick = this.hasTransformKeyframeAt(layer, this.currentFrameIndex);
+                    const quickKeyBtn = document.createElement('button');
+                    quickKeyBtn.className = 'quick-key-btn' + (hasKeyHereQuick ? ' has-key' : '');
+                    quickKeyBtn.title = hasKeyHereQuick ? 'Remove keyframe at current frame' : 'Add keyframe at current frame';
+                    quickKeyBtn.innerHTML = '<svg viewBox="0 0 10 10" width="12" height="12"><polygon points="5,0 10,5 5,10 0,5" fill="currentColor"/></svg>';
+                    quickKeyBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.saveFullState();
+                        if (hasKeyHereQuick) {
+                            this.removeTransformKeyframe(layer, this.currentFrameIndex);
+                        } else {
+                            const tf = this.getLayerTransformAtFrame(layer, this.currentFrameIndex);
+                            this.setTransformKeyframe(layer, this.currentFrameIndex, {
+                                x: tf.x, y: tf.y,
+                                anchorX: tf.anchorX, anchorY: tf.anchorY,
+                                scaleX: tf.scaleX, scaleY: tf.scaleY,
+                                rotation: tf.rotation, opacity: tf.opacity
+                            });
+                        }
+                        this.render();
+                    });
+                    topRow.appendChild(quickKeyBtn);
                     
                     label.appendChild(topRow);
                     
@@ -10052,46 +10232,6 @@
                         opRow.appendChild(makeScrub('opacity', Math.round(tf.opacity * 100), 0, 100, 1, '%', 0.5));
                         props.appendChild(opRow);
                         
-                        // Parent row (dropdown)
-                        const parRow = document.createElement('div');
-                        parRow.className = 'tl-prop';
-                        const parSpacer = document.createElement('span');
-                        parSpacer.className = 'tl-prop-diamond';
-                        parSpacer.innerHTML = '<svg viewBox="0 0 10 10" style="opacity:0"><polygon points="5,0 10,5 5,10 0,5"/></svg>';
-                        parRow.appendChild(parSpacer);
-                        const parLbl = document.createElement('span');
-                        parLbl.className = 'tl-prop-name';
-                        parLbl.textContent = 'Parent';
-                        parRow.appendChild(parLbl);
-                        const parSelect = document.createElement('select');
-                        parSelect.className = 'parent-select';
-                        // "None" option
-                        const noneOpt = document.createElement('option');
-                        noneOpt.value = '';
-                        noneOpt.textContent = 'None';
-                        parSelect.appendChild(noneOpt);
-                        // Add all other layers as options (excluding self and descendants)
-                        for (const otherLayer of this.layers) {
-                            if (otherLayer.id === layer.id) continue;
-                            if (this._wouldCreateCycle(layer.id, otherLayer.id)) continue; // skip descendants
-                            const opt = document.createElement('option');
-                            opt.value = otherLayer.id;
-                            opt.textContent = otherLayer.name;
-                            if (layer.parentId === otherLayer.id) opt.selected = true;
-                            parSelect.appendChild(opt);
-                        }
-                        parSelect.addEventListener('change', (e) => {
-                            e.stopPropagation();
-                            this.saveFullState();
-                            const val = parSelect.value;
-                            layer.parentId = val ? parseInt(val) : null;
-                            this.render();
-                        });
-                        // Prevent keyboard shortcuts from firing when dropdown is focused
-                        parSelect.addEventListener('keydown', (e) => e.stopPropagation());
-                        parRow.appendChild(parSelect);
-                        props.appendChild(parRow);
-                        
                         // Keyframe actions
                         const actRow = document.createElement('div');
                         actRow.className = 'tl-key-actions';
@@ -10120,6 +10260,47 @@
                         actRow.appendChild(setBtn);
                         actRow.appendChild(delBtn);
                         
+                        const copyBtn = document.createElement('button');
+                        copyBtn.className = 'act-copy';
+                        copyBtn.textContent = '⎘ Copy';
+                        copyBtn.disabled = !hasKeyHere;
+                        copyBtn.title = hasKeyHere ? 'Copy keyframe values' : 'No keyframe to copy at this frame';
+                        copyBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            const kf = (layer.transformKeyframes || []).find(k => k.frame === this.currentFrameIndex);
+                            if (kf) {
+                                this._copiedKeyframe = {
+                                    x: kf.x, y: kf.y,
+                                    anchorX: kf.anchorX || 0, anchorY: kf.anchorY || 0,
+                                    scaleX: kf.scaleX, scaleY: kf.scaleY,
+                                    rotation: kf.rotation,
+                                    opacity: kf.opacity != null ? kf.opacity : 1,
+                                    easeX1: kf.easeX1, easeY1: kf.easeY1,
+                                    easeX2: kf.easeX2, easeY2: kf.easeY2
+                                };
+                                // Flash feedback
+                                copyBtn.textContent = '✓ Copied';
+                                setTimeout(() => { copyBtn.textContent = '⎘ Copy'; }, 800);
+                                // Enable paste button
+                                if (pasteBtn) { pasteBtn.disabled = false; pasteBtn.title = 'Paste keyframe values'; }
+                            }
+                        });
+                        actRow.appendChild(copyBtn);
+                        
+                        const pasteBtn = document.createElement('button');
+                        pasteBtn.className = 'act-paste';
+                        pasteBtn.textContent = '⎗ Paste';
+                        pasteBtn.disabled = !this._copiedKeyframe;
+                        pasteBtn.title = this._copiedKeyframe ? 'Paste keyframe values at current frame' : 'No keyframe copied yet';
+                        pasteBtn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            if (!this._copiedKeyframe) return;
+                            this.saveFullState();
+                            this.setTransformKeyframe(layer, this.currentFrameIndex, { ...this._copiedKeyframe });
+                            this.render();
+                        });
+                        actRow.appendChild(pasteBtn);
+                        
                         const curveBtn = document.createElement('button');
                         curveBtn.className = 'act-curve' + (this._curveEditorActive && this._curveEditorLayerId === layer.id ? ' active' : '');
                         curveBtn.textContent = '⌇ Curves';
@@ -10143,6 +10324,8 @@
                         if (e.target.closest('.tl-props')) return;
                         if (e.target.closest('.layer-name-input')) return;
                         if (e.target.closest('.layer-name')) return; // Handled by name click
+                        if (e.target.closest('.parent-select-inline')) return;
+                        if (e.target.closest('.quick-key-btn')) return;
                         this.commitSelection();
                         this.currentLayerId = layer.id;
                         this.audioLayerSelected = false;
@@ -10307,6 +10490,7 @@
                     
                     for (let i = 0; i < layerLocalMax; i++) {
                         const timelinePos = offset + i;
+                        
                         const frameDiv = document.createElement('div');
                         let cls = 'frame';
                         if (isActive && timelinePos === playheadPos) cls += ' active';
@@ -10355,11 +10539,21 @@
                         }
                         
                         if (layer.frames[i]) {
-                            const thumbnail = document.createElement('canvas');
-                            thumbnail.width = 80;
-                            thumbnail.height = 60;
-                            const thumbCtx = thumbnail.getContext('2d');
-                            thumbCtx.drawImage(layer.frames[i], 0, 0, 80, 60);
+                            const frame = layer.frames[i];
+                            // Always redraw thumbnail for the active frame (might have been edited)
+                            const isCurrentFrame = isActive && i === this.currentFrameIndex;
+                            const cached = this._thumbCache.get(frame);
+                            const ver = frame._thumbVer || 0;
+                            let thumbnail;
+                            if (!isCurrentFrame && cached && cached.ver === ver) {
+                                thumbnail = cached.el.cloneNode(true);
+                            } else {
+                                thumbnail = document.createElement('canvas');
+                                thumbnail.width = 20;
+                                thumbnail.height = 15;
+                                thumbnail.getContext('2d').drawImage(frame, 0, 0, 20, 15);
+                                this._thumbCache.set(frame, { el: thumbnail, ver });
+                            }
                             frameDiv.appendChild(thumbnail);
                         }
                         
@@ -10390,7 +10584,8 @@
                             
                             // If clicking a non-active layer, switch to it
                             if (layerRef.id !== this.currentLayerId) {
-                                this.commitSelection();
+                                if (this.selection) { this._dismissTransform(); }
+                                else { this.commitSelection(); }
                                 this.currentLayerId = layerRef.id;
                                 this.audioLayerSelected = false;
                                 this.selectedFrames.clear();
@@ -10459,6 +10654,10 @@
                             
                             // Active layer: navigate to local frame
                             if (frameIdx !== this.currentFrameIndex) {
+                                // Commit any active selection to current frame before navigating
+                                if (this.selection) {
+                                    this._dismissTransform();
+                                }
                                 this.currentFrameIndex = frameIdx;
                                 this.initializeFrame();
                                 this.render();
@@ -10483,7 +10682,8 @@
                             e.stopPropagation();
                             // Switch to this layer if needed
                             if (layerRef.id !== this.currentLayerId) {
-                                this.commitSelection();
+                                if (this.selection) { this._dismissTransform(); }
+                                else { this.commitSelection(); }
                                 this.currentLayerId = layerRef.id;
                                 this.audioLayerSelected = false;
                                 this.currentFrameIndex = frameIdx;
