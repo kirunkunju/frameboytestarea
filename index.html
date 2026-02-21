@@ -4649,6 +4649,28 @@
                         e.preventDefault();
                         this.clearSelection();
                         this.render();
+                    } else if (this.selection && (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+                        e.preventDefault();
+                        const step = e.shiftKey ? 10 : 1;
+                        let dx = 0, dy = 0;
+                        if (e.key === 'ArrowUp') dy = -step;
+                        else if (e.key === 'ArrowDown') dy = step;
+                        else if (e.key === 'ArrowLeft') dx = -step;
+                        else if (e.key === 'ArrowRight') dx = step;
+                        this.selection.bounds.x += dx;
+                        this.selection.bounds.y += dy;
+                        if (this.selection.anchorX != null) {
+                            this.selection.anchorX += dx;
+                            this.selection.anchorY += dy;
+                        }
+                        if (this.selection.corners) {
+                            for (const c of this.selection.corners) {
+                                c.x += dx;
+                                c.y += dy;
+                            }
+                        }
+                        this.showTransformHandles();
+                        this.renderCanvasOnly();
                     }
                     
                     // Single-key shortcuts (only when no modifier keys held, no modal open, no input focused)
