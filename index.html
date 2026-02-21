@@ -371,6 +371,14 @@
             cursor: text;
         }
         
+        .layer-parent-indicator {
+            font-size: 10px;
+            color: #5588cc;
+            margin-left: 2px;
+            flex-shrink: 0;
+            opacity: 0.7;
+        }
+        
         .layer-opacity-control {
             display: flex;
             align-items: center;
@@ -805,6 +813,22 @@
             width: 56px;
             flex-shrink: 0;
         }
+        
+        .parent-select {
+            flex: 1;
+            height: 20px;
+            background: #1a1a24;
+            border: 1px solid #333;
+            border-radius: 4px;
+            color: #ccc;
+            font-size: 10px;
+            padding: 0 4px;
+            outline: none;
+            cursor: pointer;
+            min-width: 60px;
+        }
+        .parent-select:hover { border-color: #4a4a5a; }
+        .parent-select:focus { border-color: #5588cc; }
         
         /* Scrub slider — the main control */
         .scrub-slider {
@@ -2924,7 +2948,7 @@
                 this.selectionCtx = this.selectionCanvas.getContext('2d');
                 this.brushCursor = document.getElementById('brushCursor');
                 
-                this.layers = [{ id: 1, name: 'Layer 1', visible: true, opacity: 1.0, frames: [], transformKeyframes: [], startFrame: 0 }];
+                this.layers = [{ id: 1, name: 'Layer 1', visible: true, opacity: 1.0, frames: [], transformKeyframes: [], startFrame: 0, parentId: null }];
                 this.currentLayerId = 1;
                 this.currentFrameIndex = 0;
                 this.nextLayerId = 2;
@@ -3537,6 +3561,7 @@
                 this._panDidStart = false;
                 this.canvas.style.cursor = 'grabbing';
                 this.selectionCanvas.style.cursor = 'grabbing';
+                this.canvasContainer.style.cursor = 'grabbing';
             }
             
             doPan(clientX, clientY) {
@@ -3557,10 +3582,11 @@
                 this.isPanning = false;
                 this._panStart = null;
                 this._scrollStart = null;
-                // Restore cursor
+                // Restore cursor by re-applying current tool's cursor
                 if (this.tool === 'pan' || this._spaceHeld) {
                     this.canvas.style.cursor = 'grab';
                     this.selectionCanvas.style.cursor = 'grab';
+                    this.canvasContainer.style.cursor = 'grab';
                 } else {
                     // Re-apply current tool cursor
                     this.selectTool(this.tool);
@@ -4740,6 +4766,7 @@
                                     this._toolBeforeSpace = this.tool;
                                     this.canvas.style.cursor = 'grab';
                                     this.selectionCanvas.style.cursor = 'grab';
+                                    this.canvasContainer.style.cursor = 'grab';
                                     this.brushCursor.style.display = 'none';
                                 }
                                 break;
@@ -5187,29 +5214,43 @@
                 if (tool === 'brush' || tool === 'eraser') {
                     this.canvas.style.cursor = 'none';
                     this.selectionCanvas.style.cursor = 'none';
+                    this.canvasContainer.style.cursor = 'none';
+                    this.canvasWrapper.style.cursor = 'none';
                 } else if (tool === 'fill' || tool === 'lasso') {
                     this.canvas.style.cursor = 'crosshair';
                     this.selectionCanvas.style.cursor = 'crosshair';
+                    this.canvasContainer.style.cursor = '';
+                    this.canvasWrapper.style.cursor = '';
                     this.brushCursor.style.display = 'none';
                 } else if (tool === 'pen') {
                     this.canvas.style.cursor = 'crosshair';
                     this.selectionCanvas.style.cursor = 'crosshair';
+                    this.canvasContainer.style.cursor = '';
+                    this.canvasWrapper.style.cursor = '';
                     this.brushCursor.style.display = 'none';
                 } else if (tool === 'pan') {
                     this.canvas.style.cursor = 'grab';
                     this.selectionCanvas.style.cursor = 'grab';
+                    this.canvasContainer.style.cursor = 'grab';
+                    this.canvasWrapper.style.cursor = '';
                     this.brushCursor.style.display = 'none';
                 } else if (tool === 'magnifier') {
                     this.canvas.style.cursor = 'zoom-in';
                     this.selectionCanvas.style.cursor = 'zoom-in';
+                    this.canvasContainer.style.cursor = '';
+                    this.canvasWrapper.style.cursor = '';
                     this.brushCursor.style.display = 'none';
                 } else if (tool === 'magnifier-out') {
                     this.canvas.style.cursor = 'zoom-out';
                     this.selectionCanvas.style.cursor = 'zoom-out';
+                    this.canvasContainer.style.cursor = '';
+                    this.canvasWrapper.style.cursor = '';
                     this.brushCursor.style.display = 'none';
                 } else {
                     this.canvas.style.cursor = 'default';
                     this.selectionCanvas.style.cursor = 'default';
+                    this.canvasContainer.style.cursor = '';
+                    this.canvasWrapper.style.cursor = '';
                     this.brushCursor.style.display = 'none';
                 }
             }
@@ -5400,7 +5441,8 @@
                                     imageData: frame.getContext('2d').getImageData(0, 0, frame.width, frame.height)
                                 };
                             }),
-                            transformKeyframes: (layer.transformKeyframes || []).map(kf => ({...kf}))
+                            transformKeyframes: (layer.transformKeyframes || []).map(kf => ({...kf})),
+                            parentId: layer.parentId || null
                         };
                     }),
                     currentLayerId: this.currentLayerId,
@@ -5541,6 +5583,7 @@
                     visible: layer.visible,
                     opacity: layer.opacity,
                     startFrame: layer.startFrame || 0,
+                    parentId: layer.parentId || null,
                     transformKeyframes: (layer.transformKeyframes || []).map(kf => ({...kf})),
                     frames: (() => {
                         const canvasMap = new Map();
@@ -6694,7 +6737,8 @@
                     opacity: 1.0,
                     frames: [],
                     transformKeyframes: [],
-                    startFrame: 0
+                    startFrame: 0,
+                    parentId: null
                 };
                 
                 // Insert above (after in array) the current layer
@@ -6731,7 +6775,8 @@
                         return copy;
                     }),
                     transformKeyframes: (currentLayer.transformKeyframes || []).map(kf => ({...kf})),
-                    startFrame: currentLayer.startFrame || 0
+                    startFrame: currentLayer.startFrame || 0,
+                    parentId: currentLayer.parentId || null
                 };
                 
                 // Insert after current layer
@@ -6764,7 +6809,13 @@
                 const layerIndex = this.layers.findIndex(l => l.id === this.currentLayerId);
                 
                 // Remove the layer
+                const deletedId = this.layers[layerIndex].id;
                 this.layers.splice(layerIndex, 1);
+                
+                // Unparent any layers that were children of the deleted layer
+                for (const l of this.layers) {
+                    if (l.parentId === deletedId) l.parentId = null;
+                }
                 
                 // Select a different layer
                 if (layerIndex >= this.layers.length) {
@@ -7021,13 +7072,59 @@
                 return (layer.transformKeyframes || []).map(kf => kf.frame);
             }
             
+            // Get ancestor chain from root to direct parent (excluding self)
+            _getParentChain(layer) {
+                const chain = [];
+                const visited = new Set();
+                let current = layer;
+                while (current.parentId != null) {
+                    if (visited.has(current.parentId)) break; // cycle guard
+                    visited.add(current.parentId);
+                    const parent = this.layers.find(l => l.id === current.parentId);
+                    if (!parent) break;
+                    chain.unshift(parent); // prepend so chain is root→parent order
+                    current = parent;
+                }
+                return chain;
+            }
+            
+            // Check if setting parentId on layer would create a cycle
+            _wouldCreateCycle(layerId, parentId) {
+                if (parentId == null) return false;
+                if (parentId === layerId) return true;
+                const visited = new Set([layerId]);
+                let current = parentId;
+                while (current != null) {
+                    if (visited.has(current)) return true;
+                    visited.add(current);
+                    const layer = this.layers.find(l => l.id === current);
+                    if (!layer) break;
+                    current = layer.parentId;
+                }
+                return false;
+            }
+            
+            // Apply a single layer's transform to the canvas context
+            _applyLayerTransform(ctx, tf) {
+                const ax = -this.viewportX + this.projectWidth / 2 + tf.anchorX;
+                const ay = -this.viewportY + this.projectHeight / 2 + tf.anchorY;
+                ctx.translate(ax + tf.x, ay + tf.y);
+                ctx.rotate(tf.rotation * Math.PI / 180);
+                ctx.scale(tf.scaleX, tf.scaleY);
+                ctx.translate(-ax, -ay);
+            }
+            
             drawLayerWithTransform(ctx, layer, timelinePos) {
                 const frame = this.getFrameAtPosition(layer, timelinePos);
                 if (!layer.visible || !frame) return;
                 
                 const localIdx = timelinePos - (layer.startFrame || 0);
                 const tf = this.getLayerTransformAtFrame(layer, localIdx);
-                const hasTransform = tf.x !== 0 || tf.y !== 0 || tf.anchorX !== 0 || tf.anchorY !== 0 || tf.scaleX !== 1 || tf.scaleY !== 1 || tf.rotation !== 0;
+                const hasOwnTransform = tf.x !== 0 || tf.y !== 0 || tf.anchorX !== 0 || tf.anchorY !== 0 || tf.scaleX !== 1 || tf.scaleY !== 1 || tf.rotation !== 0;
+                
+                // Get parent chain transforms
+                const parentChain = this._getParentChain(layer);
+                const hasParents = parentChain.length > 0;
                 
                 // Frame position relative to viewport
                 const offX = (frame._originX || 0) - this.viewportX;
@@ -7036,14 +7133,18 @@
                 ctx.save();
                 ctx.globalAlpha = tf.opacity;
                 
-                if (hasTransform) {
-                    // Anchor at project center in canvas coordinates
-                    const ax = -this.viewportX + this.projectWidth / 2 + tf.anchorX;
-                    const ay = -this.viewportY + this.projectHeight / 2 + tf.anchorY;
-                    ctx.translate(ax + tf.x, ay + tf.y);
-                    ctx.rotate(tf.rotation * Math.PI / 180);
-                    ctx.scale(tf.scaleX, tf.scaleY);
-                    ctx.translate(-ax, -ay);
+                // Apply parent transforms in order (root ancestor → direct parent)
+                if (hasParents) {
+                    for (const parent of parentChain) {
+                        const pLocalIdx = timelinePos - (parent.startFrame || 0);
+                        const ptf = this.getLayerTransformAtFrame(parent, pLocalIdx);
+                        this._applyLayerTransform(ctx, ptf);
+                    }
+                }
+                
+                // Apply this layer's own transform
+                if (hasOwnTransform) {
+                    this._applyLayerTransform(ctx, tf);
                 }
                 
                 ctx.drawImage(frame, offX, offY);
@@ -9646,6 +9747,19 @@
                     topRow.appendChild(dragHandle);
                     topRow.appendChild(vis);
                     topRow.appendChild(name);
+                    
+                    // Show parent indicator if this layer is parented
+                    if (layer.parentId != null) {
+                        const parentLayer = this.layers.find(l => l.id === layer.parentId);
+                        if (parentLayer) {
+                            const parInd = document.createElement('span');
+                            parInd.className = 'layer-parent-indicator';
+                            parInd.title = 'Parented to: ' + parentLayer.name;
+                            parInd.textContent = '⤴';
+                            topRow.appendChild(parInd);
+                        }
+                    }
+                    
                     label.appendChild(topRow);
                     
                     // === PROPERTY PANEL DROPDOWN (AE-style scrub sliders) ===
@@ -9915,6 +10029,46 @@
                         opRow.appendChild(opLbl);
                         opRow.appendChild(makeScrub('opacity', Math.round(tf.opacity * 100), 0, 100, 1, '%', 0.5));
                         props.appendChild(opRow);
+                        
+                        // Parent row (dropdown)
+                        const parRow = document.createElement('div');
+                        parRow.className = 'tl-prop';
+                        const parSpacer = document.createElement('span');
+                        parSpacer.className = 'tl-prop-diamond';
+                        parSpacer.innerHTML = '<svg viewBox="0 0 10 10" style="opacity:0"><polygon points="5,0 10,5 5,10 0,5"/></svg>';
+                        parRow.appendChild(parSpacer);
+                        const parLbl = document.createElement('span');
+                        parLbl.className = 'tl-prop-name';
+                        parLbl.textContent = 'Parent';
+                        parRow.appendChild(parLbl);
+                        const parSelect = document.createElement('select');
+                        parSelect.className = 'parent-select';
+                        // "None" option
+                        const noneOpt = document.createElement('option');
+                        noneOpt.value = '';
+                        noneOpt.textContent = 'None';
+                        parSelect.appendChild(noneOpt);
+                        // Add all other layers as options (excluding self and descendants)
+                        for (const otherLayer of this.layers) {
+                            if (otherLayer.id === layer.id) continue;
+                            if (this._wouldCreateCycle(layer.id, otherLayer.id)) continue; // skip descendants
+                            const opt = document.createElement('option');
+                            opt.value = otherLayer.id;
+                            opt.textContent = otherLayer.name;
+                            if (layer.parentId === otherLayer.id) opt.selected = true;
+                            parSelect.appendChild(opt);
+                        }
+                        parSelect.addEventListener('change', (e) => {
+                            e.stopPropagation();
+                            this.saveFullState();
+                            const val = parSelect.value;
+                            layer.parentId = val ? parseInt(val) : null;
+                            this.render();
+                        });
+                        // Prevent keyboard shortcuts from firing when dropdown is focused
+                        parSelect.addEventListener('keydown', (e) => e.stopPropagation());
+                        parRow.appendChild(parSelect);
+                        props.appendChild(parRow);
                         
                         // Keyframe actions
                         const actRow = document.createElement('div');
@@ -10696,7 +10850,8 @@
                             opacity: layer.opacity,
                             frames: frames,
                             transformKeyframes: layer.transformKeyframes || [],
-                            startFrame: layer.startFrame || 0
+                            startFrame: layer.startFrame || 0,
+                            parentId: layer.parentId || null
                         });
                     }
                     
@@ -10877,7 +11032,8 @@
                             opacity: layerData.opacity,
                             frames: frames,
                             transformKeyframes: layerData.transformKeyframes || [],
-                            startFrame: layerData.startFrame || 0
+                            startFrame: layerData.startFrame || 0,
+                            parentId: layerData.parentId || null
                         });
                     }
                     
@@ -11515,6 +11671,12 @@
         
         // Initialize the app
         const app = new FrameBoy();
+        
+        // Warn before closing/navigating away to prevent losing unsaved work
+        window.addEventListener('beforeunload', (e) => {
+            e.preventDefault();
+            e.returnValue = '';
+        });
         
         // Helper: safely check e.target.closest (e.target may be a text node without .closest)
         const _cl = (el, sel) => el && typeof el.closest === 'function' ? el.closest(sel) : null;
