@@ -2850,8 +2850,10 @@
                             </div>
                         </div>
                         <button id="stopBtn" title="Stop (Space)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="10" height="10" rx="1" fill="currentColor" stroke="none"/></svg> <span class="btn-label">Stop</span></button>
+                        <button id="firstFrame" title="First Frame (Shift+,)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="4" y1="3" x2="4" y2="13"/><path d="M12 3L7 8l5 5"/></svg></button>
                         <button id="prevFrame" title="Previous Frame (,)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M10 3L5 8l5 5"/></svg></button>
                         <button id="nextFrame" title="Next Frame (.)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M6 3l5 5-5 5"/></svg></button>
+                        <button id="lastFrame" title="Last Frame (Shift+.)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M4 3l5 5-5 5"/><line x1="12" y1="3" x2="12" y2="13"/></svg></button>
                         <button id="insertFrame" title="Insert Frame (F6)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v10M3 8h10"/></svg> <span class="btn-label">Insert</span></button>
                         <button id="holdFrame" title="Hold Frame (F5)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="5" height="5" rx="0.5"/><rect x="10" y="4" width="5" height="5" rx="0.5"/><path d="M6 6.5h4"/></svg> <span class="btn-label">Hold</span></button>
                         <button id="duplicateFrame" title="Duplicate Frame (Ctrl+D)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="4" width="8" height="8" rx="1"/><rect x="5.5" y="1" width="8" height="8" rx="1"/></svg> <span class="btn-label">Duplicate</span></button>
@@ -4880,6 +4882,14 @@
                                 e.preventDefault();
                                 this.goToNextFrame();
                                 break;
+                            case '<':
+                                e.preventDefault();
+                                this.goToFirstFrame();
+                                break;
+                            case '>':
+                                e.preventDefault();
+                                this.goToLastFrame();
+                                break;
                             case 'o':
                                 e.preventDefault();
                                 this.onionSkinEnabled = !this.onionSkinEnabled;
@@ -4982,8 +4992,10 @@
                     }
                 });
                 document.getElementById('stopBtn').addEventListener('click', () => this.stop());
+                document.getElementById('firstFrame').addEventListener('click', () => this.goToFirstFrame());
                 document.getElementById('prevFrame').addEventListener('click', () => this.previousFrame());
                 document.getElementById('nextFrame').addEventListener('click', () => this.nextFrame());
+                document.getElementById('lastFrame').addEventListener('click', () => this.goToLastFrame());
                 document.getElementById('insertFrame').addEventListener('click', () => this.insertFrameAfterCurrent());
                 document.getElementById('holdFrame').addEventListener('click', () => this.holdFrame());
                 document.getElementById('duplicateFrame').addEventListener('click', () => this.duplicateFrame());
@@ -6996,6 +7008,32 @@
                 else this.selectedFrames.clear();
                 if (this.currentFrameIndex > 0) {
                     this.currentFrameIndex--;
+                    this.initializeFrame();
+                    this.render();
+                    this.scrubAudio(this.getPlayheadPosition());
+                }
+            }
+            
+            goToFirstFrame() {
+                if (this.selection) { this._dismissTransform(); }
+                if (this.frameSelectMode) this.exitFrameSelectMode();
+                else this.selectedFrames.clear();
+                if (this.currentFrameIndex !== 0) {
+                    this.currentFrameIndex = 0;
+                    this.initializeFrame();
+                    this.render();
+                    this.scrubAudio(this.getPlayheadPosition());
+                }
+            }
+            
+            goToLastFrame() {
+                if (this.selection) { this._dismissTransform(); }
+                if (this.frameSelectMode) this.exitFrameSelectMode();
+                else this.selectedFrames.clear();
+                const layer = this.getCurrentLayer();
+                const lastIdx = layer.frames.length - 1;
+                if (this.currentFrameIndex !== lastIdx) {
+                    this.currentFrameIndex = lastIdx;
                     this.initializeFrame();
                     this.render();
                     this.scrubAudio(this.getPlayheadPosition());
@@ -9164,7 +9202,6 @@
                         this.renderCanvasOnly();
                         this.updatePlayheadPosition();
                         this.updateAudioPlayhead(this.getPlayheadPosition(), maxFrames);
-                        this.scrollPlayheadIntoView();
                         frameIndex = (frameIndex + 1) % maxFrames;
                         lastFrameTime = currentTime - (elapsed % frameDelay);
                         
@@ -11055,8 +11092,17 @@
                 const { cellW, padding } = this.getTimelineMetrics();
                 const timelinePos = this.getPlayheadPosition();
                 const x = padding + timelinePos * cellW + cellW / 2;
-                const visibleX = x - framesSection.scrollLeft;
                 
+                // Auto-scroll timeline to keep playhead visible
+                const viewW = framesSection.clientWidth;
+                const margin = viewW * 0.25;
+                if (x > framesSection.scrollLeft + viewW - margin) {
+                    framesSection.scrollLeft = x - margin;
+                } else if (x < framesSection.scrollLeft + margin) {
+                    framesSection.scrollLeft = Math.max(0, x - margin);
+                }
+                
+                const visibleX = x - framesSection.scrollLeft;
                 playhead.style.left = visibleX + 'px';
                 playhead.classList.add('visible');
             }
