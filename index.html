@@ -1837,7 +1837,7 @@
         }
         
         .frame.hold-frame {
-            border-style: solid;
+            /* no extra border — S/H badges and left accent handle hold indication */
         }
         
         .hold-badge {
@@ -1861,10 +1861,50 @@
             z-index: 1;
         }
 
-        .frame-thumb canvas {
-            width: 100%;
-            height: 100%;
-            border: none;
+        .frame-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 1;
+        }
+        
+        .frame-indicator.circle {
+            width: 35%;
+            height: 0;
+            padding-bottom: 35%;
+            border-radius: 50%;
+            background: #999;
+        }
+        
+        .frame.active .frame-indicator.circle {
+            background: #4a9eff;
+        }
+        
+        .frame-indicator.square {
+            width: 22%;
+            height: 0;
+            padding-bottom: 22%;
+            border-radius: 2px;
+            background: #999;
+        }
+        
+        .frame.active .frame-indicator.square {
+            background: #4a9eff;
+        }
+        
+        .frame-indicator.square-outline {
+            width: 22%;
+            height: 0;
+            padding-bottom: 22%;
+            border-radius: 2px;
+            background: transparent;
+            border: 1.5px solid #999;
+        }
+        
+        .frame.active .frame-indicator.square-outline {
+            border-color: #4a9eff;
         }
 
         .frame-number {
@@ -3159,7 +3199,6 @@
                 this.timelineScale = 1.0;
                 this._openTransformLayers = new Set();
                 this._copiedKeyframe = null; // clipboard for copy/paste keyframes
-                this._thumbCache = new WeakMap(); // frame canvas → {canvas, version}
                 this._timelineDirty = true; // flag to avoid unnecessary timeline DOM rebuilds
                 this._showAnchorIndicator = false;
                 this._curveEditorActive = false;
@@ -5728,6 +5767,7 @@
                         const ctx = frame.getContext('2d');
                         ctx.clearRect(0, 0, frame.width, frame.height);
                         ctx.putImageData(state.frameData.imageData, 0, 0);
+                        this._dirtyThumb(frame);
                     }
                     this.render();
                     return;
@@ -6401,6 +6441,9 @@
                 this.shapeStart = null;
                 this._shiftAnchor = null;
                 this._shiftLockedAngle = null;
+                // Invalidate thumbnail cache so timeline indicators update
+                const _layer = this.getCurrentLayer();
+                if (_layer) this._dirtyThumb(_layer.frames[this.currentFrameIndex]);
                 this.render();
             }
             
@@ -6829,6 +6872,7 @@
                 this._penDragIdx = -1;
                 this._penDragType = null;
                 this._penMousePos = null;
+                this._dirtyThumb(frame);
                 this.render();
             }
             
@@ -6852,6 +6896,7 @@
                     this._timelineDirty = true; // new canvas replaces old
                 }
                 layer.frames[this.currentFrameIndex] = this.createEmptyFrame();
+                this._dirtyThumb(layer.frames[this.currentFrameIndex]);
                 this.initializeFrame();
                 this.render();
             }
@@ -7152,6 +7197,18 @@
                 if (!canvas) return false;
                 for (let i = 0; i < layer.frames.length; i++) {
                     if (i !== frameIndex && layer.frames[i] === canvas) return true;
+                }
+                return false;
+            }
+            
+            // Check if a frame canvas has any non-transparent pixels
+            _frameHasContent(frame) {
+                if (!frame || frame.width === 0 || frame.height === 0) return false;
+                // Scan actual frame data — early exit on first opaque pixel
+                const ctx = frame.getContext('2d');
+                const data = ctx.getImageData(0, 0, frame.width, frame.height).data;
+                for (let j = 3, len = data.length; j < len; j += 4) {
+                    if (data[j] > 0) return true;
                 }
                 return false;
             }
@@ -8641,6 +8698,8 @@
             commitSelection() {
                 if (this.selection) {
                     this.applySelection();
+                    const _layer = this.getCurrentLayer();
+                    if (_layer) this._dirtyThumb(_layer.frames[this.currentFrameIndex]);
                     this.clearSelection();
                 }
             }
@@ -9105,6 +9164,7 @@
                 frameCtx.drawImage(fillLayer, 0, 0);
                 frameCtx.drawImage(strippedCanvas, 0, 0);
                 
+                this._dirtyThumb(frame);
                 this.render();
             }
             
@@ -9861,7 +9921,6 @@
                 }
                 
                 // Find and activate the new current frame via data attributes
-                // Use a targeted selector instead of iterating all frames
                 const newActive = container.querySelector(
                     `.frame[data-layer-id="${this.currentLayerId}"][data-timeline-pos="${playheadPos}"]`
                 );
@@ -9869,16 +9928,67 @@
                     newActive.classList.add('active');
                     this._activeFrameEl = newActive;
                     
-                    // Update current frame thumbnail (it may have been drawn on)
+                    // Refresh indicator for active frame (content may have changed from drawing)
                     const layer = this.getCurrentLayer();
                     const frame = layer.frames[this.currentFrameIndex];
-                    if (frame) {
-                        const oldThumb = newActive.querySelector('canvas');
-                        if (oldThumb) {
-                            const ctx = oldThumb.getContext('2d');
-                            ctx.clearRect(0, 0, 20, 15);
-                            ctx.drawImage(frame, 0, 0, 20, 15);
+                    const thumbEl = newActive.querySelector('.frame-thumb');
+                    if (thumbEl && frame) {
+                        const existingIndicator = thumbEl.querySelector('.frame-indicator');
+                        const hasContent = this._frameHasContent(frame);
+                        const isHold = this.isHoldFrame(layer, this.currentFrameIndex);
+                        // Determine if this is the source (earliest index sharing this canvas)
+                        let isSource = false;
+                        if (isHold) {
+                            isSource = true;
+                            for (let si = 0; si < this.currentFrameIndex; si++) {
+                                if (layer.frames[si] === frame) { isSource = false; break; }
+                            }
                         }
+                        const needsClass = !isHold ? 'frame-indicator circle' :
+                            (isSource ? 'frame-indicator square' : 'frame-indicator square-outline');
+                        
+                        if (hasContent && !existingIndicator) {
+                            const ind = document.createElement('div');
+                            ind.className = needsClass;
+                            thumbEl.appendChild(ind);
+                        } else if (!hasContent && existingIndicator) {
+                            existingIndicator.remove();
+                        } else if (hasContent && existingIndicator) {
+                            existingIndicator.className = needsClass;
+                        }
+                        
+                        // Also update all hold frames sharing the same canvas
+                        const offset = layer.startFrame || 0;
+                        for (let fi = 0; fi < layer.frames.length; fi++) {
+                            if (fi === this.currentFrameIndex) continue;
+                            if (layer.frames[fi] !== frame) continue;
+                            const tp = offset + fi;
+                            const holdEl = container.querySelector(
+                                `.frame[data-layer-id="${this.currentLayerId}"][data-timeline-pos="${tp}"]`
+                            );
+                            if (!holdEl) continue;
+                            const holdThumb = holdEl.querySelector('.frame-thumb');
+                            if (!holdThumb) continue;
+                            // Determine if this sibling is the source
+                            let sibIsSource = true;
+                            for (let si = 0; si < fi; si++) {
+                                if (layer.frames[si] === frame) { sibIsSource = false; break; }
+                            }
+                            const sibClass = sibIsSource ? 'frame-indicator square' : 'frame-indicator square-outline';
+                            const holdInd = holdThumb.querySelector('.frame-indicator');
+                            if (hasContent && !holdInd) {
+                                const ind = document.createElement('div');
+                                ind.className = sibClass;
+                                holdThumb.appendChild(ind);
+                            } else if (!hasContent && holdInd) {
+                                holdInd.remove();
+                            } else if (hasContent && holdInd) {
+                                holdInd.className = sibClass;
+                            }
+                        }
+                    } else if (thumbEl && !frame) {
+                        const existingIndicator = thumbEl.querySelector('.frame-indicator');
+                        if (existingIndicator) existingIndicator.remove();
                     }
                 } else {
                     this._activeFrameEl = null;
@@ -10644,34 +10754,12 @@
                         const thumb = document.createElement('div');
                         thumb.className = 'frame-thumb';
                         
-                        // Hold badge + color coding
+                        // Hold color coding
                         if (holdFrameSet.has(i)) {
                             const hc = holdColorMap.get(i);
-                            const isActiveFrame = isActive && timelinePos === playheadPos;
                             if (hc) {
-                                if (!isActiveFrame) {
-                                    thumb.style.borderColor = hc.color + '88';
-                                }
-                                if (hc.isSource) {
-                                    thumb.style.borderLeftWidth = '4px';
-                                    thumb.style.borderLeftColor = hc.color;
-                                }
-                                const badge = document.createElement('div');
-                                badge.className = 'hold-badge';
-                                badge.textContent = hc.isSource ? 'S' : 'H';
-                                if (hc.isSource) {
-                                    badge.style.background = hc.color + 'cc';
-                                    badge.style.color = '#111';
-                                } else {
-                                    badge.style.background = 'transparent';
-                                    badge.style.color = hc.color;
-                                    badge.style.border = '1px solid ' + hc.color + 'aa';
-                                }
-                                thumb.appendChild(badge);
-                                const tint = document.createElement('div');
-                                tint.className = 'hold-tint';
-                                tint.style.background = hc.color + '18';
-                                thumb.appendChild(tint);
+                                thumb.style.borderLeftWidth = '4px';
+                                thumb.style.borderLeftColor = hc.color;
                             }
                         }
                         
@@ -10685,20 +10773,19 @@
                         
                         if (layer.frames[i]) {
                             const frame = layer.frames[i];
-                            const isCurrentFrame = isActive && i === this.currentFrameIndex;
-                            const cached = this._thumbCache.get(frame);
-                            const ver = frame._thumbVer || 0;
-                            let thumbnail;
-                            if (!isCurrentFrame && cached && cached.ver === ver) {
-                                thumbnail = cached.el.cloneNode(true);
-                            } else {
-                                thumbnail = document.createElement('canvas');
-                                thumbnail.width = 20;
-                                thumbnail.height = 15;
-                                thumbnail.getContext('2d').drawImage(frame, 0, 0, 20, 15);
-                                this._thumbCache.set(frame, { el: thumbnail, ver });
+                            const isHold = holdFrameSet.has(i);
+                            // Check if frame has any content
+                            const hasContent = this._frameHasContent(frame);
+                            if (hasContent) {
+                                const indicator = document.createElement('div');
+                                let indClass = 'frame-indicator circle';
+                                if (isHold) {
+                                    const hc = holdColorMap.get(i);
+                                    indClass = (hc && hc.isSource) ? 'frame-indicator square' : 'frame-indicator square-outline';
+                                }
+                                indicator.className = indClass;
+                                thumb.appendChild(indicator);
                             }
-                            thumb.appendChild(thumbnail);
                         }
                         
                         frameDiv.appendChild(thumb);
@@ -10763,15 +10850,12 @@
                             const gm = this.getTimelineMetrics();
                             ghost.style.width = gm.frameW + 'px';
                             ghost.style.height = gm.frameW + 'px';
-                            const thumb = state.element.querySelector('canvas');
-                            if (thumb) {
-                                const c = document.createElement('canvas');
-                                c.width = 80; c.height = 60;
-                                c.getContext('2d').drawImage(thumb, 0, 0);
-                                c.style.width = '100%';
-                                c.style.height = '100%';
-                                c.style.objectFit = 'contain';
-                                ghost.appendChild(c);
+                            ghost.style.background = '#2a2a2a';
+                            ghost.style.position = 'relative';
+                            const indicator = state.element.querySelector('.frame-indicator');
+                            if (indicator) {
+                                const clone = indicator.cloneNode(true);
+                                ghost.appendChild(clone);
                             }
                             ghost.style.display = 'block';
                         }
