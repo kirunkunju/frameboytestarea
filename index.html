@@ -4257,7 +4257,7 @@
                 setupCanvasEvents(this.selectionCanvas);
                 
                 // Dismiss active free transform when clicking outside the canvas
-                // (e.g. timeline, layers panel, toolbar, etc.)
+                // (e.g. timeline, layers panel, etc. — but not toolbar buttons/dropdowns)
                 document.addEventListener('pointerdown', (e) => {
                     if (!this.selection) return;
                     const isTransformTool = this.tool === 'transform' || this.tool === 'scale' || 
@@ -4265,6 +4265,8 @@
                     if (!isTransformTool) return;
                     // If click is on canvas or selection canvas, startDrawing handles it
                     if (e.target === this.canvas || e.target === this.selectionCanvas) return;
+                    // Don't dismiss when interacting with toolbar or dropdowns
+                    if (e.target && e.target.closest && e.target.closest('.toolbar, .dropdown-menu, .dropdown-container')) return;
                     this._dismissTransform();
                 });
                 
@@ -4374,24 +4376,28 @@
                 const eraserBtn = document.getElementById('eraserTool');
                 const eraserDropdown = document.getElementById('eraserDropdown');
                 
+                // Central helper to close every dropdown/panel
+                const _closeAllDropdowns = (except) => {
+                    const ids = ['shapeDropdown', 'onionSkinDropdown', 'brushDropdown', 'eraserDropdown', 'fileMenuDropdown', 'navToolDropdown', 'transformToolDropdown', 'playModeMenu'];
+                    for (const id of ids) {
+                        if (id === except) continue;
+                        const el = document.getElementById(id);
+                        if (el) el.classList.remove('show');
+                    }
+                };
+                
                 brushBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     this.selectTool('brush');
+                    _closeAllDropdowns('brushDropdown');
                     brushDropdown.classList.toggle('show');
-                    eraserDropdown.classList.remove('show');
-                    document.getElementById('shapeDropdown').classList.remove('show');
-                    document.getElementById('fileMenuDropdown').classList.remove('show');
-                    document.getElementById('onionSkinDropdown').classList.remove('show');
                 });
                 
                 eraserBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
                     this.selectTool('eraser');
+                    _closeAllDropdowns('eraserDropdown');
                     eraserDropdown.classList.toggle('show');
-                    brushDropdown.classList.remove('show');
-                    document.getElementById('shapeDropdown').classList.remove('show');
-                    document.getElementById('fileMenuDropdown').classList.remove('show');
-                    document.getElementById('onionSkinDropdown').classList.remove('show');
                 });
                 
                 // Prevent dropdown clicks from propagating
@@ -4454,8 +4460,8 @@
                     document.getElementById('eraserSmoothingValue').textContent = e.target.value + '%';
                 });
 
-                document.getElementById('fillTool').addEventListener('click', () => this.selectTool('fill'));
-                document.getElementById('lassoTool').addEventListener('click', () => this.selectTool('lasso'));
+                document.getElementById('fillTool').addEventListener('click', () => { _closeAllDropdowns(); this.selectTool('fill'); });
+                document.getElementById('lassoTool').addEventListener('click', () => { _closeAllDropdowns(); this.selectTool('lasso'); });
                 // Transform tool dropdown
                 const xformButton = document.getElementById('transformTool');
                 const xformDropdown = document.getElementById('transformToolDropdown');
@@ -4463,8 +4469,10 @@
                 xformButton.addEventListener('click', (e) => {
                     e.stopPropagation();
                     if (this.tool === 'transform' || this.tool === 'scale' || this.tool === 'rotate' || this.tool === 'skew' || this.tool === 'distort') {
+                        _closeAllDropdowns('transformToolDropdown');
                         xformDropdown.classList.toggle('show');
                     } else {
+                        _closeAllDropdowns();
                         this.selectTool(this._activeTransformTool);
                     }
                 });
@@ -4487,10 +4495,11 @@
                 
                 navButton.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    // If already on a nav tool, toggle dropdown; otherwise activate current sub-tool
                     if (this.tool === 'magnifier' || this.tool === 'magnifier-out' || this.tool === 'pan') {
+                        _closeAllDropdowns('navToolDropdown');
                         navDropdown.classList.toggle('show');
                     } else {
+                        _closeAllDropdowns();
                         this.selectTool(this._activeNavTool);
                     }
                 });
@@ -4526,17 +4535,16 @@
                 
                 shapeButton.addEventListener('click', (e) => {
                     e.stopPropagation();
+                    _closeAllDropdowns('shapeDropdown');
                     shapeDropdown.classList.toggle('show');
                 });
                 
-                // Close dropdown when clicking outside
-                document.addEventListener('click', () => {
-                    shapeDropdown.classList.remove('show');
-                    onionDropdown.classList.remove('show');
-                    brushDropdown.classList.remove('show');
-                    eraserDropdown.classList.remove('show');
-                    document.getElementById('fileMenuDropdown').classList.remove('show');
-                    document.getElementById('navToolDropdown').classList.remove('show');
+                // Close all dropdowns when clicking/tapping outside toolbar dropdown areas
+                document.addEventListener('pointerdown', (e) => {
+                    if (!e.target || !e.target.closest) return;
+                    // Don't close if interacting with dropdown content or toolbar/playback controls
+                    if (e.target.closest('.dropdown-menu, .brush-dropdown, .onion-skin-dropdown, .play-mode-menu, .toolbar, .playback-controls')) return;
+                    _closeAllDropdowns();
                 });
                 
                 // Shape selection
@@ -4589,6 +4597,7 @@
                 const onionDropdown = document.getElementById('onionSkinDropdown');
                 onionBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
+                    _closeAllDropdowns('onionSkinDropdown');
                     onionDropdown.classList.toggle('show');
                 });
                 onionDropdown.addEventListener('click', (e) => e.stopPropagation());
@@ -5029,6 +5038,7 @@
                 const playModeMenu = document.getElementById('playModeMenu');
                 playModeBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
+                    _closeAllDropdowns('playModeMenu');
                     playModeMenu.classList.toggle('show');
                 });
                 playModeMenu.querySelectorAll('.play-mode-item').forEach(item => {
@@ -5112,6 +5122,7 @@
                 const fileMenuDropdown = document.getElementById('fileMenuDropdown');
                 fileMenuBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
+                    _closeAllDropdowns('fileMenuDropdown');
                     fileMenuDropdown.classList.toggle('show');
                 });
                 document.getElementById('saveProjectBtn').addEventListener('click', () => {
@@ -8214,7 +8225,6 @@
                 this.isTransforming = false;
                 this.isRotating = false;
                 this.activeHandle = null;
-                this.selectTool('lasso');
                 this.render();
             }
             
