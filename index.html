@@ -7431,22 +7431,28 @@
             isHoldFrame(layer, frameIndex) {
                 const canvas = layer.frames[frameIndex];
                 if (!canvas) return false;
-                for (let i = 0; i < layer.frames.length; i++) {
-                    if (i !== frameIndex && layer.frames[i] === canvas) return true;
-                }
-                return false;
+                const groups = this.getHoldGroups(layer);
+                return groups.has(canvas);
             }
             
-            // Check if a frame canvas has any non-transparent pixels
+            // Check if a frame canvas has any non-transparent pixels (cached per _thumbVer)
             _frameHasContent(frame) {
                 if (!frame || frame.width === 0 || frame.height === 0) return false;
-                // Scan actual frame data — early exit on first opaque pixel
+                const ver = frame._thumbVer || 0;
+                if (frame._hasContentVer === ver && frame._hasContentCached !== undefined) {
+                    return frame._hasContentCached;
+                }
+                // Full scan with early exit — only runs once per content mutation
+                // (cached until _dirtyThumb increments _thumbVer)
                 const ctx = frame.getContext('2d');
                 const data = ctx.getImageData(0, 0, frame.width, frame.height).data;
+                let result = false;
                 for (let j = 3, len = data.length; j < len; j += 4) {
-                    if (data[j] > 0) return true;
+                    if (data[j] > 0) { result = true; break; }
                 }
-                return false;
+                frame._hasContentCached = result;
+                frame._hasContentVer = ver;
+                return result;
             }
             
             releaseHoldFrame() {
@@ -10090,7 +10096,7 @@
                 // Only rebuild timeline DOM when structure changed; otherwise lightweight update
                 // Force rebuild if properties panel is open (slider values need updating)
                 if (this._timelineDirty || (this._openTransformLayers && this._openTransformLayers.size > 0)) {
-                    this.renderTimeline();
+                    this._scheduleRenderTimeline();
                 } else {
                     this._updateTimelineActive();
                 }
@@ -10170,14 +10176,16 @@
                     if (thumbEl && frame) {
                         const existingIndicator = thumbEl.querySelector('.frame-indicator');
                         const hasContent = this._frameHasContent(frame);
-                        const isHold = this.isHoldFrame(layer, this.currentFrameIndex);
-                        // Determine if this is the source (earliest index sharing this canvas)
+                        
+                        // Use holdGroups cache for O(1) hold/source detection
+                        const holdGroups = this.getHoldGroups(layer);
+                        const siblings = holdGroups.get(frame); // Set of indices sharing this canvas
+                        const isHold = !!siblings;
                         let isSource = false;
+                        let sourceIdx = -1;
                         if (isHold) {
-                            isSource = true;
-                            for (let si = 0; si < this.currentFrameIndex; si++) {
-                                if (layer.frames[si] === frame) { isSource = false; break; }
-                            }
+                            sourceIdx = Math.min(...siblings);
+                            isSource = (this.currentFrameIndex === sourceIdx);
                         }
                         const needsClass = !isHold ? 'frame-indicator circle' :
                             (isSource ? 'frame-indicator square' : 'frame-indicator square-outline');
@@ -10193,32 +10201,28 @@
                         }
                         
                         // Also update all hold frames sharing the same canvas
-                        const offset = layer.startFrame || 0;
-                        for (let fi = 0; fi < layer.frames.length; fi++) {
-                            if (fi === this.currentFrameIndex) continue;
-                            if (layer.frames[fi] !== frame) continue;
-                            const tp = offset + fi;
-                            const holdEl = container.querySelector(
-                                `.frame[data-layer-id="${this.currentLayerId}"][data-timeline-pos="${tp}"]`
-                            );
-                            if (!holdEl) continue;
-                            const holdThumb = holdEl.querySelector('.frame-thumb');
-                            if (!holdThumb) continue;
-                            // Determine if this sibling is the source
-                            let sibIsSource = true;
-                            for (let si = 0; si < fi; si++) {
-                                if (layer.frames[si] === frame) { sibIsSource = false; break; }
-                            }
-                            const sibClass = sibIsSource ? 'frame-indicator square' : 'frame-indicator square-outline';
-                            const holdInd = holdThumb.querySelector('.frame-indicator');
-                            if (hasContent && !holdInd) {
-                                const ind = document.createElement('div');
-                                ind.className = sibClass;
-                                holdThumb.appendChild(ind);
-                            } else if (!hasContent && holdInd) {
-                                holdInd.remove();
-                            } else if (hasContent && holdInd) {
-                                holdInd.className = sibClass;
+                        if (siblings) {
+                            const offset = layer.startFrame || 0;
+                            for (const fi of siblings) {
+                                if (fi === this.currentFrameIndex) continue;
+                                const tp = offset + fi;
+                                const holdEl = container.querySelector(
+                                    `.frame[data-layer-id="${this.currentLayerId}"][data-timeline-pos="${tp}"]`
+                                );
+                                if (!holdEl) continue;
+                                const holdThumb = holdEl.querySelector('.frame-thumb');
+                                if (!holdThumb) continue;
+                                const sibClass = (fi === sourceIdx) ? 'frame-indicator square' : 'frame-indicator square-outline';
+                                const holdInd = holdThumb.querySelector('.frame-indicator');
+                                if (hasContent && !holdInd) {
+                                    const ind = document.createElement('div');
+                                    ind.className = sibClass;
+                                    holdThumb.appendChild(ind);
+                                } else if (!hasContent && holdInd) {
+                                    holdInd.remove();
+                                } else if (hasContent && holdInd) {
+                                    holdInd.className = sibClass;
+                                }
                             }
                         }
                     } else if (thumbEl && !frame) {
@@ -10256,6 +10260,21 @@
             }
             
             renderTimeline() {
+                // Cancel any pending debounced render
+                if (this._rtRaf) { cancelAnimationFrame(this._rtRaf); this._rtRaf = null; }
+                this._renderTimelineImpl();
+            }
+            
+            // Debounced version — used from render() to coalesce rapid calls
+            _scheduleRenderTimeline() {
+                if (this._rtRaf) return; // already scheduled
+                this._rtRaf = requestAnimationFrame(() => {
+                    this._rtRaf = null;
+                    this._renderTimelineImpl();
+                });
+            }
+            
+            _renderTimelineImpl() {
                 this._timelineDirty = false; // Clear flag — we're doing a full rebuild
                 this._activeFrameEl = null; // Old DOM elements destroyed
                 
@@ -10921,9 +10940,24 @@
                     // Frame block wrapper (for drag-to-slide)
                     const blockWrap = document.createElement('div');
                     blockWrap.className = 'frame-block';
-                    blockWrap.style.display = 'flex';
-                    blockWrap.style.position = 'relative';
                     blockWrap.dataset.layerId = layer.id;
+                    
+                    // Pre-build keyframe Set for O(1) lookup
+                    const keyframeSet = new Set((layer.transformKeyframes || []).map(kf => kf.frame));
+                    
+                    // Virtualization: use absolute positioning, only create visible frames
+                    const { cellW, frameW, gap } = this.getTimelineMetrics();
+                    blockWrap.style.display = 'block';
+                    blockWrap.style.position = 'relative';
+                    blockWrap.style.minWidth = (layerLocalMax * cellW) + 'px';
+                    blockWrap.style.height = (frameW + 20) + 'px';
+                    
+                    // Store metadata for scroll-based re-rendering
+                    blockWrap._virt = {
+                        layer, layerLocalMax, offset, holdFrameSet, holdColorMap,
+                        isActive, playheadPos, keyframeSet, cellW, frameW, gap,
+                        renderedRange: null
+                    };
                     
                     // Slide handle on left edge
                     const slideHandle = document.createElement('div');
@@ -10972,66 +11006,8 @@
                         document.addEventListener('pointercancel', onUp);
                     });
                     
-                    for (let i = 0; i < layerLocalMax; i++) {
-                        const timelinePos = offset + i;
-                        
-                        const frameDiv = document.createElement('div');
-                        let cls = 'frame';
-                        if (isActive && timelinePos === playheadPos) cls += ' active';
-                        if (isActive && this.selectedFrames.has(i)) cls += ' selected';
-                        if (holdFrameSet.has(i)) cls += ' hold-frame';
-                        frameDiv.className = cls;
-                        frameDiv.dataset.frameIndex = i;
-                        frameDiv.dataset.timelinePos = timelinePos;
-                        frameDiv.dataset.layerId = layer.id;
-                        
-                        // Thumbnail wrapper (clips overflow for badges/tint)
-                        const thumb = document.createElement('div');
-                        thumb.className = 'frame-thumb';
-                        
-                        // Hold color coding
-                        if (holdFrameSet.has(i)) {
-                            const hc = holdColorMap.get(i);
-                            if (hc) {
-                                thumb.style.borderLeftWidth = '4px';
-                                thumb.style.borderLeftColor = hc.color;
-                            }
-                        }
-                        
-                        // Keyframe diamond
-                        if (this.hasTransformKeyframeAt(layer, i)) {
-                            const diamond = document.createElement('div');
-                            diamond.className = 'keyframe-diamond';
-                            diamond.style.left = 'calc(50% - 3.5px)';
-                            thumb.appendChild(diamond);
-                        }
-                        
-                        if (layer.frames[i]) {
-                            const frame = layer.frames[i];
-                            const isHold = holdFrameSet.has(i);
-                            // Check if frame has any content
-                            const hasContent = this._frameHasContent(frame);
-                            if (hasContent) {
-                                const indicator = document.createElement('div');
-                                let indClass = 'frame-indicator circle';
-                                if (isHold) {
-                                    const hc = holdColorMap.get(i);
-                                    indClass = (hc && hc.isSource) ? 'frame-indicator square' : 'frame-indicator square-outline';
-                                }
-                                indicator.className = indClass;
-                                thumb.appendChild(indicator);
-                            }
-                        }
-                        
-                        frameDiv.appendChild(thumb);
-                        
-                        const frameNumber = document.createElement('div');
-                        frameNumber.className = 'frame-number';
-                        frameNumber.textContent = timelinePos + 1;
-                        frameDiv.appendChild(frameNumber);
-                        
-                        blockWrap.appendChild(frameDiv);
-                    }
+                    // Populate only visible frames (virtualized)
+                    this._populateBlockFrames(blockWrap);
                     
                     row.appendChild(blockWrap);
                     
@@ -11351,38 +11327,186 @@
                 if (this._curveEditorActive) {
                     this.renderCurveEditor();
                 }
+                
+                // Set up scroll-based virtualization handler (once)
+                if (!this._tlScrollBound) {
+                    this._tlScrollBound = true;
+                    const scrollEl = document.getElementById('timelineFramesSection');
+                    let scrollRaf = null;
+                    scrollEl.addEventListener('scroll', () => {
+                        if (scrollRaf) return;
+                        scrollRaf = requestAnimationFrame(() => {
+                            scrollRaf = null;
+                            this._updateVisibleFrames();
+                        });
+                    }, { passive: true });
+                }
+            }
+            
+            // Create a single frame element for the virtualized timeline
+            _createFrameEl(i, v) {
+                const timelinePos = v.offset + i;
+                const frameDiv = document.createElement('div');
+                let cls = 'frame';
+                if (v.isActive && timelinePos === v.playheadPos) cls += ' active';
+                if (v.isActive && this.selectedFrames.has(i)) cls += ' selected';
+                if (v.holdFrameSet.has(i)) cls += ' hold-frame';
+                frameDiv.className = cls;
+                frameDiv.dataset.frameIndex = i;
+                frameDiv.dataset.timelinePos = timelinePos;
+                frameDiv.dataset.layerId = v.layer.id;
+                
+                // Absolute positioning within blockWrap
+                frameDiv.style.position = 'absolute';
+                frameDiv.style.left = (i * v.cellW + 2) + 'px'; // +2 for blockWrap padding
+                frameDiv.style.top = '0';
+                
+                // Thumbnail wrapper
+                const thumb = document.createElement('div');
+                thumb.className = 'frame-thumb';
+                
+                // Hold color coding
+                if (v.holdFrameSet.has(i)) {
+                    const hc = v.holdColorMap.get(i);
+                    if (hc) {
+                        thumb.style.borderLeftWidth = '4px';
+                        thumb.style.borderLeftColor = hc.color;
+                    }
+                }
+                
+                // Keyframe diamond
+                if (v.keyframeSet.has(i)) {
+                    const diamond = document.createElement('div');
+                    diamond.className = 'keyframe-diamond';
+                    diamond.style.left = 'calc(50% - 3.5px)';
+                    thumb.appendChild(diamond);
+                }
+                
+                // Content indicator
+                if (v.layer.frames[i]) {
+                    const frame = v.layer.frames[i];
+                    const hasContent = this._frameHasContent(frame);
+                    if (hasContent) {
+                        const indicator = document.createElement('div');
+                        let indClass = 'frame-indicator circle';
+                        if (v.holdFrameSet.has(i)) {
+                            const hc = v.holdColorMap.get(i);
+                            indClass = (hc && hc.isSource) ? 'frame-indicator square' : 'frame-indicator square-outline';
+                        }
+                        indicator.className = indClass;
+                        thumb.appendChild(indicator);
+                    }
+                }
+                
+                frameDiv.appendChild(thumb);
+                
+                const frameNumber = document.createElement('div');
+                frameNumber.className = 'frame-number';
+                frameNumber.textContent = timelinePos + 1;
+                frameDiv.appendChild(frameNumber);
+                
+                return frameDiv;
+            }
+            
+            // Populate visible frame elements in a virtualized blockWrap
+            _populateBlockFrames(blockWrap) {
+                const v = blockWrap._virt;
+                if (!v) return;
+                
+                const scrollEl = document.getElementById('timelineFramesSection');
+                const scrollLeft = scrollEl.scrollLeft;
+                const viewportWidth = scrollEl.clientWidth || 800; // fallback before layout
+                
+                // Approximate blockWrap offset in scroll container
+                const blockOffset = 10 + (v.offset * v.cellW) + 4; // row padding + spacer + border/padding
+                
+                const BUFFER = 10;
+                const startIdx = Math.max(0, Math.floor((scrollLeft - blockOffset) / v.cellW) - BUFFER);
+                const endIdx = Math.min(v.layerLocalMax, Math.ceil((scrollLeft - blockOffset + viewportWidth) / v.cellW) + BUFFER);
+                
+                // Check if range changed
+                const prevRange = v.renderedRange;
+                if (prevRange && prevRange[0] === startIdx && prevRange[1] === endIdx) return;
+                v.renderedRange = [startIdx, endIdx];
+                
+                // Remove out-of-range frame elements
+                const existing = blockWrap.querySelectorAll('.frame');
+                for (const el of existing) {
+                    const idx = parseInt(el.dataset.frameIndex);
+                    if (idx < startIdx || idx >= endIdx) el.remove();
+                }
+                
+                // Collect already-rendered indices
+                const rendered = new Set();
+                blockWrap.querySelectorAll('.frame').forEach(el => rendered.add(parseInt(el.dataset.frameIndex)));
+                
+                // Create missing frame elements
+                const frag = document.createDocumentFragment();
+                for (let i = startIdx; i < endIdx; i++) {
+                    if (rendered.has(i)) continue;
+                    frag.appendChild(this._createFrameEl(i, v));
+                }
+                blockWrap.appendChild(frag);
+            }
+            
+            // Update all visible frames across all virtualized blockWraps (called on scroll)
+            _updateVisibleFrames() {
+                const blocks = document.querySelectorAll('.frame-block');
+                for (const blockWrap of blocks) {
+                    if (blockWrap._virt) this._populateBlockFrames(blockWrap);
+                }
             }
             
             renderScrubRuler() {
-                const ruler = document.getElementById('scrubRulerInner');
-                ruler.innerHTML = '';
+                const rulerOuter = document.getElementById('scrubRulerInner');
                 
                 const numFrames = this._maxFrameCount || this.getTimelineLength();
                 const { cellW, padding } = this.getTimelineMetrics();
                 const totalWidth = padding + numFrames * cellW + 40;
-                ruler.style.width = totalWidth + 'px';
+                rulerOuter.style.width = totalWidth + 'px';
+                
+                // Use a canvas instead of DOM elements for performance
+                let canvas = rulerOuter.querySelector('canvas');
+                if (!canvas) {
+                    rulerOuter.innerHTML = '';
+                    canvas = document.createElement('canvas');
+                    canvas.style.display = 'block';
+                    canvas.style.width = '100%';
+                    canvas.style.height = '100%';
+                    rulerOuter.appendChild(canvas);
+                }
+                
+                const dpr = window.devicePixelRatio || 1;
+                canvas.width = Math.ceil(totalWidth * dpr);
+                canvas.height = Math.ceil(32 * dpr);
+                canvas.style.width = totalWidth + 'px';
+                canvas.style.height = '32px';
+                
+                const ctx = canvas.getContext('2d');
+                ctx.scale(dpr, dpr);
+                ctx.clearRect(0, 0, totalWidth, 32);
                 
                 // Adapt label frequency to zoom level
                 const labelEvery = cellW < 30 ? 10 : cellW < 50 ? 5 : cellW < 70 ? 2 : 1;
                 
+                ctx.strokeStyle = '#555';
+                ctx.fillStyle = '#888';
+                ctx.font = '9px -apple-system, BlinkMacSystemFont, sans-serif';
+                ctx.textAlign = 'center';
+                
                 for (let i = 0; i < numFrames; i++) {
                     const x = padding + i * cellW + cellW / 2;
-                    const tick = document.createElement('div');
-                    tick.className = 'scrub-tick';
-                    tick.style.left = x + 'px';
                     
-                    const line = document.createElement('div');
-                    line.className = 'scrub-tick-line';
-                    tick.appendChild(line);
+                    // Tick line
+                    ctx.beginPath();
+                    ctx.moveTo(x, 22);
+                    ctx.lineTo(x, 30);
+                    ctx.stroke();
                     
+                    // Label
                     if (i === 0 || (i + 1) % labelEvery === 0) {
-                        const label = document.createElement('span');
-                        label.className = 'scrub-tick-label';
-                        label.textContent = i + 1;
-                        tick.appendChild(label);
+                        ctx.fillText(String(i + 1), x, 16);
                     }
-                    
-                    ruler.appendChild(tick);
                 }
             }
             
