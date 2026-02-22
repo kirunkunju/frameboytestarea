@@ -6,7 +6,7 @@
     <meta name="description" content="FrameBoy - Create frame-by-frame animations">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="FrameBoy">
-    <meta name="theme-color" content="#1e1e1e">
+    <meta name="theme-color" content="#2b2d31">
     <link rel="manifest" href="manifest.json">
     <title>FrameBoy</title>
     <!-- Gifshot library for GIF export (more reliable than gif.js) -->
@@ -20,8 +20,8 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #2a2a2a;
-            color: #e0e0e0;
+            background: #2b2d31;
+            color: #d0d0d0;
             overflow: hidden;
             width: 100%;
             height: 100%;
@@ -53,23 +53,27 @@
 
         /* Toolbar */
         .toolbar {
-            background: #1e1e1e;
+            background: #2b2d31;
             padding: 10px;
             display: flex;
             gap: 10px;
             align-items: center;
-            border-bottom: 1px solid #3a3a3a;
+            border-bottom: none;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.4), 0 1px 0 rgba(255,255,255,0.03) inset;
             -webkit-user-select: none;
             -moz-user-select: none;
             -ms-user-select: none;
             user-select: none;
+            position: relative;
+            z-index: 5;
         }
 
         .tool-group {
             display: flex;
             gap: 5px;
             padding: 0 10px;
-            border-right: 1px solid #3a3a3a;
+            border-right: 1px solid rgba(255,255,255,0.04);
+            align-items: center;
         }
 
         .tool-group:last-child {
@@ -77,14 +81,14 @@
         }
 
         button {
-            background: #3a3a3a;
+            background: #2b2d31;
             border: none;
-            color: #e0e0e0;
+            color: #c0c0c0;
             padding: 8px 12px;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
             font-size: 14px;
-            transition: background 0.2s;
+            transition: all 0.15s;
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
             -webkit-user-select: none;
@@ -95,6 +99,7 @@
             display: inline-flex;
             align-items: center;
             gap: 5px;
+            box-shadow: 3px 3px 6px rgba(0,0,0,0.4), -2px -2px 5px rgba(255,255,255,0.04);
         }
         
         button svg {
@@ -129,17 +134,21 @@
         }
 
         button:hover {
-            background: #4a4a4a;
+            background: #30323a;
+            color: #e0e0e0;
         }
         
         /* Instant press feedback for Apple Pencil & touch */
         button:active {
-            background: #555;
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.4), inset -1px -1px 3px rgba(255,255,255,0.03);
             transition: none;
+            color: #ddd;
         }
 
         button.active {
-            background: #0066cc;
+            background: #2b2d31;
+            color: #6aadff;
+            box-shadow: inset 3px 3px 6px rgba(0,0,0,0.45), inset -2px -2px 5px rgba(255,255,255,0.04);
         }
         
         .dropdown-container {
@@ -152,13 +161,14 @@
             position: absolute;
             top: 100%;
             left: 0;
-            background: #2a2a2a;
-            border: 1px solid #4a4a4a;
-            border-radius: 4px;
-            margin-top: 2px;
+            background: #2b2d31;
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 10px;
+            margin-top: 4px;
             min-width: 150px;
             z-index: 1000;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            box-shadow: 6px 6px 16px rgba(0,0,0,0.5), -3px -3px 10px rgba(255,255,255,0.03);
+            overflow: hidden;
         }
         
         .dropdown-menu.show {
@@ -171,13 +181,14 @@
             gap: 8px;
             width: 100%;
             padding: 8px 12px;
-            background: #2a2a2a;
+            background: transparent;
             border: none;
-            color: #e0e0e0;
+            color: #c0c0c0;
             text-align: left;
             cursor: pointer;
             border-radius: 0;
             font-size: 14px;
+            box-shadow: none;
         }
         
         .dropdown-item .shortcut {
@@ -188,7 +199,7 @@
         
         .dropdown-divider {
             height: 1px;
-            background: #444;
+            background: rgba(255,255,255,0.05);
             margin: 4px 0;
         }
         
@@ -214,12 +225,12 @@
             position: absolute;
             left: 100%;
             top: 0;
-            background: #2a2a2a;
-            border: 1px solid #444;
-            border-radius: 4px;
+            background: #2b2d31;
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 10px;
             min-width: 180px;
             z-index: 1001;
-            box-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+            box-shadow: 6px 6px 16px rgba(0,0,0,0.5), -3px -3px 10px rgba(255,255,255,0.03);
         }
         
         .dropdown-submenu-container:hover > .dropdown-submenu,
@@ -228,35 +239,37 @@
         }
         
         .dropdown-submenu .dropdown-item:first-child {
-            border-radius: 4px 4px 0 0;
+            border-radius: 10px 10px 0 0;
         }
         
         .dropdown-submenu .dropdown-item:last-child {
-            border-radius: 0 0 4px 4px;
+            border-radius: 0 0 10px 10px;
         }
         
         .dropdown-item:hover {
-            background: #3a3a3a;
+            background: rgba(255,255,255,0.05);
         }
         
         .dropdown-item:first-child {
-            border-radius: 4px 4px 0 0;
+            border-radius: 10px 10px 0 0;
         }
         
         .dropdown-item:last-child {
-            border-radius: 0 0 4px 4px;
+            border-radius: 0 0 10px 10px;
         }
 
         input[type="color"] {
             width: 40px;
             height: 32px;
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.3), inset -1px -1px 3px rgba(255,255,255,0.03);
         }
 
         input[type="range"] {
             width: 100px;
+            accent-color: #5b8def;
         }
 
         label {
@@ -288,7 +301,7 @@
             display: flex;
             flex-direction: column;
             gap: 6px;
-            border-bottom: 1px solid #2a2a2a;
+            border-bottom: 1px solid rgba(0,0,0,0.15);
             font-size: 11px;
             position: relative;
             user-select: none;
@@ -348,11 +361,12 @@
         }
 
         .layer-item:hover {
-            background: #2a2a2a;
+            background: rgba(255,255,255,0.03);
         }
 
         .layer-item.active {
-            background: #0066cc;
+            background: rgba(91, 141, 239, 0.12);
+            box-shadow: inset 3px 3px 6px rgba(0,0,0,0.2), inset -2px -2px 4px rgba(255,255,255,0.02);
         }
 
         .layer-visibility {
@@ -404,7 +418,7 @@
             color: #88bbee;
         }
         .parent-select-inline option {
-            background: #1e1e1e;
+            background: #2b2d31;
             color: #ccc;
         }
         
@@ -442,7 +456,7 @@
         /* Canvas area */
         .canvas-container {
             flex: 1;
-            background: #333;
+            background: #26282c;
             position: relative;
             overflow: auto;
             min-height: 200px;
@@ -452,6 +466,7 @@
             user-select: none;
             -webkit-touch-callout: none;
             -webkit-tap-highlight-color: transparent;
+            box-shadow: inset 0 4px 12px rgba(0,0,0,0.3);
         }
         
         .canvas-wrapper {
@@ -461,7 +476,7 @@
         }
 
         canvas {
-            border: 1px solid #555;
+            border: none;
             cursor: crosshair;
             display: block;
             touch-action: none;
@@ -474,6 +489,8 @@
             -webkit-tap-highlight-color: transparent;
             image-rendering: pixelated;
             image-rendering: crisp-edges;
+            box-shadow: 4px 4px 12px rgba(0,0,0,0.5), -2px -2px 8px rgba(255,255,255,0.02);
+            border-radius: 2px;
         }
         
         .zoom-controls {
@@ -483,14 +500,14 @@
             display: flex;
             align-items: center;
             gap: 4px;
-            background: rgba(30, 30, 30, 0.9);
+            background: #2b2d31;
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
             padding: 4px 6px;
-            border-radius: 10px;
+            border-radius: 14px;
             z-index: 20;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+            border: none;
+            box-shadow: 4px 4px 10px rgba(0,0,0,0.45), -2px -2px 6px rgba(255,255,255,0.03);
             pointer-events: auto;
         }
         
@@ -509,23 +526,27 @@
             min-height: 28px;
             justify-content: center;
             background: transparent;
-            border-radius: 6px;
+            border-radius: 8px;
+            box-shadow: none;
         }
         
         .zoom-controls button:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.06);
         }
         
         .zoom-controls button:active {
-            background: rgba(255, 255, 255, 0.15);
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: none;
         }
         
         .zoom-controls button.pill-active {
-            background: #0066cc;
+            background: rgba(91, 141, 239, 0.2);
+            color: #6aadff;
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.3), inset -1px -1px 3px rgba(255,255,255,0.02);
         }
         
         .zoom-controls button.pill-active:hover {
-            background: #0077dd;
+            background: rgba(91, 141, 239, 0.25);
         }
 
         .magnifier-marquee {
@@ -569,19 +590,20 @@
             position: absolute;
             width: 16px;
             height: 16px;
-            background: white;
-            border: 2px solid #0066cc;
+            background: #2b2d31;
+            border: 2px solid #5b8def;
             border-radius: 50%;
             cursor: pointer;
             z-index: 4;
             transform: translate(-50%, -50%);
             touch-action: none;
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.4);
         }
         
         .transform-handle.corner { cursor: nwse-resize; }
         .transform-handle.side-h { cursor: ew-resize; }
         .transform-handle.side-v { cursor: ns-resize; }
-        .transform-handle.rotate { cursor: grab; background: #0066cc; }
+        .transform-handle.rotate { cursor: grab; background: #5b8def; }
 
         /* Timeline */
         .timeline-resize-handle {
@@ -601,21 +623,21 @@
             transform: translate(-50%, -50%);
             width: 40px;
             height: 4px;
-            background: #4a4a4a;
+            background: #3a3c42;
             border-radius: 2px;
         }
         
         .timeline-resize-handle:hover::before,
         .timeline-resize-handle:active::before {
-            background: #0066cc;
+            background: #5b8def;
         }
         
         .timeline {
             min-height: 180px;
             max-height: 280px;
             height: 25vh;
-            background: #252525;
-            border-top: 1px solid #3a3a3a;
+            background: #2b2d31;
+            border-top: none;
             display: flex;
             flex-direction: column;
             flex-shrink: 0;
@@ -623,11 +645,12 @@
             -moz-user-select: none;
             -ms-user-select: none;
             user-select: none;
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.3), 0 -1px 0 rgba(255,255,255,0.03) inset;
         }
         
         .timeline-header {
-            background: #1e1e1e;
-            border-bottom: 1px solid #3a3a3a;
+            background: #2b2d31;
+            border-bottom: 1px solid rgba(0,0,0,0.2);
         }
 
         .timeline-controls {
@@ -681,13 +704,13 @@
             top: 100%;
             left: 0;
             margin-top: 3px;
-            background: #2a2a2a;
-            border: 1px solid #555;
-            border-radius: 6px;
+            background: #2b2d31;
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 10px;
             padding: 3px;
             z-index: 1000;
             min-width: 180px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            box-shadow: 6px 6px 16px rgba(0,0,0,0.5), -3px -3px 10px rgba(255,255,255,0.03);
         }
         
         .play-mode-menu.show {
@@ -711,12 +734,12 @@
         }
         
         .play-mode-item:hover {
-            background: #3a3a3a;
+            background: rgba(255,255,255,0.05);
         }
         
         .play-mode-item.active {
-            background: rgba(0, 102, 204, 0.25);
-            color: #6af;
+            background: rgba(91, 141, 239, 0.15);
+            color: #6aadff;
         }
         
         .play-mode-item .shortcut {
@@ -801,12 +824,12 @@
             position: absolute;
             bottom: calc(100% + 8px);
             right: 0;
-            background: #2a2a2a;
-            border: 1px solid #444;
-            border-radius: 10px;
+            background: #2b2d31;
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 14px;
             padding: 12px;
             z-index: 1000;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            box-shadow: 6px 6px 20px rgba(0,0,0,0.5), -3px -3px 10px rgba(255,255,255,0.03);
             min-width: 180px;
         }
         
@@ -832,27 +855,26 @@
         
         .fps-preset {
             padding: 6px 0;
-            border: 1px solid #444;
-            border-radius: 6px;
-            background: transparent;
+            border: none;
+            border-radius: 8px;
+            background: #2b2d31;
             color: #bbb;
             font-size: 13px;
             font-weight: 600;
             cursor: pointer;
             text-align: center;
             transition: all 0.15s;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.35), -1px -1px 3px rgba(255,255,255,0.03);
         }
         
         .fps-preset:hover {
-            border-color: #666;
-            background: rgba(255,255,255,0.06);
+            background: #30323a;
             color: #e0e0e0;
         }
         
         .fps-preset.active {
-            border-color: #0066cc;
-            background: rgba(0, 102, 204, 0.2);
-            color: #6ab0ff;
+            color: #6aadff;
+            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.4), inset -1px -1px 3px rgba(255,255,255,0.03);
         }
         
         .fps-custom-row {
@@ -869,9 +891,9 @@
         
         .fps-custom-input {
             flex: 1;
-            background: #1e1e1e;
-            border: 1px solid #444;
-            border-radius: 6px;
+            background: #2b2d31;
+            border: none;
+            border-radius: 8px;
             color: #e0e0e0;
             font-size: 13px;
             font-weight: 600;
@@ -880,10 +902,11 @@
             outline: none;
             width: 100%;
             font-variant-numeric: tabular-nums;
+            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.4), inset -1px -1px 3px rgba(255,255,255,0.03);
         }
         
         .fps-custom-input:focus {
-            border-color: #0066cc;
+            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.4), inset -1px -1px 3px rgba(255,255,255,0.03), 0 0 0 2px rgba(91,141,239,0.3);
         }
         
         .timeline-zoom-controls {
@@ -897,23 +920,24 @@
             width: 24px;
             height: 24px;
             padding: 0;
-            border: 1px solid #444;
-            border-radius: 4px;
-            background: #2a2a2a;
+            border: none;
+            border-radius: 6px;
+            background: #2b2d31;
             color: #ccc;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.3), -1px -1px 3px rgba(255,255,255,0.03);
         }
         
         .timeline-zoom-controls button:hover {
-            background: #3a3a3a;
-            border-color: #666;
+            background: #30323a;
         }
         
         .timeline-zoom-controls button:active {
-            background: #0066cc;
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.3), inset -1px -1px 3px rgba(255,255,255,0.02);
+            color: #6aadff;
         }
         
         /* Layer disclosure & property panel */
@@ -997,23 +1021,24 @@
         .scrub-slider {
             flex: 1;
             height: 20px;
-            background: #1a1a24;
-            border: 1px solid #333;
-            border-radius: 4px;
+            background: #2b2d31;
+            border: none;
+            border-radius: 6px;
             position: relative;
             cursor: ew-resize;
             overflow: hidden;
             min-width: 60px;
             user-select: none;
             -webkit-user-select: none;
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.35), inset -1px -1px 3px rgba(255,255,255,0.03);
         }
         
         .scrub-slider:hover {
-            border-color: #4a4a5a;
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.4), inset -1px -1px 3px rgba(255,255,255,0.04);
         }
         
         .scrub-slider:active, .scrub-slider.dragging {
-            border-color: #5588cc;
+            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.45), inset -1px -1px 3px rgba(255,255,255,0.03), 0 0 0 1px rgba(91,141,239,0.3);
         }
         
         .scrub-fill {
@@ -1021,8 +1046,8 @@
             top: 0;
             left: 0;
             height: 100%;
-            background: linear-gradient(90deg, #2a3a55, #334466);
-            border-radius: 3px 0 0 3px;
+            background: linear-gradient(90deg, rgba(91,141,239,0.15), rgba(91,141,239,0.25));
+            border-radius: 5px 0 0 5px;
             pointer-events: none;
             transition: none;
         }
@@ -1054,14 +1079,15 @@
             width: 100%;
             height: 100%;
             border: none;
-            border-radius: 3px;
-            background: #111122;
+            border-radius: 5px;
+            background: #22242a;
             color: #e0e8f0;
             font-size: 11px;
             font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
             text-align: center;
             z-index: 2;
-            outline: 2px solid #5588cc;
+            outline: none;
+            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.4), 0 0 0 2px rgba(91,141,239,0.4);
             display: none;
             -moz-appearance: textfield;
         }
@@ -1108,68 +1134,65 @@
             gap: 5px;
             padding-top: 4px;
             margin-top: 2px;
-            border-top: 1px solid #2a2a2a;
+            border-top: 1px solid rgba(0,0,0,0.15);
         }
         
         .tl-key-actions button {
             padding: 4px 10px;
             font-size: 10px;
-            border: 1px solid #444;
-            border-radius: 4px;
+            border: none;
+            border-radius: 6px;
             cursor: pointer;
-            background: #2a2a2a;
+            background: #2b2d31;
             color: #bbb;
             transition: all 0.1s;
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.3), -1px -1px 3px rgba(255,255,255,0.03);
         }
         
         .tl-key-actions button:hover {
-            background: #3a3a3a;
+            background: #30323a;
             color: #eee;
         }
         
         .tl-key-actions .act-set {
-            border-color: #8a7a20;
             color: #eec840;
         }
         
         .tl-key-actions .act-set:hover {
-            background: #3a3518;
+            background: #33301e;
         }
         
         .tl-key-actions .act-del {
-            border-color: #5a2a2a;
             color: #d88;
         }
         
         .tl-key-actions .act-del:hover {
-            background: #3a1a1a;
+            background: #331e1e;
         }
         
         .tl-key-actions .act-copy {
-            border-color: #3a5a7a;
             color: #88bbdd;
         }
-        .tl-key-actions .act-copy:hover { background: #1a2a3a; }
+        .tl-key-actions .act-copy:hover { background: #1e2a33; }
         .tl-key-actions .act-copy:disabled {
             opacity: 0.35;
             cursor: default;
-            border-color: #333;
             color: #666;
+            box-shadow: none;
         }
-        .tl-key-actions .act-copy:disabled:hover { background: #2a2a2a; }
+        .tl-key-actions .act-copy:disabled:hover { background: #2b2d31; }
         
         .tl-key-actions .act-paste {
-            border-color: #3a6a3a;
             color: #88cc88;
         }
-        .tl-key-actions .act-paste:hover { background: #1a3a1a; }
+        .tl-key-actions .act-paste:hover { background: #1e331e; }
         .tl-key-actions .act-paste:disabled {
             opacity: 0.35;
             cursor: default;
-            border-color: #333;
             color: #666;
+            box-shadow: none;
         }
-        .tl-key-actions .act-paste:disabled:hover { background: #2a2a2a; }
+        .tl-key-actions .act-paste:disabled:hover { background: #2b2d31; }
         
         /* Curve Editor (Graph Editor overlay) */
         .curve-editor {
@@ -1179,7 +1202,7 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: #1a1a22;
+            background: #22242a;
             z-index: 20;
             flex-direction: column;
         }
@@ -1193,8 +1216,8 @@
             align-items: center;
             gap: 4px;
             padding: 4px 8px;
-            background: #222230;
-            border-bottom: 1px solid #3a3a44;
+            background: #2b2d31;
+            border-bottom: 1px solid rgba(0,0,0,0.2);
             flex-shrink: 0;
             flex-wrap: wrap;
         }
@@ -1333,8 +1356,8 @@
         
         .scrub-ruler {
             height: 32px;
-            background: #1a1a1a;
-            border-bottom: 1px solid #3a3a3a;
+            background: #26282c;
+            border-bottom: 1px solid rgba(0,0,0,0.2);
             flex-shrink: 0;
             overflow-x: auto;
             overflow-y: hidden;
@@ -1411,8 +1434,8 @@
             width: 220px;
             min-width: 160px;
             max-width: 400px;
-            background: #252525;
-            border-right: 1px solid #3a3a3a;
+            background: #2b2d31;
+            border-right: 1px solid rgba(0,0,0,0.2);
             display: flex;
             flex-direction: column;
             flex-shrink: 0;
@@ -1432,11 +1455,11 @@
         }
         
         .layer-panel-resize-handle:hover {
-            background: rgba(0, 102, 204, 0.3);
+            background: rgba(91, 141, 239, 0.2);
         }
         
         .layer-panel-resize-handle:active {
-            background: rgba(0, 102, 204, 0.5);
+            background: rgba(91, 141, 239, 0.35);
         }
         
         .layer-panel-resize-handle::before {
@@ -1447,17 +1470,17 @@
             transform: translateY(-50%);
             width: 2px;
             height: 30px;
-            background: #4a4a4a;
+            background: #3a3c42;
             border-radius: 1px;
         }
         
         .layers-header {
             padding: 6px 10px;
-            background: #1a1a1a;
+            background: #2b2d31;
             font-weight: bold;
             font-size: 11px;
             text-transform: uppercase;
-            border-bottom: 1px solid #3a3a3a;
+            border-bottom: 1px solid rgba(0,0,0,0.2);
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -1465,6 +1488,8 @@
             -webkit-user-select: none;
             min-height: 32px;
             box-sizing: border-box;
+            color: #888;
+            letter-spacing: 0.5px;
         }
         
         .tl-label {
@@ -1473,7 +1498,7 @@
             justify-content: center;
             gap: 4px;
             padding: 6px 8px;
-            border-bottom: 1px solid #333;
+            border-bottom: 1px solid rgba(0,0,0,0.15);
             min-height: calc(var(--frame-w, 80px) + 24px);
             box-sizing: border-box;
             cursor: pointer;
@@ -1481,7 +1506,7 @@
             user-select: none;
             -webkit-user-select: none;
             touch-action: none;
-            background: #252525;
+            background: #2b2d31;
         }
         
         .tl-label-row {
@@ -1504,13 +1529,14 @@
             padding: 0;
             color: #555;
             transition: color 0.15s;
+            box-shadow: none;
         }
         .quick-key-btn:hover { color: #eebb00; }
         .quick-key-btn.has-key { color: #dda520; }
         .quick-key-btn.has-key:hover { color: #eedd44; }
         
         .tl-label.active-row {
-            background: #2a2a3a;
+            background: rgba(91, 141, 239, 0.08);
         }
         
         .tl-label.inactive-row {
@@ -1587,35 +1613,37 @@
         .add-layer-btn-inline {
             padding: 3px 9px;
             font-size: 14px;
-            background: #0066cc;
+            background: #2b2d31;
             border: none;
-            color: white;
-            border-radius: 4px;
+            color: #6aadff;
+            border-radius: 6px;
             cursor: pointer;
             font-weight: bold;
             user-select: none;
             -webkit-user-select: none;
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.35), -1px -1px 3px rgba(255,255,255,0.03);
         }
         
         .add-layer-btn-inline:hover {
-            background: #0077dd;
+            background: #30323a;
         }
         
         .delete-layer-btn-inline {
             padding: 3px 9px;
             font-size: 14px;
-            background: #cc3333;
+            background: #2b2d31;
             border: none;
-            color: white;
-            border-radius: 4px;
+            color: #e07070;
+            border-radius: 6px;
             cursor: pointer;
             font-weight: bold;
             user-select: none;
             -webkit-user-select: none;
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.35), -1px -1px 3px rgba(255,255,255,0.03);
         }
         
         .delete-layer-btn-inline:hover {
-            background: #dd4444;
+            background: #30323a;
         }
         
         .timeline-layers-section .layers-list {
@@ -1634,7 +1662,7 @@
             flex: 1;
             overflow-x: auto;
             overflow-y: auto;
-            background: #2a2a2a;
+            background: #26282c;
         }
         
         /* Audio Timeline (multi-track) */
@@ -1868,7 +1896,7 @@
         }
         
         .layer-frames-row.active-row {
-            background: rgba(0, 102, 204, 0.08);
+            background: rgba(91, 141, 239, 0.05);
         }
 
         .frame {
@@ -1894,12 +1922,13 @@
         .frame-thumb {
             width: 100%;
             height: var(--frame-w, 80px);
-            border: 2px solid #3a3a3a;
-            border-radius: 4px;
+            border: none;
+            border-radius: 6px;
             position: relative;
             overflow: hidden;
-            background: #2a2a2a;
-            transition: border-color 0.15s;
+            background: #26282c;
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.35), inset -1px -1px 3px rgba(255,255,255,0.03);
+            transition: box-shadow 0.15s;
         }
         
         .frame:active {
@@ -1920,11 +1949,11 @@
             pointer-events: none;
             z-index: 9999;
             opacity: 0.85;
-            border: 2px solid #4a9eff;
-            border-radius: 4px;
-            box-shadow: 0 4px 16px rgba(74, 158, 255, 0.4);
+            border: none;
+            border-radius: 8px;
+            box-shadow: 6px 6px 16px rgba(0,0,0,0.5), -3px -3px 10px rgba(255,255,255,0.03), 0 0 0 2px rgba(91,141,239,0.4);
             transform: translate(-50%, -50%) scale(1.05);
-            background: #2a2a2a;
+            background: #2b2d31;
             overflow: hidden;
         }
         
@@ -1941,31 +1970,31 @@
         }
 
         .frame:hover .frame-thumb {
-            border-color: #4a4a4a;
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.4), inset -1px -1px 3px rgba(255,255,255,0.04);
         }
 
         .frame.active .frame-thumb {
-            border-color: #0066cc;
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.3), inset -1px -1px 3px rgba(255,255,255,0.03), 0 0 0 2px rgba(91,141,239,0.5);
         }
         
         .frame.selected .frame-thumb {
-            border-color: #4a9eff;
-            background: #1a3a5a;
+            background: rgba(91,141,239,0.08);
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.3), inset -1px -1px 3px rgba(255,255,255,0.03), 0 0 0 2px rgba(91,141,239,0.3);
         }
         
         .frame.active.selected .frame-thumb {
-            border-color: #0066cc;
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.3), inset -1px -1px 3px rgba(255,255,255,0.03), 0 0 0 2px rgba(91,141,239,0.5);
         }
         
         .frame-select-banner {
             display: none;
-            background: #1a3a5a;
-            color: #7bb8f0;
+            background: rgba(91,141,239,0.1);
+            color: #6aadff;
             font-size: 12px;
             font-weight: 600;
             padding: 4px 12px;
             text-align: center;
-            border-bottom: 1px solid #4a9eff44;
+            border-bottom: 1px solid rgba(91,141,239,0.15);
             letter-spacing: 0.3px;
         }
         
@@ -1976,14 +2005,15 @@
         }
         
         .frame-select-banner .done-btn {
-            background: #4a9eff;
-            color: #fff;
+            background: #2b2d31;
+            color: #6aadff;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             padding: 2px 10px;
             font-size: 11px;
             font-weight: 600;
             cursor: pointer;
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.3), -1px -1px 3px rgba(255,255,255,0.03);
         }
         
         .frame.hold-frame {
@@ -2025,11 +2055,11 @@
             height: 0;
             padding-bottom: 35%;
             border-radius: 50%;
-            background: #999;
+            background: #555;
         }
         
         .frame.active .frame-indicator.circle {
-            background: #4a9eff;
+            background: #5b8def;
         }
         
         .frame-indicator.square {
@@ -2069,27 +2099,27 @@
         }
         
         .frame.active .frame-number {
-            color: #4a9eff;
+            color: #6aadff;
             font-weight: 600;
         }
 
         .add-frame {
             width: var(--frame-w, 80px);
             height: var(--frame-w, 80px);
-            border: 2px dashed #3a3a3a;
-            border-radius: 4px;
+            border: 2px dashed rgba(255,255,255,0.08);
+            border-radius: 8px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 24px;
-            color: #666;
+            color: #555;
             flex-shrink: 0;
             margin-left: 5px;
         }
 
         .add-frame:hover {
-            border-color: #4a4a4a;
+            border-color: rgba(255,255,255,0.15);
             color: #888;
         }
         /* Brush cursor overlay */
@@ -2097,7 +2127,7 @@
             position: fixed;
             pointer-events: none;
             z-index: 100;
-            border: 1.5px solid rgba(0, 102, 204, 0.8);
+            border: 1.5px solid rgba(91, 141, 239, 0.8);
             display: none;
             transform: translate(-50%, -50%);
             mix-blend-mode: difference;
@@ -2122,13 +2152,13 @@
             position: absolute;
             top: 100%;
             left: 0;
-            background: #2a2a2a;
-            border: 1px solid #4a4a4a;
-            border-radius: 4px;
-            margin-top: 2px;
+            background: #2b2d31;
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 12px;
+            margin-top: 4px;
             min-width: 200px;
             z-index: 1000;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            box-shadow: 6px 6px 16px rgba(0,0,0,0.5), -3px -3px 10px rgba(255,255,255,0.03);
             padding: 10px;
         }
         
@@ -2174,24 +2204,24 @@
         .shape-icon {
             width: 30px;
             height: 30px;
-            background: #3a3a3a;
-            border: 2px solid #555;
-            border-radius: 4px;
+            background: #2b2d31;
+            border: none;
+            border-radius: 6px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 2px;
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.3), -1px -1px 3px rgba(255,255,255,0.03);
         }
         
         .shape-icon:hover {
-            border-color: #888;
-            background: #444;
+            background: #30323a;
         }
         
         .shape-icon.active {
-            border-color: #4a9eff;
-            background: #2a4a6a;
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.35), inset -1px -1px 3px rgba(255,255,255,0.03);
+            background: rgba(91,141,239,0.1);
         }
         
         .shape-icon svg {
@@ -2212,13 +2242,13 @@
             position: absolute;
             top: 100%;
             left: 0;
-            background: #2a2a2a;
-            border: 1px solid #4a4a4a;
-            border-radius: 4px;
-            margin-top: 2px;
+            background: #2b2d31;
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 12px;
+            margin-top: 4px;
             min-width: 220px;
             z-index: 1000;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            box-shadow: 6px 6px 16px rgba(0,0,0,0.5), -3px -3px 10px rgba(255,255,255,0.03);
             padding: 10px;
         }
         
@@ -2249,12 +2279,13 @@
         
         .onion-setting-row input[type="number"] {
             width: 45px;
-            background: #3a3a3a;
-            border: 1px solid #555;
-            border-radius: 3px;
-            color: #e0e0e0;
+            background: #2b2d31;
+            border: none;
+            border-radius: 6px;
+            color: #d0d0d0;
             padding: 2px 4px;
             font-size: 12px;
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.35), inset -1px -1px 3px rgba(255,255,255,0.03);
         }
         
         .onion-setting-row input[type="color"] {
@@ -2275,7 +2306,7 @@
         
         .onion-divider {
             height: 1px;
-            background: #3a3a3a;
+            background: rgba(255,255,255,0.05);
             margin: 8px 0;
         }
 
@@ -2283,12 +2314,12 @@
         .frame-context-menu {
             display: none;
             position: fixed;
-            background: #2a2a2a;
-            border: 1px solid #4a4a4a;
-            border-radius: 4px;
+            background: #2b2d31;
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 10px;
             min-width: 160px;
             z-index: 2000;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            box-shadow: 6px 6px 16px rgba(0,0,0,0.5), -3px -3px 10px rgba(255,255,255,0.03);
             padding: 4px 0;
         }
         
@@ -2304,18 +2335,19 @@
             padding: 8px 14px;
             background: none;
             border: none;
-            color: #e0e0e0;
+            color: #c0c0c0;
             text-align: left;
             cursor: pointer;
             font-size: 13px;
+            box-shadow: none;
         }
         
         .frame-context-menu-item:hover {
-            background: #3a3a3a;
+            background: rgba(255,255,255,0.05);
         }
         
         .frame-context-menu-item.disabled {
-            color: #666;
+            color: #555;
             cursor: default;
         }
         
@@ -2325,13 +2357,13 @@
         
         .frame-context-menu-item .shortcut {
             font-size: 11px;
-            color: #888;
+            color: #666;
             margin-left: 16px;
         }
         
         .frame-context-menu-divider {
             height: 1px;
-            background: #3a3a3a;
+            background: rgba(255,255,255,0.05);
             margin: 4px 0;
         }
 
@@ -2365,7 +2397,7 @@
             
             .tool-group {
                 padding: 0 3px;
-                border-right: 1px solid #444;
+                border-right: 1px solid rgba(255,255,255,0.04);
                 flex-shrink: 0;
                 flex-wrap: nowrap;
                 gap: 2px;
@@ -2391,7 +2423,7 @@
             
             /* Active press state — immediate feedback for Apple Pencil & touch */
             button:active {
-                background: #0066cc;
+                box-shadow: inset 2px 2px 4px rgba(0,0,0,0.4), inset -1px -1px 3px rgba(255,255,255,0.03);
                 transform: scale(0.93);
                 transition: none;
             }
@@ -2413,20 +2445,31 @@
                 display: none;
             }
             #sizeValue {
-                font-size: 11px;
-                min-width: 20px;
+                font-size: 10px;
+                font-weight: 600;
+                min-width: 26px;
+                height: 22px;
                 flex-shrink: 0;
-                text-align: center;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: #2b2d31;
+                border: none;
+                border-radius: 6px;
+                color: #a0a0a0;
+                font-variant-numeric: tabular-nums;
+                box-sizing: border-box;
+                box-shadow: inset 2px 2px 4px rgba(0,0,0,0.35), inset -1px -1px 3px rgba(255,255,255,0.03);
             }
             
             .size-step-btn {
                 width: 22px;
                 height: 22px;
                 padding: 0;
-                border: 1px solid #555;
-                border-radius: 4px;
-                background: #2a2a2a;
-                color: #ccc;
+                border: none;
+                border-radius: 6px;
+                background: #2b2d31;
+                color: #999;
                 font-size: 14px;
                 line-height: 1;
                 cursor: pointer;
@@ -2434,9 +2477,34 @@
                 align-items: center;
                 justify-content: center;
                 flex-shrink: 0;
+                box-shadow: 2px 2px 4px rgba(0,0,0,0.35), -1px -1px 3px rgba(255,255,255,0.03);
             }
-            .size-step-btn:hover { background: #3a3a3a; border-color: #777; }
-            .size-step-btn:active { background: #444; }
+            .size-step-btn:hover { background: #30323a; color: #ccc; }
+            .size-step-btn:active { box-shadow: inset 2px 2px 4px rgba(0,0,0,0.35), inset -1px -1px 3px rgba(255,255,255,0.03); }
+            
+            .pressure-toggle {
+                width: 24px;
+                height: 22px;
+                padding: 0;
+                border: none;
+                border-radius: 6px;
+                background: #2b2d31;
+                color: #555;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+                margin-left: 4px;
+                transition: all 0.15s;
+                box-shadow: 2px 2px 4px rgba(0,0,0,0.35), -1px -1px 3px rgba(255,255,255,0.03);
+            }
+            .pressure-toggle:hover { background: #30323a; }
+            .pressure-toggle.active {
+                color: #6aadff;
+                box-shadow: inset 2px 2px 4px rgba(0,0,0,0.35), inset -1px -1px 3px rgba(255,255,255,0.03);
+                background: #2b2d31;
+            }
             
             /* Keep dropdown containers inline */
             .dropdown-container {
@@ -2555,7 +2623,7 @@
                 box-shadow: none !important;
                 border-radius: 0 !important;
                 min-width: 0 !important;
-                background: #333 !important;
+                background: rgba(0,0,0,0.15) !important;
             }
             
             .dropdown-submenu .dropdown-item {
@@ -2687,12 +2755,12 @@
             display: flex;
         }
         .modal-dialog {
-            background: #1e1e1e;
-            border: 1px solid #444;
-            border-radius: 12px;
+            background: #2b2d31;
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 16px;
             width: 380px;
             max-width: 95vw;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            box-shadow: 10px 10px 30px rgba(0,0,0,0.5), -5px -5px 15px rgba(255,255,255,0.02);
             overflow: hidden;
         }
         .modal-header {
@@ -2700,22 +2768,23 @@
             align-items: center;
             justify-content: space-between;
             padding: 16px 20px 12px;
-            border-bottom: 1px solid #333;
+            border-bottom: 1px solid rgba(0,0,0,0.2);
         }
         .modal-header h3 {
             margin: 0;
             font-size: 16px;
             font-weight: 600;
-            color: #e0e0e0;
+            color: #d0d0d0;
         }
         .modal-close {
             background: none;
             border: none;
-            color: #888;
+            color: #666;
             font-size: 22px;
             cursor: pointer;
             padding: 0 4px;
             line-height: 1;
+            box-shadow: none;
         }
         .modal-close:hover { color: #fff; }
         .modal-body {
@@ -2737,12 +2806,13 @@
         }
         .modal-row select {
             flex: 1;
-            background: #2a2a2a;
-            color: #e0e0e0;
-            border: 1px solid #555;
-            border-radius: 6px;
+            background: #2b2d31;
+            color: #d0d0d0;
+            border: none;
+            border-radius: 8px;
             padding: 7px 10px;
             font-size: 13px;
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.35), inset -1px -1px 3px rgba(255,255,255,0.03);
         }
         .modal-size-row {
             justify-content: center;
@@ -2763,15 +2833,16 @@
         .modal-input-wrap {
             display: flex;
             align-items: center;
-            background: #2a2a2a;
-            border: 1px solid #555;
-            border-radius: 6px;
+            background: #2b2d31;
+            border: none;
+            border-radius: 8px;
             overflow: hidden;
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.35), inset -1px -1px 3px rgba(255,255,255,0.03);
         }
         .modal-input-wrap input {
             flex: 1;
             background: transparent;
-            color: #e0e0e0;
+            color: #d0d0d0;
             border: none;
             padding: 8px 10px;
             font-size: 14px;
@@ -2779,7 +2850,7 @@
             outline: none;
         }
         .modal-input-wrap input:focus {
-            box-shadow: inset 0 0 0 1px #0066cc;
+            box-shadow: none;
         }
         .modal-unit {
             color: #666;
@@ -2789,19 +2860,20 @@
         }
         .modal-link-btn {
             background: none;
-            border: 1px solid #555;
-            border-radius: 6px;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
             color: #666;
             cursor: pointer;
             padding: 6px;
             margin-top: 16px;
             transition: all 0.15s;
+            box-shadow: none;
         }
-        .modal-link-btn:hover { border-color: #888; color: #aaa; }
-        .modal-link-btn.linked { color: #0088ff; border-color: #0066cc; }
+        .modal-link-btn:hover { border-color: rgba(255,255,255,0.2); color: #aaa; }
+        .modal-link-btn.linked { color: #6aadff; border-color: rgba(91,141,239,0.4); }
         .modal-info {
             font-size: 12px;
-            color: #666;
+            color: #555;
             text-align: center;
             min-height: 16px;
         }
@@ -2810,26 +2882,27 @@
             justify-content: flex-end;
             gap: 8px;
             padding: 12px 20px 16px;
-            border-top: 1px solid #333;
+            border-top: 1px solid rgba(0,0,0,0.2);
         }
         .modal-btn {
             padding: 8px 20px;
-            border-radius: 8px;
+            border-radius: 10px;
             font-size: 13px;
             font-weight: 500;
             cursor: pointer;
             border: none;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.35), -1px -1px 3px rgba(255,255,255,0.03);
         }
         .modal-btn-cancel {
-            background: #333;
-            color: #ccc;
+            background: #2b2d31;
+            color: #aaa;
         }
-        .modal-btn-cancel:hover { background: #444; }
+        .modal-btn-cancel:hover { background: #30323a; }
         .modal-btn-apply {
-            background: #0066cc;
-            color: #fff;
+            background: #2b2d31;
+            color: #6aadff;
         }
-        .modal-btn-apply:hover { background: #0077dd; }
+        .modal-btn-apply:hover { background: #30323a; }
 
     </style>
 </head>
@@ -2967,13 +3040,16 @@
                 </div>
             </div>
             <div class="tool-group">
-                <label>Color:</label>
                 <input type="color" id="colorPicker" value="#000000">
-                <label>Size:</label>
                 <button class="size-step-btn" id="brushSizeMinus" title="Decrease brush size ([)">−</button>
                 <input type="range" id="brushSize" min="1" max="100" value="8">
                 <button class="size-step-btn" id="brushSizePlus" title="Increase brush size (])">+</button>
                 <span id="sizeValue">8</span>
+                <button class="pressure-toggle active" id="pressureToggle" title="Brush Pressure">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="14" height="14">
+                        <path d="M2 2.5 C4 4, 8.5 8, 11 11 C12 12.5, 12.5 14, 11 14 C9.5 14, 8 12, 6.5 10 C4 7, 2 4, 2 2.5Z" fill="currentColor"/>
+                    </svg>
+                </button>
             </div>
             <div class="tool-group">
                 <button id="copyBtn" title="Copy (Ctrl+C)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="1.5" width="9" height="11" rx="1"/><path d="M2 4.5v9a1 1 0 001 1h7"/></svg> <span class="btn-label">Copy</span></button>
@@ -3377,6 +3453,15 @@
                 this._timelineDirty = true; // flag to avoid unnecessary timeline DOM rebuilds
                 this._showAnchorIndicator = false;
                 this._curveEditorActive = false;
+                
+                // Layer composite caches — avoid re-compositing unchanged layers during drawing
+                this._belowCache = document.createElement('canvas');
+                this._belowCtx = this._belowCache.getContext('2d');
+                this._aboveCache = document.createElement('canvas');
+                this._aboveCtx = this._aboveCache.getContext('2d');
+                this._compositeCacheDirty = true;
+                this._compositeCacheKey = null; // tracks what state the cache was built for
+                this._compositeCacheVer = 0; // bumped on any non-active-layer change
                 this._curveEditorProp = 'x';
                 this._curveEditorLayerId = null;
                 this._ceDragHandle = null; // null | 'cp1' | 'cp2'
@@ -4607,17 +4692,21 @@
                     document.getElementById('brushSmoothingValue').textContent = e.target.value + '%';
                 });
                 
-                // Pressure toggle — keep brush and eraser checkboxes synced
+                // Pressure toggle — keep brush and eraser checkboxes + toolbar toggle synced
                 const brushPressureCb = document.getElementById('pressureEnabled');
                 const eraserPressureCb = document.getElementById('eraserPressureEnabled');
-                brushPressureCb.addEventListener('change', (e) => {
-                    this.pressureEnabled = e.target.checked;
-                    eraserPressureCb.checked = e.target.checked;
-                });
-                eraserPressureCb.addEventListener('change', (e) => {
-                    this.pressureEnabled = e.target.checked;
-                    brushPressureCb.checked = e.target.checked;
-                });
+                const pressureToggleBtn = document.getElementById('pressureToggle');
+                
+                const syncPressure = (enabled) => {
+                    this.pressureEnabled = enabled;
+                    brushPressureCb.checked = enabled;
+                    eraserPressureCb.checked = enabled;
+                    pressureToggleBtn.classList.toggle('active', enabled);
+                };
+                
+                brushPressureCb.addEventListener('change', (e) => syncPressure(e.target.checked));
+                eraserPressureCb.addEventListener('change', (e) => syncPressure(e.target.checked));
+                pressureToggleBtn.addEventListener('click', () => syncPressure(!this.pressureEnabled));
                 
                 // Eraser dropdown controls
                 document.getElementById('eraserShapePicker').querySelectorAll('.shape-icon').forEach(icon => {
@@ -5665,6 +5754,12 @@
                     this.canvasContainer.style.cursor = '';
                     this.canvasWrapper.style.cursor = '';
                     this.brushCursor.style.display = 'none';
+                } else if (tool === 'rect' || tool === 'circle' || tool === 'triangle') {
+                    this.canvas.style.cursor = 'crosshair';
+                    this.selectionCanvas.style.cursor = 'crosshair';
+                    this.canvasContainer.style.cursor = '';
+                    this.canvasWrapper.style.cursor = '';
+                    this.brushCursor.style.display = 'none';
                 } else {
                     this.canvas.style.cursor = 'default';
                     this.selectionCanvas.style.cursor = 'default';
@@ -5892,6 +5987,7 @@
             saveFullState() {
                 // Slow path — full snapshot for structural changes
                 this._timelineDirty = true; // Structural change — timeline needs rebuild
+                this._invalidateCompositeCache();
                 // Wrapped in try-catch because snapshotting many large frames
                 // can exceed memory limits (especially on iPad)
                 try {
@@ -5999,6 +6095,7 @@
             }
             
             restoreState(state) {
+                this._invalidateCompositeCache();
                 if (state.type === 'frame') {
                     // Fast restore — overwrite just one frame's pixels
                     const layer = this.layers.find(l => l.id === state.layerId);
@@ -6576,7 +6673,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
                         <text x="16" y="20" font-size="26" text-anchor="middle" 
                               transform="rotate(${rotation}, 16, 16)"
-                              fill="${isActive ? '#0066cc' : '#222'}" 
+                              fill="${isActive ? '#5b8def' : '#222'}" 
                               stroke="#000" 
                               stroke-width="0.5"
                               paint-order="stroke">${arrow}</text>
@@ -6885,9 +6982,14 @@
                     // Clear and redraw everything for preview
                     this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
                     
-                    // Draw all visible layers
-                    for (const l of this.layers) {
-                        this.drawLayerWithTransform(this.ctx, l, this.getPlayheadPosition());
+                    // Draw all visible layers (cached if possible)
+                    const _playheadPos = this.getPlayheadPosition();
+                    if (this.layers.length > 2) {
+                        this._drawWithCompositeCache(this.ctx, _playheadPos);
+                    } else {
+                        for (const l of this.layers) {
+                            this.drawLayerWithTransform(this.ctx, l, _playheadPos);
+                        }
                     }
                     
                     // Now draw the preview shape on top
@@ -6964,8 +7066,12 @@
                 // Redraw canvas
                 this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
                 const playheadPos = this.getPlayheadPosition();
-                for (const layer of this.layers) {
-                    this.drawLayerWithTransform(this.ctx, layer, playheadPos);
+                if (this.layers.length > 2) {
+                    this._drawWithCompositeCache(this.ctx, playheadPos);
+                } else {
+                    for (const layer of this.layers) {
+                        this.drawLayerWithTransform(this.ctx, layer, playheadPos);
+                    }
                 }
                 this.drawPasteboardOverlay(this.ctx);
                 
@@ -7570,11 +7676,13 @@
                     layer.transformKeyframes.push({ frame: frameIndex, ...props });
                     layer.transformKeyframes.sort((a, b) => a.frame - b.frame);
                 }
+                this._invalidateCompositeCache();
             }
             
             removeTransformKeyframe(layer, frameIndex) {
                 if (!layer.transformKeyframes) return;
                 layer.transformKeyframes = layer.transformKeyframes.filter(kf => kf.frame !== frameIndex);
+                this._invalidateCompositeCache();
             }
             
             hasTransformKeyframeAt(layer, frameIndex) {
@@ -8177,7 +8285,7 @@
                 this.selectionCtx.clearRect(0, 0, this.selectionCanvas.width, this.selectionCanvas.height);
                 if (this.lassoPath.length < 2) return;
                 
-                this.selectionCtx.strokeStyle = '#0066cc';
+                this.selectionCtx.strokeStyle = '#5b8def';
                 this.selectionCtx.lineWidth = 2;
                 this.selectionCtx.setLineDash([5, 5]);
                 this.selectionCtx.beginPath();
@@ -8520,7 +8628,7 @@
                     }
                     this.selectionCtx.translate(-anchorX, -anchorY);
                     
-                    const skewColor = (skewX || skewY) ? '#cc44ff' : '#0066cc';
+                    const skewColor = (skewX || skewY) ? '#cc44ff' : '#5b8def';
                     this.selectionCtx.strokeStyle = skewColor;
                     this.selectionCtx.lineWidth = 2;
                     this.selectionCtx.setLineDash([5, 5]);
@@ -8537,7 +8645,7 @@
                         const handleColor = (this.tool === 'skew' && isEdge) ? '#cc44ff' : 'white';
                         
                         this.selectionCtx.fillStyle = handleColor;
-                        this.selectionCtx.strokeStyle = '#0066cc';
+                        this.selectionCtx.strokeStyle = '#5b8def';
                         this.selectionCtx.lineWidth = 2;
                         this.selectionCtx.beginPath();
                         
@@ -10035,6 +10143,66 @@
                 }
             }
             
+            _invalidateCompositeCache() {
+                this._compositeCacheDirty = true;
+                this._compositeCacheVer++;
+            }
+            
+            _getCompositeCacheKey() {
+                // Build a lightweight key from all state that affects non-active layer compositing
+                const layerSigs = this.layers.map(l => 
+                    `${l.id}:${l.visible}:${l.opacity}:${l.startFrame || 0}:${l.frames.length}`
+                ).join('|');
+                return `${this._compositeCacheVer},${this.currentLayerId},${this.currentFrameIndex},${this.getPlayheadPosition()},${this.canvas.width},${this.canvas.height},${this.viewportX},${this.viewportY},${layerSigs}`;
+            }
+            
+            _rebuildCompositeCache(playheadPos) {
+                const w = this.canvas.width;
+                const h = this.canvas.height;
+                
+                // Resize cache canvases if needed
+                if (this._belowCache.width !== w || this._belowCache.height !== h) {
+                    this._belowCache.width = w;
+                    this._belowCache.height = h;
+                    this._aboveCache.width = w;
+                    this._aboveCache.height = h;
+                }
+                
+                this._belowCtx.clearRect(0, 0, w, h);
+                this._aboveCtx.clearRect(0, 0, w, h);
+                
+                const activeIdx = this.layers.findIndex(l => l.id === this.currentLayerId);
+                
+                // Composite layers below active
+                for (let i = 0; i < activeIdx; i++) {
+                    this.drawLayerWithTransform(this._belowCtx, this.layers[i], playheadPos);
+                }
+                
+                // Composite layers above active
+                for (let i = activeIdx + 1; i < this.layers.length; i++) {
+                    this.drawLayerWithTransform(this._aboveCtx, this.layers[i], playheadPos);
+                }
+                
+                this._compositeCacheDirty = false;
+                this._compositeCacheKey = this._getCompositeCacheKey();
+            }
+            
+            _drawWithCompositeCache(ctx, playheadPos) {
+                // Check if cache is still valid
+                const currentKey = this._getCompositeCacheKey();
+                if (this._compositeCacheDirty || this._compositeCacheKey !== currentKey) {
+                    this._rebuildCompositeCache(playheadPos);
+                }
+                
+                // Draw: below layers (cached) → active layer (live) → above layers (cached)
+                ctx.drawImage(this._belowCache, 0, 0);
+                
+                const activeLayer = this.getCurrentLayer();
+                this.drawLayerWithTransform(ctx, activeLayer, playheadPos);
+                
+                ctx.drawImage(this._aboveCache, 0, 0);
+            }
+            
             render() {
                 // Position onion canvas
                 this.positionOnionCanvas();
@@ -10078,8 +10246,14 @@
                 
                 // Draw all visible layers for current frame ON THE MAIN CANVAS
                 const playheadPos = this.getPlayheadPosition();
-                for (const layer of this.layers) {
-                    this.drawLayerWithTransform(this.ctx, layer, playheadPos);
+                if (this.layers.length > 2 && !this.isPlaying) {
+                    // Use composite cache — only redraws active layer each frame
+                    this._drawWithCompositeCache(this.ctx, playheadPos);
+                } else {
+                    // Few layers or playing back — direct compositing is faster
+                    for (const layer of this.layers) {
+                        this.drawLayerWithTransform(this.ctx, layer, playheadPos);
+                    }
                 }
                 
                 // Draw anchor point indicator
@@ -10137,8 +10311,12 @@
                 }
                 
                 const playheadPos = this.getPlayheadPosition();
-                for (const layer of this.layers) {
-                    this.drawLayerWithTransform(this.ctx, layer, playheadPos);
+                if (this.layers.length > 2 && !this.isPlaying) {
+                    this._drawWithCompositeCache(this.ctx, playheadPos);
+                } else {
+                    for (const layer of this.layers) {
+                        this.drawLayerWithTransform(this.ctx, layer, playheadPos);
+                    }
                 }
                 this.drawAnchorIndicator(this.ctx);
                 this.drawPasteboardOverlay(this.ctx);
@@ -10151,12 +10329,14 @@
             renderLayers() {
                 // Shim — renderTimeline builds both labels and frames
                 this._timelineDirty = true;
+                this._invalidateCompositeCache();
                 this.renderTimeline();
             }
             
             // Mark timeline for full DOM rebuild on next render()
             _markTimelineDirty() {
                 this._timelineDirty = true;
+                this._invalidateCompositeCache();
             }
             
             // Lightweight timeline update: swap active frame highlight + update playhead
@@ -10355,6 +10535,7 @@
                     vis.addEventListener('click', (e) => {
                         e.stopPropagation();
                         layer.visible = !layer.visible;
+                        this._invalidateCompositeCache();
                         this._timelineDirty = true;
                         this.render();
                     });
@@ -10377,7 +10558,7 @@
                             input.type = 'text';
                             input.value = layer.name;
                             input.className = 'layer-name-input';
-                            input.style.cssText = 'background:#2a2a2a;color:#fff;border:1px solid #5af;outline:none;font:inherit;padding:0 4px;width:100%;box-sizing:border-box;border-radius:3px;';
+                            input.style.cssText = 'background:#2b2d31;color:#ddd;border:none;outline:none;font:inherit;padding:0 4px;width:100%;box-sizing:border-box;border-radius:6px;box-shadow:inset 2px 2px 4px rgba(0,0,0,0.35),inset -1px -1px 3px rgba(255,255,255,0.03);';
                             
                             const commit = () => {
                                 const newName = input.value.trim();
@@ -10534,6 +10715,7 @@
                                     this.renderCanvasOnly();
                                 } else if (key === 'opacity') {
                                     layer.opacity = Math.max(0, Math.min(1, currentVal / 100));
+                                    this._invalidateCompositeCache();
                                     this.renderCanvasOnly();
                                 }
                             };
@@ -11072,7 +11254,7 @@
                             const gm = this.getTimelineMetrics();
                             ghost.style.width = gm.frameW + 'px';
                             ghost.style.height = gm.frameW + 'px';
-                            ghost.style.background = '#2a2a2a';
+                            ghost.style.background = '#2b2d31';
                             ghost.style.position = 'relative';
                             const indicator = state.element.querySelector('.frame-indicator');
                             if (indicator) {
@@ -11955,6 +12137,7 @@
                     
                     // Render
                     this._timelineDirty = true;
+                    this._invalidateCompositeCache();
                     this.positionOnionCanvas();
                     this.render();
                     
