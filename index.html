@@ -492,6 +492,7 @@
             position: relative;
             margin: auto;
             /* Centering when wrapper is smaller than container */
+            background: white;
         }
 
         canvas {
@@ -596,7 +597,6 @@
             position: absolute;
             pointer-events: none;
             z-index: 1;
-            background: white;
         }
         
         #selectionCanvas {
@@ -3327,6 +3327,13 @@
                         <option value="crop-tl">Crop / Expand (Top-Left)</option>
                     </select>
                 </div>
+                <div class="modal-row">
+                    <label>Background:</label>
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <input type="color" id="canvasBgColor" value="#ffffff" style="width:32px; height:32px; border-radius:50%; padding:0; border:none; cursor:pointer;">
+                        <span id="canvasBgColorLabel" style="color:#aaa; font-size:12px;">#ffffff</span>
+                    </div>
+                </div>
                 <div class="modal-info" id="canvasSizeInfo"></div>
             </div>
             <div class="modal-footer">
@@ -3412,6 +3419,7 @@
                 // Project dimensions (the "camera frame" / export size)
                 this.projectWidth = this.canvas.width;
                 this.projectHeight = this.canvas.height;
+                this.bgColor = '#ffffff'; // Canvas background color
                 
                 // Pasteboard: show content outside the camera frame
                 this.pasteboardVisible = false;
@@ -4386,6 +4394,10 @@
                         } else if (e.pointerType === 'mouse') {
                             this.currentPressure = 0.5;
                         }
+                        // Capture pointer so events continue when pen/mouse leaves canvas edge
+                        try { canvasEl.setPointerCapture(e.pointerId); } catch(_) {}
+                        this._capturedPointerId = e.pointerId;
+                        this._capturedCanvas = canvasEl;
                         this.startDrawing(e);
                     });
                     
@@ -4413,6 +4425,12 @@
                     });
                     
                     canvasEl.addEventListener('pointerup', (e) => {
+                        // Release pointer capture
+                        if (this._capturedCanvas && this._capturedPointerId !== undefined) {
+                            try { this._capturedCanvas.releasePointerCapture(this._capturedPointerId); } catch(_) {}
+                            this._capturedPointerId = undefined;
+                            this._capturedCanvas = null;
+                        }
                         if (this.isPanning) {
                             this.stopPan();
                             return;
@@ -4425,6 +4443,12 @@
                     });
                     
                     canvasEl.addEventListener('pointercancel', (e) => {
+                        // Release pointer capture
+                        if (this._capturedCanvas && this._capturedPointerId !== undefined) {
+                            try { this._capturedCanvas.releasePointerCapture(this._capturedPointerId); } catch(_) {}
+                            this._capturedPointerId = undefined;
+                            this._capturedCanvas = null;
+                        }
                         if (this.isPanning) {
                             this.stopPan();
                             return;
@@ -5699,8 +5723,17 @@
                     csHeightIn.value = this.projectHeight;
                     csPreset.value = 'custom';
                     csAspect = this.projectWidth / this.projectHeight;
+                    document.getElementById('canvasBgColor').value = this.bgColor;
+                    document.getElementById('canvasBgColorLabel').textContent = this.bgColor;
                     csUpdateInfo();
                     csModal.classList.add('show');
+                });
+                
+                // Background color — live preview
+                document.getElementById('canvasBgColor').addEventListener('input', (e) => {
+                    this.bgColor = e.target.value;
+                    document.getElementById('canvasBgColorLabel').textContent = e.target.value;
+                    this.canvasWrapper.style.background = this.bgColor;
                 });
                 
                 const csClose = () => csModal.classList.remove('show');
@@ -6465,6 +6498,7 @@
                 if (this.tool === 'brush' || this.tool === 'eraser') {
                     const layer = this.getCurrentLayer();
                     const frame = layer.frames[this.currentFrameIndex];
+                    this._drawingFrameIndex = this.currentFrameIndex; // Track which frame the stroke started on
                     if (frame) {
                         const growth = this.ensureFrameCovers(frame, worldX, worldY);
                         if ((growth.dx !== 0 || growth.dy !== 0) && this._lastStrokeEnd) {
@@ -6630,6 +6664,27 @@
                     const worldY = y + this.viewportY;
                     const layer = this.getCurrentLayer();
                     const frame = layer.frames[this.currentFrameIndex];
+                    
+                    // Detect frame change during playback — reset stroke to avoid cross-frame lines
+                    if (this._drawingFrameIndex !== undefined && this._drawingFrameIndex !== this.currentFrameIndex) {
+                        this._drawingFrameIndex = this.currentFrameIndex;
+                        // Save undo state for this new frame
+                        this.strokeStateSaved = true;
+                        this._pendingSnapshot = null;
+                        setTimeout(() => this.saveState(), 0);
+                        // Reset stroke position to current point (new drawPoint, not drawLine)
+                        if (frame) {
+                            this.ensureFrameCovers(frame, worldX, worldY);
+                            const local = this.worldToLocal(worldX, worldY, frame);
+                            this.lastX = local.x;
+                            this.lastY = local.y;
+                            this.smoothX = local.x;
+                            this.smoothY = local.y;
+                            this.drawPoint(local.x, local.y);
+                        }
+                        return;
+                    }
+                    
                     // Expand frame if needed — shift stored coords by the growth amount
                     if (frame) {
                         const growth = this.ensureFrameCovers(frame, worldX, worldY);
@@ -6660,6 +6715,22 @@
                     }
                     
                     const smoothing = this.getSmoothing();
+                    
+                    // Safety: if pointer jumped too far (lost events near edge, etc.),
+                    // start a new stroke segment instead of connecting with a long line
+                    const jumpDx = tx - this.lastX;
+                    const jumpDy = ty - this.lastY;
+                    const jumpDist = Math.sqrt(jumpDx * jumpDx + jumpDy * jumpDy);
+                    const maxJump = Math.max(this.brushSize * 6, 80);
+                    if (jumpDist > maxJump) {
+                        this.lastX = tx;
+                        this.lastY = ty;
+                        this.smoothX = tx;
+                        this.smoothY = ty;
+                        this.drawPoint(tx, ty);
+                        return;
+                    }
+                    
                     if (smoothing > 0) {
                         const factor = 1 - (smoothing / 100) * 0.95;
                         this.smoothX += (tx - this.smoothX) * factor;
@@ -6945,6 +7016,7 @@
                 }
                 
                 this.isDrawing = false;
+                this._drawingFrameIndex = undefined;
                 this.shapeStart = null;
                 this._shiftAnchor = null;
                 this._shiftLockedAngle = null;
@@ -7555,32 +7627,37 @@
             
             // Render a tinted version of a frame onto the onion canvas
             drawOnionFrame(frame, tintColor, opacity) {
-                // Reuse a temp canvas for tinting (avoids allocation every render)
-                if (!this._onionTemp || this._onionTemp.width !== this.canvas.width || this._onionTemp.height !== this.canvas.height) {
-                    this._onionTemp = document.createElement('canvas');
-                    this._onionTemp.width = this.canvas.width;
-                    this._onionTemp.height = this.canvas.height;
-                    this._onionTempCtx = this._onionTemp.getContext('2d');
-                }
-                const tempCtx = this._onionTempCtx;
-                tempCtx.clearRect(0, 0, this._onionTemp.width, this._onionTemp.height);
+                // --- Onion skin tint caching ---
+                // Cache the tinted version of each frame at its native size.
+                // Only re-tint when frame pixels change (_thumbVer) or tint color changes.
+                // Viewport offset is applied at draw time, so panning doesn't invalidate.
+                if (!frame._onionCaches) frame._onionCaches = {};
+                const ver = frame._thumbVer || 0;
+                let cached = frame._onionCaches[tintColor];
                 
-                // Draw the frame artwork at viewport offset
+                if (!cached || cached._ver !== ver) {
+                    // Build tinted canvas at frame's native size
+                    const tinted = document.createElement('canvas');
+                    tinted.width = frame.width;
+                    tinted.height = frame.height;
+                    const tctx = tinted.getContext('2d');
+                    tctx.drawImage(frame, 0, 0);
+                    tctx.globalCompositeOperation = 'source-atop';
+                    tctx.globalAlpha = 0.5;
+                    tctx.fillStyle = tintColor;
+                    tctx.fillRect(0, 0, frame.width, frame.height);
+                    tctx.globalAlpha = 1;
+                    tctx.globalCompositeOperation = 'source-over';
+                    tinted._ver = ver;
+                    frame._onionCaches[tintColor] = tinted;
+                    cached = tinted;
+                }
+                
+                // Draw cached tinted frame at viewport offset
                 const offX = (frame._originX || 0) - this.viewportX;
                 const offY = (frame._originY || 0) - this.viewportY;
-                tempCtx.drawImage(frame, offX, offY);
-                
-                // Apply a semi-transparent tint over only the artwork pixels
-                tempCtx.globalCompositeOperation = 'source-atop';
-                tempCtx.globalAlpha = 0.5;
-                tempCtx.fillStyle = tintColor;
-                tempCtx.fillRect(0, 0, this._onionTemp.width, this._onionTemp.height);
-                tempCtx.globalAlpha = 1;
-                tempCtx.globalCompositeOperation = 'source-over';
-                
-                // Draw the tinted result onto the onion canvas
                 this.onionCtx.globalAlpha = opacity;
-                this.onionCtx.drawImage(this._onionTemp, 0, 0);
+                this.onionCtx.drawImage(cached, offX, offY);
                 this.onionCtx.globalAlpha = 1;
             }
             
@@ -9920,6 +9997,9 @@
                 
                 this.isPlaying = true;
                 
+                // Hide onion canvas during playback (not needed, saves compositing)
+                this.onionCanvas.style.display = 'none';
+                
                 const mode = modeOverride || this.playbackMode;
                 this._activePlayMode = mode;
                 
@@ -10002,6 +10082,9 @@
                 }
                 this.stopAudioPlayback();
                 this.hideAudioPlayhead();
+                
+                // Restore onion canvas visibility
+                this.onionCanvas.style.display = '';
                 
                 // Restore viewport and pasteboard from before playback
                 if (this._savedViewport) {
@@ -10532,17 +10615,17 @@
             }
             
             render() {
-                // Position onion canvas
-                this.positionOnionCanvas();
+                // Position onion canvas (skip during playback — it's hidden)
+                if (!this.isPlaying) {
+                    this.positionOnionCanvas();
+                }
                 
                 // Clear main canvas
                 this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
                 
-                // Clear onion skin canvas
-                this.onionCtx.clearRect(0, 0, this.onionCanvas.width, this.onionCanvas.height);
-                
-                // Draw onion skin (previous and next frames) — skip during playback
+                // Draw onion skin — skip during playback (canvas is hidden)
                 if (this.onionSkinEnabled && !this.isPlaying) {
+                    this.onionCtx.clearRect(0, 0, this.onionCanvas.width, this.onionCanvas.height);
                     const layer = this.getCurrentLayer();
                     
                     // Draw previous frames (tinted with prevColor)
@@ -10621,6 +10704,7 @@
                 
                 if (this.onionSkinEnabled && !this.isPlaying) {
                     this.onionCtx.clearRect(0, 0, this.onionCanvas.width, this.onionCanvas.height);
+                    this.positionOnionCanvas();
                     const curLayer = this.getCurrentLayer();
                     for (let offset = 1; offset <= this.onionFramesBefore; offset++) {
                         const frameIdx = this.currentFrameIndex - offset;
@@ -12225,6 +12309,7 @@
                         version: 1,
                         canvasWidth: this.projectWidth,
                         canvasHeight: this.projectHeight,
+                        bgColor: this.bgColor,
                         fps: this.fps,
                         currentLayerId: this.currentLayerId,
                         currentFrameIndex: this.currentFrameIndex,
@@ -12353,6 +12438,12 @@
                         document.getElementById('fpsPresets').querySelectorAll('.fps-preset').forEach(btn => {
                             btn.classList.toggle('active', parseInt(btn.dataset.fps) === project.fps);
                         });
+                    }
+                    
+                    // Restore background color
+                    if (project.bgColor) {
+                        this.bgColor = project.bgColor;
+                        this.canvasWrapper.style.background = this.bgColor;
                     }
                     
                     // Load layers and frames from base64
@@ -12664,8 +12755,8 @@
                     const _savedVpX = this.viewportX, _savedVpY = this.viewportY;
                     this.viewportX = 0; this.viewportY = 0;
                     for (let i = 0; i < maxFrames; i++) {
-                        // Clear canvas with white background
-                        compositeCtx.fillStyle = 'white';
+                        // Clear canvas with project background color
+                        compositeCtx.fillStyle = this.bgColor;
                         compositeCtx.fillRect(0, 0, compositeCanvas.width, compositeCanvas.height);
                         
                         // Draw all visible layers for this frame
@@ -12761,8 +12852,8 @@
                     this.viewportX = 0; this.viewportY = 0;
                     
                     for (let i = 0; i < maxFrames; i++) {
-                        // White background for GIF export
-                        tempCtx.fillStyle = '#ffffff';
+                        // Project background for GIF export
+                        tempCtx.fillStyle = this.bgColor;
                         tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
                         
                         // Render all visible layers for this frame
@@ -12919,8 +13010,8 @@
                             const _rvpx = this.viewportX, _rvpy = this.viewportY;
                             this.viewportX = 0; this.viewportY = 0;
                             
-                            // White background
-                            recordCtx.fillStyle = '#ffffff';
+                            // Project background
+                            recordCtx.fillStyle = this.bgColor;
                             recordCtx.fillRect(0, 0, recordCanvas.width, recordCanvas.height);
                             
                             // Draw all visible layers for this frame
@@ -13019,8 +13110,8 @@
                 spriteSheet.height = frameHeight;
                 const ctx = spriteSheet.getContext('2d');
                 
-                // Draw white background
-                ctx.fillStyle = 'white';
+                // Draw project background
+                ctx.fillStyle = this.bgColor;
                 ctx.fillRect(0, 0, spriteSheet.width, spriteSheet.height);
                 
                 // Draw each frame (accounting for frame origin in infinite canvas)
