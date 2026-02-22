@@ -2309,16 +2309,14 @@
             }
             .timeline-controls {
                 padding: 4px 6px;
-                overflow-x: auto;
-                flex-wrap: nowrap;
-                -webkit-overflow-scrolling: touch;
-                scrollbar-width: none;
+                flex-wrap: wrap;
+                gap: 4px;
             }
             .timeline-controls::-webkit-scrollbar { display: none; }
             
             .playback-controls {
                 flex-shrink: 0;
-                flex-wrap: nowrap;
+                flex-wrap: wrap;
                 gap: 2px;
             }
             
@@ -2337,6 +2335,7 @@
             
             .fps-control {
                 flex-shrink: 0;
+                margin-left: auto;
             }
             .fps-control label {
                 display: inline;
