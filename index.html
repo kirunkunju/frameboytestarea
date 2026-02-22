@@ -4232,6 +4232,12 @@
                     // On iPad these get blocked by touch preventDefault()
                     
                     canvasEl.addEventListener('pointerdown', (e) => {
+                        // Clear frame multi-selection when interacting with canvas
+                        if (this.selectedFrames.size > 0) {
+                            this.selectedFrames.clear();
+                            this._timelineDirty = true;
+                            this._scheduleRenderTimeline();
+                        }
                         // Middle mouse button always pans
                         if (e.button === 1) {
                             e.preventDefault();
@@ -5439,6 +5445,11 @@
                 
                 scrubRuler.addEventListener('pointerdown', (e) => {
                     e.preventDefault();
+                    if (this.selectedFrames.size > 0) {
+                        this.selectedFrames.clear();
+                        this._timelineDirty = true;
+                        this._scheduleRenderTimeline();
+                    }
                     scrubRuler.setPointerCapture(e.pointerId);
                     this._isScrubbing = true;
                     scrubToX(e.clientX);
@@ -11140,7 +11151,15 @@
                     // Instead of per-frame listeners, one listener on the container handles all frames
                     container.addEventListener('pointerdown', (e) => {
                         const frameDiv = e.target.closest('.frame');
-                        if (!frameDiv) return;
+                        if (!frameDiv) {
+                            // Clicked empty timeline area — clear selection
+                            if (this.selectedFrames.size > 0) {
+                                this.selectedFrames.clear();
+                                this._timelineDirty = true;
+                                this._scheduleRenderTimeline();
+                            }
+                            return;
+                        }
                         if (e.button && e.button !== 0) return;
                         e.preventDefault();
                         
@@ -11190,6 +11209,7 @@
                         // Regular click: clear multi-select
                         if (this.selectedFrames.size > 0) {
                             this.selectedFrames.clear();
+                            this._timelineDirty = true;
                         }
                         
                         // --- Long-press detection for touch ---
