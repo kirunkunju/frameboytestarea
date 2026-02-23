@@ -7184,6 +7184,12 @@
                     const y = (e.clientY - rect.top) * scaleY;
                     const hitRadius = 10 / (rect.width / this.canvas.width);
                     
+                    // Guard: if we're already dragging a new handle (point just placed),
+                    // skip duplicate events from iPad touch+pointer firing both
+                    if (this._penDragType === 'newHandle' && (performance.now() - (this._penLastPointTime || 0)) < 200) {
+                        return;
+                    }
+                    
                     if (!this._penActive) {
                         // Save state before first pen point
                         this.saveState();
