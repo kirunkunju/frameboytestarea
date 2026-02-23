@@ -377,6 +377,161 @@
             border: none;
             border-radius: 50%;
         }
+        
+        /* Color pickers wrap */
+        .color-pickers-wrap {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .color-b-picker {
+            display: none; /* shown when gradient tool active */
+        }
+        
+        .gradient-active .color-b-picker {
+            display: block;
+        }
+        
+        .swap-colors-btn {
+            display: none;
+            width: 22px !important;
+            height: 22px !important;
+            min-width: 22px;
+            padding: 0 !important;
+            font-size: 12px;
+            line-height: 1;
+            border-radius: 50% !important;
+            background: #26282c !important;
+            color: #aaa;
+            border: none;
+            cursor: pointer;
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.3), -1px -1px 2px rgba(255,255,255,0.03);
+        }
+        
+        .swap-colors-btn:hover {
+            color: #fff;
+            background: #32343a !important;
+        }
+        
+        .gradient-active .swap-colors-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .gradient-swatch {
+            display: none;
+            width: 40px;
+            height: 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: inset 1px 1px 3px rgba(0,0,0,0.3), 1px 1px 3px rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.08);
+            flex-shrink: 0;
+            position: relative;
+            transition: box-shadow 0.2s, border-color 0.2s;
+        }
+        
+        .gradient-active .gradient-swatch {
+            display: block;
+        }
+        
+        /* Show swatch on ANY tool when a gradient is stored */
+        .gradient-stored .gradient-swatch {
+            display: block;
+        }
+        
+        .gradient-swatch.has-gradient {
+            border-color: rgba(106,173,255,0.35);
+            box-shadow: inset 1px 1px 3px rgba(0,0,0,0.3), 0 0 6px rgba(106,173,255,0.25);
+        }
+        
+        .gradient-swatch .swatch-clear {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: #3a3c42;
+            color: #aaa;
+            font-size: 9px;
+            line-height: 14px;
+            text-align: center;
+            display: none;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 1px 1px 3px rgba(0,0,0,0.4);
+        }
+        
+        .gradient-swatch.has-gradient .swatch-clear {
+            display: block;
+        }
+        
+        .gradient-swatch .swatch-clear:hover {
+            background: #e04040;
+            color: #fff;
+            border-color: rgba(255,255,255,0.2);
+        }
+        
+        /* Stored gradient indicator badge on the fill tool button */
+        .gradient-badge {
+            display: none;
+            position: absolute;
+            bottom: -2px;
+            right: -2px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #5b8def, #ef5b8d);
+            border: 1.5px solid #1e2024;
+            box-shadow: 0 0 4px rgba(106,173,255,0.4);
+        }
+        
+        .has-stored-gradient .gradient-badge {
+            display: block;
+        }
+        
+        #fillTool {
+            position: relative;
+        }
+        
+        .gradient-type-toggle {
+            display: none;
+            gap: 2px;
+        }
+        
+        .gradient-active .gradient-type-toggle {
+            display: flex;
+        }
+        
+        .grad-type-btn {
+            width: 26px !important;
+            height: 26px !important;
+            min-width: 26px;
+            padding: 0 !important;
+            border-radius: 6px !important;
+            background: transparent !important;
+            color: #888;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: none !important;
+        }
+        
+        .grad-type-btn:hover {
+            color: #ccc;
+            background: #2a2c30 !important;
+        }
+        
+        .grad-type-btn.active {
+            color: #6aadff !important;
+            background: #26282c !important;
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.35), inset -1px -1px 3px rgba(255,255,255,0.03) !important;
+        }
 
         input[type="range"] {
             width: 100px;
@@ -2733,6 +2888,24 @@
                 border-radius: 50%;
             }
             
+            .gradient-swatch {
+                width: 32px;
+                height: 20px;
+            }
+            
+            .swap-colors-btn {
+                width: 20px !important;
+                height: 20px !important;
+                min-width: 20px;
+                font-size: 10px;
+            }
+            
+            .grad-type-btn {
+                width: 24px !important;
+                height: 24px !important;
+                min-width: 24px;
+            }
+            
             /* Hide labels in toolbar */
             .tool-group > label {
                 display: none;
@@ -3326,9 +3499,10 @@
                     </div>
                 </div>
                 <div class="dropdown-container">
-                    <button id="fillTool" title="Paint Bucket (K / F)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2C8 2 3 7.5 3 10.5a5 5 0 0010 0C13 7.5 8 2 8 2z" fill="currentColor"/></svg> <span class="btn-label">Fill ▼</span></button>
+                    <button id="fillTool" title="Paint Bucket (K / F)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2C8 2 3 7.5 3 10.5a5 5 0 0010 0C13 7.5 8 2 8 2z" fill="currentColor"/></svg> <span class="btn-label">Fill ▼</span><span class="gradient-badge"></span></button>
                     <div class="dropdown-menu" id="fillToolDropdown">
                         <button class="dropdown-item" data-filltool="fill"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M8 2C8 2 3 7.5 3 10.5a5 5 0 0010 0C13 7.5 8 2 8 2z" fill="currentColor"/></svg> Paint Bucket<span class="shortcut">F</span></button>
+                        <button class="dropdown-item" data-filltool="gradient"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="2" y="2" width="12" height="12" rx="1.5"/><line x1="5" y1="14" x2="14" y2="5" stroke-opacity="0.4"/><line x1="2" y1="14" x2="14" y2="2" stroke-opacity="0.6"/><line x1="2" y1="11" x2="11" y2="2" stroke-opacity="0.4"/></svg> Gradient Fill<span class="shortcut">G</span></button>
                         <button class="dropdown-item" data-filltool="eyedropper"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M13.5 2.5a1.4 1.4 0 00-2 0L10 4l-1-.5-5 5-.5 3.5 3.5-.5 5-5L11.5 6l1.5-1.5a1.4 1.4 0 000-2z"/><path d="M3.5 12l.5.5"/></svg> Eyedropper<span class="shortcut">I</span></button>
                     </div>
                 </div>
@@ -3354,7 +3528,16 @@
                 </div>
             </div>
             <div class="tool-group">
-                <input type="color" id="colorPicker" value="#000000">
+                <div class="color-pickers-wrap" id="colorPickersWrap">
+                    <input type="color" id="colorPicker" value="#000000" title="Color A">
+                    <input type="color" id="colorPickerB" value="#ffffff" title="Color B" class="color-b-picker">
+                    <button class="swap-colors-btn" id="swapColorsBtn" title="Swap Colors (X)">⇄</button>
+                    <div class="gradient-swatch" id="gradientSwatch" title="Gradient stored — click to apply, × to clear"><span class="swatch-clear" id="swatchClear" title="Clear stored gradient">×</span></div>
+                    <div class="gradient-type-toggle" id="gradientTypeToggle">
+                        <button class="grad-type-btn active" data-gradtype="linear" title="Linear gradient"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="3" y1="13" x2="13" y2="3"/><circle cx="3" cy="13" r="1.5" fill="currentColor"/><circle cx="13" cy="3" r="1.5" fill="currentColor"/></svg></button>
+                        <button class="grad-type-btn" data-gradtype="radial" title="Radial gradient"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2"/><circle cx="8" cy="8" r="5"/></svg></button>
+                    </div>
+                </div>
                 <button class="size-step-btn" id="brushSizeMinus" title="Decrease brush size ([)">−</button>
                 <input type="range" id="brushSize" min="1" max="100" value="8">
                 <button class="size-step-btn" id="brushSizePlus" title="Increase brush size (])">+</button>
@@ -3646,6 +3829,12 @@
                 
                 this.tool = 'brush';
                 this.color = '#000000';
+                this.colorB = '#ffffff';
+                this.gradientType = 'linear'; // 'linear' or 'radial'
+                this.gradientDef = null; // { type, colorA, colorB, x0, y0, x1, y1 } in frame-local coords
+                this._gradientDrag = null; // Active drag state during gradient drawing
+                this._gradientEdit = null; // Edit mode state: {startLocal, endLocal, originX, originY, dragging}
+                this._gradientMaskCache = null; // Cached fill region mask for live preview
                 this.brushSize = 8;
                 this.brushShape = 'round';    // 'round', 'square', 'oval-h', 'oval-v'
                 this.eraserShape = 'round';
@@ -3684,6 +3873,7 @@
                 this._penDragIdx = -1;
                 this._penDragType = null;
                 this._penMousePos = null;
+                this._penShiftHeld = false;
                 
                 // Panning state
                 this.isPanning = false;
@@ -4308,6 +4498,16 @@
             }
             
             initializeFrame() {
+                // Clear any gradient preview/edit state when changing frames
+                if (this._gradientEdit) {
+                    this._gradientEdit = null;
+                }
+                if (this._gradientDrag) {
+                    this._gradientDrag = null;
+                    this.isDrawing = false;
+                }
+                this._gradientMaskCache = null;
+                
                 const layer = this.getCurrentLayer();
                 if (!layer.frames[this.currentFrameIndex]) {
                     layer.frames[this.currentFrameIndex] = this.createEmptyFrame();
@@ -5133,16 +5333,16 @@
                 const fillButton = document.getElementById('fillTool');
                 const fillIcons = {
                     'fill': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M8 2C8 2 3 7.5 3 10.5a5 5 0 0010 0C13 7.5 8 2 8 2z" fill="currentColor"/></svg>',
+                    'gradient': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="2" y="2" width="12" height="12" rx="1.5"/><line x1="5" y1="14" x2="14" y2="5" stroke-opacity="0.4"/><line x1="2" y1="14" x2="14" y2="2" stroke-opacity="0.6"/><line x1="2" y1="11" x2="11" y2="2" stroke-opacity="0.4"/></svg>',
                     'eyedropper': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M13.5 2.5a1.4 1.4 0 00-2 0L10 4l-1-.5-5 5-.5 3.5 3.5-.5 5-5L11.5 6l1.5-1.5a1.4 1.4 0 000-2z"/><path d="M3.5 12l.5.5"/></svg>'
                 };
-                const fillNames = { 'fill': 'Fill', 'eyedropper': 'Eyedropper' };
+                const fillNames = { 'fill': 'Fill', 'gradient': 'Gradient', 'eyedropper': 'Eyedropper' };
                 fillDropdown.querySelectorAll('.dropdown-item').forEach(item => {
                     item.addEventListener('click', (e) => {
                         e.stopPropagation();
                         const ft = item.getAttribute('data-filltool');
                         this.selectTool(ft);
                         fillDropdown.classList.remove('show');
-                        fillButton.innerHTML = `${fillIcons[ft]} <span class="btn-label">${fillNames[ft]} ▼</span>`;
                     });
                 });
                 document.getElementById('lassoTool').addEventListener('click', () => { _closeAllDropdowns(); this.selectTool('lasso'); });
@@ -5255,6 +5455,49 @@
                 // Color and size
                 document.getElementById('colorPicker').addEventListener('change', (e) => {
                     this.color = e.target.value;
+                    if (this.tool === 'gradient') this._updateGradientSwatch();
+                    this._refreshGradientEdit();
+                });
+                
+                document.getElementById('colorPickerB').addEventListener('change', (e) => {
+                    this.colorB = e.target.value;
+                    if (this.tool === 'gradient') this._updateGradientSwatch();
+                    this._refreshGradientEdit();
+                });
+                
+                document.getElementById('swapColorsBtn').addEventListener('click', () => {
+                    const tmp = this.color;
+                    this.color = this.colorB;
+                    this.colorB = tmp;
+                    document.getElementById('colorPicker').value = this.color;
+                    document.getElementById('colorPickerB').value = this.colorB;
+                    if (this.tool === 'gradient') this._updateGradientSwatch();
+                    this._refreshGradientEdit();
+                });
+                
+                document.getElementById('swatchClear').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    // Clear stored gradient def
+                    this.gradientDef = null;
+                    this._syncGradientUI();
+                });
+                
+                document.getElementById('gradientSwatch').addEventListener('click', (e) => {
+                    if (e.target.id === 'swatchClear') return; // handled above
+                    // Clicking swatch itself: if not on gradient tool, switch to it
+                    if (this.tool !== 'gradient' && this.gradientDef) {
+                        this.selectTool('gradient');
+                    }
+                });
+                
+                document.getElementById('gradientTypeToggle').addEventListener('click', (e) => {
+                    const btn = e.target.closest('.grad-type-btn');
+                    if (!btn) return;
+                    this.gradientType = btn.dataset.gradtype;
+                    document.querySelectorAll('.grad-type-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    this._updateGradientSwatch();
+                    this._refreshGradientEdit();
                 });
                 
                 document.getElementById('brushSize').addEventListener('input', (e) => {
@@ -5470,6 +5713,12 @@
                     } else if (e.key === 'Escape' && this._roundRectEdit) {
                         e.preventDefault();
                         this._cancelRoundRect();
+                    } else if (e.key === 'Enter' && this._gradientEdit) {
+                        e.preventDefault();
+                        this._finalizeGradient();
+                    } else if (e.key === 'Escape' && this._gradientEdit) {
+                        e.preventDefault();
+                        this._cancelGradient();
                     } else if (e.key === 'Enter' && this._penActive) {
                         e.preventDefault();
                         this._penFinalize(false);
@@ -5530,6 +5779,14 @@
                             case 'k':
                                 e.preventDefault();
                                 this.selectTool('fill');
+                                break;
+                            case 'g':
+                                e.preventDefault();
+                                this.selectTool('gradient');
+                                break;
+                            case 'x':
+                                e.preventDefault();
+                                document.getElementById('swapColorsBtn').click();
                                 break;
                             case 'i':
                                 e.preventDefault();
@@ -6143,6 +6400,11 @@
                     this._cancelRoundRect();
                 }
                 
+                // Finalize gradient edit if switching away
+                if (this._gradientEdit && tool !== 'gradient') {
+                    this._finalizeGradient();
+                }
+                
                 this.tool = tool;
                 document.querySelectorAll('.toolbar button').forEach(btn => btn.classList.remove('active'));
                 const toolButton = document.getElementById(tool + 'Tool');
@@ -6164,17 +6426,21 @@
                 }
                 
                 // For fill sub-tools, highlight the fillTool dropdown button
-                if (tool === 'fill' || tool === 'eyedropper') {
+                if (tool === 'fill' || tool === 'gradient' || tool === 'eyedropper') {
                     document.getElementById('fillTool').classList.add('active');
                     // Update button icon to match selected sub-tool
                     const _fillIcons = {
                         'fill': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M8 2C8 2 3 7.5 3 10.5a5 5 0 0010 0C13 7.5 8 2 8 2z" fill="currentColor"/></svg>',
+                        'gradient': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="2" y="2" width="12" height="12" rx="1.5"/><line x1="5" y1="14" x2="14" y2="5" stroke-opacity="0.4"/><line x1="2" y1="14" x2="14" y2="2" stroke-opacity="0.6"/><line x1="2" y1="11" x2="11" y2="2" stroke-opacity="0.4"/></svg>',
                         'eyedropper': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M13.5 2.5a1.4 1.4 0 00-2 0L10 4l-1-.5-5 5-.5 3.5 3.5-.5 5-5L11.5 6l1.5-1.5a1.4 1.4 0 000-2z"/><path d="M3.5 12l.5.5"/></svg>'
                     };
-                    const _fillNames = { 'fill': 'Fill', 'eyedropper': 'Eyedropper' };
+                    const _fillNames = { 'fill': 'Fill', 'gradient': 'Gradient', 'eyedropper': 'Eyedropper' };
                     const _fb = document.getElementById('fillTool');
-                    _fb.innerHTML = `${_fillIcons[tool]} <span class="btn-label">${_fillNames[tool]} ▼</span>`;
+                    _fb.innerHTML = `${_fillIcons[tool]} <span class="btn-label">${_fillNames[tool]} ▼</span><span class="gradient-badge"></span>`;
                 }
+                
+                // Sync gradient UI state
+                this._syncGradientUI();
                 
                 // Sync pill pan button
                 const pillPan = document.getElementById('pillPanBtn');
@@ -6206,7 +6472,7 @@
                     this.selectionCanvas.style.cursor = 'none';
                     this.canvasContainer.style.cursor = 'none';
                     this.canvasWrapper.style.cursor = 'none';
-                } else if (tool === 'fill' || tool === 'lasso') {
+                } else if (tool === 'fill' || tool === 'gradient' || tool === 'lasso') {
                     this.canvas.style.cursor = 'crosshair';
                     this.selectionCanvas.style.cursor = 'crosshair';
                     this.canvasContainer.style.cursor = '';
@@ -6676,8 +6942,65 @@
                     const frame = layer.frames[this.currentFrameIndex];
                     if (frame) {
                         const local = this.worldToLocal(worldX, worldY, frame);
-                        this.floodFill(Math.floor(local.x), Math.floor(local.y));
+                        const lx = Math.floor(local.x);
+                        const ly = Math.floor(local.y);
+                        // If a gradient is stored, use gradient fill; otherwise solid fill
+                        if (this.gradientDef) {
+                            this.gradientFill(lx, ly, this.gradientDef);
+                        } else {
+                            this.floodFill(lx, ly);
+                        }
                     }
+                    return;
+                }
+                
+                // Handle gradient tool (Step 2 will add drag interaction)
+                if (this.tool === 'gradient') {
+                    const canvas = e.target === this.selectionCanvas ? this.selectionCanvas : this.canvas;
+                    const rect = canvas.getBoundingClientRect();
+                    const scaleX = canvas.width / rect.width;
+                    const scaleY = canvas.height / rect.height;
+                    const canvasX = (e.clientX - rect.left) * scaleX;
+                    const canvasY = (e.clientY - rect.top) * scaleY;
+                    const worldX = canvasX + this.viewportX;
+                    const worldY = canvasY + this.viewportY;
+                    const layer = this.getCurrentLayer();
+                    const frame = layer.frames[this.currentFrameIndex];
+                    if (!frame) return;
+                    const local = this.worldToLocal(worldX, worldY, frame);
+                    
+                    // If in edit mode, check if clicking near an endpoint to drag it
+                    if (this._gradientEdit) {
+                        const edit = this._gradientEdit;
+                        const hitRadius = 16 / (this.zoomLevel || 1); // scale hit target with zoom
+                        const distStart = Math.hypot(local.x - edit.startLocal.x, local.y - edit.startLocal.y);
+                        const distEnd = Math.hypot(local.x - edit.endLocal.x, local.y - edit.endLocal.y);
+                        
+                        if (distStart < hitRadius || distEnd < hitRadius) {
+                            // Drag the nearest endpoint
+                            edit.dragging = distStart <= distEnd ? 'start' : 'end';
+                            this.isDrawing = true;
+                            return;
+                        }
+                        
+                        // Clicking elsewhere — finalize current, then start new drag
+                        this._finalizeGradient();
+                    }
+                    
+                    this._gradientDrag = {
+                        startLocal: { x: local.x, y: local.y },
+                        endLocal: { x: local.x, y: local.y },
+                        originX: frame._originX || 0,
+                        originY: frame._originY || 0,
+                    };
+                    // Pre-compute the fill mask at the start point for live preview
+                    this._gradientMaskCache = this._computeGradientMask(frame, Math.floor(local.x), Math.floor(local.y));
+                    if (this._gradientMaskCache) {
+                        this._gradientMaskCache.frameRef = frame;
+                        this._gradientMaskCache.frameIndex = this.currentFrameIndex;
+                        this._gradientMaskCache.layerId = this.currentLayerId;
+                    }
+                    this.isDrawing = true;
                     return;
                 }
                 
@@ -6817,10 +7140,19 @@
                     
                     // Add new point
                     this._penActive = true;
-                    this._penPoints.push({ x, y, handleIn: null, handleOut: null });
+                    let px = x, py = y;
+                    // Shift: snap to 45° angle from previous point
+                    if (e.shiftKey && this._penPoints.length > 0) {
+                        const prev = this._penPoints[this._penPoints.length - 1];
+                        const snapped = this._penSnap45(prev.x, prev.y, x, y);
+                        px = snapped.x;
+                        py = snapped.y;
+                    }
+                    this._penPoints.push({ x: px, y: py, handleIn: null, handleOut: null });
                     this._penDragIdx = this._penPoints.length - 1;
                     this._penDragType = 'newHandle';
-                    this._penNewHandleOrigin = { x, y };
+                    this._penNewHandleOrigin = { x: px, y: py };
+                    this._penShiftHeld = e.shiftKey;
                     this._penRenderPreview();
                     return;
                 }
@@ -6926,6 +7258,67 @@
                     this._checkSkewDistortCursor(e);
                 }
                 
+                // Gradient edit mode: show grab cursor near handles
+                if (this.tool === 'gradient' && this._gradientEdit && !this.isDrawing) {
+                    const canvas = e.target === this.selectionCanvas ? this.selectionCanvas : this.canvas;
+                    const rect = canvas.getBoundingClientRect();
+                    const scaleX = canvas.width / rect.width;
+                    const scaleY = canvas.height / rect.height;
+                    const canvasX = (e.clientX - rect.left) * scaleX;
+                    const canvasY = (e.clientY - rect.top) * scaleY;
+                    const worldX = canvasX + this.viewportX;
+                    const worldY = canvasY + this.viewportY;
+                    const edit = this._gradientEdit;
+                    const lx = worldX - edit.originX;
+                    const ly = worldY - edit.originY;
+                    const hitRadius = 16 / (this.zoomLevel || 1);
+                    const nearStart = Math.hypot(lx - edit.startLocal.x, ly - edit.startLocal.y) < hitRadius;
+                    const nearEnd = Math.hypot(lx - edit.endLocal.x, ly - edit.endLocal.y) < hitRadius;
+                    this.canvas.style.cursor = (nearStart || nearEnd) ? 'grab' : 'crosshair';
+                    this.selectionCanvas.style.cursor = this.canvas.style.cursor;
+                }
+                
+                // Gradient tool: update end point during drag or edit-mode endpoint drag
+                if (this.tool === 'gradient' && this.isDrawing) {
+                    const canvas = e.target === this.selectionCanvas ? this.selectionCanvas : this.canvas;
+                    const rect = canvas.getBoundingClientRect();
+                    const scaleX = canvas.width / rect.width;
+                    const scaleY = canvas.height / rect.height;
+                    const canvasX = (e.clientX - rect.left) * scaleX;
+                    const canvasY = (e.clientY - rect.top) * scaleY;
+                    const worldX = canvasX + this.viewportX;
+                    const worldY = canvasY + this.viewportY;
+                    
+                    if (this._gradientEdit && this._gradientEdit.dragging) {
+                        // Edit mode: drag endpoint
+                        const edit = this._gradientEdit;
+                        const localPt = {
+                            x: worldX - edit.originX,
+                            y: worldY - edit.originY,
+                        };
+                        if (edit.dragging === 'start') {
+                            edit.startLocal = localPt;
+                        } else {
+                            edit.endLocal = localPt;
+                        }
+                        this.canvas.style.cursor = 'grabbing';
+                        this.selectionCanvas.style.cursor = 'grabbing';
+                        this.renderCanvasOnly();
+                        return;
+                    }
+                    
+                    if (this._gradientDrag) {
+                        // Initial drag
+                        this._gradientDrag.endLocal = {
+                            x: worldX - this._gradientDrag.originX,
+                            y: worldY - this._gradientDrag.originY,
+                        };
+                        this.renderCanvasOnly();
+                        this._drawGradientPreview();
+                        return;
+                    }
+                }
+                
                 // Pen tool: handle drag and preview
                 if (this.tool === 'pen') {
                     const rect = this.canvas.getBoundingClientRect();
@@ -6935,24 +7328,47 @@
                     const y = (e.clientY - rect.top) * scaleY;
                     
                     this._penMousePos = { x, y };
+                    this._penShiftHeld = e.shiftKey;
                     
                     if (this._penDragIdx >= 0) {
                         const pt = this._penPoints[this._penDragIdx];
+                        // Track shift state dynamically during drag
+                        this._penShiftHeld = e.shiftKey;
+                        
                         if (this._penDragType === 'newHandle') {
                             // Creating handles on new point by dragging
                             const ox = this._penNewHandleOrigin.x;
                             const oy = this._penNewHandleOrigin.y;
-                            const dx = x - ox, dy = y - oy;
+                            let hx = x, hy = y;
+                            // Shift: constrain handle to 45° from anchor
+                            if (e.shiftKey) {
+                                const snapped = this._penSnap45(ox, oy, x, y);
+                                hx = snapped.x;
+                                hy = snapped.y;
+                            }
+                            const dx = hx - ox, dy = hy - oy;
                             if (Math.hypot(dx, dy) > 3) {
-                                pt.handleOut = { x, y };
+                                pt.handleOut = { x: hx, y: hy };
                                 pt.handleIn = { x: ox - dx, y: oy - dy };
                             }
                         } else if (this._penDragType === 'handleOut') {
-                            pt.handleOut = { x, y };
-                            pt.handleIn = { x: pt.x * 2 - x, y: pt.y * 2 - y };
+                            let hx = x, hy = y;
+                            if (e.shiftKey) {
+                                const snapped = this._penSnap45(pt.x, pt.y, x, y);
+                                hx = snapped.x;
+                                hy = snapped.y;
+                            }
+                            pt.handleOut = { x: hx, y: hy };
+                            pt.handleIn = { x: pt.x * 2 - hx, y: pt.y * 2 - hy };
                         } else if (this._penDragType === 'handleIn') {
-                            pt.handleIn = { x, y };
-                            pt.handleOut = { x: pt.x * 2 - x, y: pt.y * 2 - y };
+                            let hx = x, hy = y;
+                            if (e.shiftKey) {
+                                const snapped = this._penSnap45(pt.x, pt.y, x, y);
+                                hx = snapped.x;
+                                hy = snapped.y;
+                            }
+                            pt.handleIn = { x: hx, y: hy };
+                            pt.handleOut = { x: pt.x * 2 - hx, y: pt.y * 2 - hy };
                         } else if (this._penDragType === 'point') {
                             const dx = x - this._penDragStart.x;
                             const dy = y - this._penDragStart.y;
@@ -7265,6 +7681,53 @@
                     this._penDragIdx = -1;
                     this._penDragType = null;
                     this._penDragStart = null;
+                    return;
+                }
+                
+                // Gradient tool: finalize drag → enter edit mode
+                if (this.tool === 'gradient' && this.isDrawing) {
+                    this.isDrawing = false;
+                    
+                    // Edit mode: releasing an endpoint drag
+                    if (this._gradientEdit && this._gradientEdit.dragging) {
+                        this._gradientEdit.dragging = null;
+                        this.canvas.style.cursor = 'crosshair';
+                        this.selectionCanvas.style.cursor = 'crosshair';
+                        this.renderCanvasOnly();
+                        return;
+                    }
+                    
+                    if (this._gradientDrag) {
+                        const drag = this._gradientDrag;
+                        const s = drag.startLocal;
+                        const end = drag.endLocal;
+                        this._gradientDrag = null;
+                        
+                        const dist = Math.hypot(end.x - s.x, end.y - s.y);
+                        
+                        if (dist < 3) {
+                            // Short click — replay stored gradient if available
+                            this._gradientMaskCache = null;
+                            if (this.gradientDef) {
+                                this.gradientFill(Math.floor(s.x), Math.floor(s.y), this.gradientDef);
+                            }
+                            this.renderCanvasOnly();
+                            return;
+                        }
+                        
+                        // Enter gradient edit mode
+                        this._gradientEdit = {
+                            startLocal: { ...s },
+                            endLocal: { ...end },
+                            originX: drag.originX,
+                            originY: drag.originY,
+                            dragging: null,
+                            frameIndex: this.currentFrameIndex,
+                            layerId: this.currentLayerId,
+                        };
+                        this.renderCanvasOnly();
+                        return;
+                    }
                     return;
                 }
                 
@@ -7802,13 +8265,20 @@
                 if (this._penMousePos && this._penDragIdx < 0 && points.length >= 1) {
                     const last = points[points.length - 1];
                     const first = points[0];
-                    const distLast = Math.hypot(this._penMousePos.x - last.x, this._penMousePos.y - last.y);
+                    
+                    // Shift: snap preview target to 45° from last point
+                    let mouseTarget = this._penMousePos;
+                    if (this._penShiftHeld && points.length >= 1) {
+                        mouseTarget = this._penSnap45(last.x, last.y, this._penMousePos.x, this._penMousePos.y);
+                    }
+                    
+                    const distLast = Math.hypot(mouseTarget.x - last.x, mouseTarget.y - last.y);
                     const distFirst = points.length >= 2 ? Math.hypot(this._penMousePos.x - first.x, this._penMousePos.y - first.y) : Infinity;
                     const hitR = 10 * (this.canvas.width / this.canvas.getBoundingClientRect().width);
                     
                     if (distLast > hitR) {
                         // Near first point: show closing segment snapped to first point
-                        const target = (distFirst < hitR) ? first : this._penMousePos;
+                        const target = (distFirst < hitR) ? first : mouseTarget;
                         const cp1 = last.handleOut || last;
                         const cp2 = (distFirst < hitR && first.handleIn) ? first.handleIn : target;
                         if (cp1 === last && cp2 === target) {
@@ -7898,6 +8368,23 @@
                         this.ctx.restore();
                     }
                 }
+            }
+            
+            // Snap a point to the nearest 45° angle relative to a reference point
+            // Returns { x, y } snapped position
+            _penSnap45(fromX, fromY, toX, toY) {
+                const dx = toX - fromX;
+                const dy = toY - fromY;
+                const dist = Math.hypot(dx, dy);
+                if (dist < 1) return { x: toX, y: toY };
+                
+                const angle = Math.atan2(dy, dx);
+                // Snap to nearest 45° (π/4) increment
+                const snapped = Math.round(angle / (Math.PI / 4)) * (Math.PI / 4);
+                return {
+                    x: fromX + Math.cos(snapped) * dist,
+                    y: fromY + Math.sin(snapped) * dist,
+                };
             }
             
             _penFinalize(close) {
@@ -10244,6 +10731,649 @@
                 this._scrollTimelineToFrame(this.currentFrameIndex);
             }
             
+            // Update the gradient swatch preview
+            _updateGradientSwatch() {
+                const swatch = document.getElementById('gradientSwatch');
+                if (!swatch) return;
+                const cA = this.color;
+                const cB = this.colorB;
+                if (this.gradientType === 'linear') {
+                    swatch.style.background = `linear-gradient(to right, ${cA}, ${cB})`;
+                } else {
+                    swatch.style.background = `radial-gradient(circle, ${cA}, ${cB})`;
+                }
+                // Sync stored state
+                swatch.classList.toggle('has-gradient', this.gradientDef !== null);
+            }
+            
+            // Master UI sync — call whenever gradientDef, tool, or colors change
+            _syncGradientUI() {
+                const colorWrap = document.getElementById('colorPickersWrap');
+                const swatch = document.getElementById('gradientSwatch');
+                const fillBtn = document.getElementById('fillTool');
+                const hasStored = this.gradientDef !== null;
+                const isGradTool = this.tool === 'gradient';
+                
+                // gradient-active: show full controls (pickers, swap, type toggle)
+                colorWrap.classList.toggle('gradient-active', isGradTool);
+                
+                // gradient-stored: show just the swatch even when not on gradient tool
+                colorWrap.classList.toggle('gradient-stored', hasStored && !isGradTool);
+                
+                // Badge on fill tool button
+                fillBtn.classList.toggle('has-stored-gradient', hasStored);
+                
+                // Swatch state
+                this._updateGradientSwatch();
+                
+                // Update fill tool tooltip
+                if (hasStored) {
+                    fillBtn.title = 'Fill with stored gradient (F)';
+                } else {
+                    fillBtn.title = 'Paint Bucket (K / F)';
+                }
+            }
+            
+            // Draw gradient preview line on the canvas during drag
+            _drawGradientPreview() {
+                if (!this._gradientDrag) return;
+                const drag = this._gradientDrag;
+                const s = drag.startLocal;
+                const end = drag.endLocal;
+                
+                // Render the live gradient fill preview into the mask region
+                // Only if mask matches current frame context
+                const dist = Math.hypot(end.x - s.x, end.y - s.y);
+                if (dist > 3 && this._gradientMaskCache) {
+                    this._renderGradientMaskPreview(s, end);
+                }
+                
+                // Convert frame-local coords to canvas (screen) coords
+                const sx = s.x + drag.originX - this.viewportX;
+                const sy = s.y + drag.originY - this.viewportY;
+                const ex = end.x + drag.originX - this.viewportX;
+                const ey = end.y + drag.originY - this.viewportY;
+                
+                const ctx = this.ctx;
+                ctx.save();
+                
+                // Draw the gradient line
+                ctx.beginPath();
+                ctx.moveTo(sx, sy);
+                ctx.lineTo(ex, ey);
+                ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([6, 4]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // Draw color A circle at start
+                ctx.beginPath();
+                ctx.arc(sx, sy, 8, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Draw color B circle at end
+                ctx.beginPath();
+                ctx.arc(ex, ey, 8, 0, Math.PI * 2);
+                ctx.fillStyle = this.colorB;
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Draw a small gradient preview rectangle along the midpoint
+                const mx = (sx + ex) / 2;
+                const my = (sy + ey) / 2;
+                const angle = Math.atan2(ey - sy, ex - sx);
+                const previewW = Math.min(60, Math.hypot(ex - sx, ey - sy) * 0.5);
+                const previewH = 12;
+                
+                if (previewW > 10) {
+                    ctx.save();
+                    ctx.translate(mx, my);
+                    ctx.rotate(angle);
+                    
+                    // Create gradient for the preview bar
+                    const pg = ctx.createLinearGradient(-previewW / 2, 0, previewW / 2, 0);
+                    pg.addColorStop(0, this.color);
+                    pg.addColorStop(1, this.colorB);
+                    
+                    ctx.fillStyle = pg;
+                    ctx.beginPath();
+                    const r = 4;
+                    ctx.roundRect(-previewW / 2, -previewH / 2, previewW, previewH, r);
+                    ctx.fill();
+                    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    ctx.restore();
+                }
+                
+                ctx.restore();
+            }
+            
+            // Draw the gradient edit mode overlay — shows handles, line, and gradient preview
+            _drawGradientEditPreview() {
+                if (!this._gradientEdit) return;
+                // Only show on the frame/layer where the gradient was started
+                if (this._gradientEdit.frameIndex !== this.currentFrameIndex ||
+                    this._gradientEdit.layerId !== this.currentLayerId) return;
+                const edit = this._gradientEdit;
+                const s = edit.startLocal;
+                const end = edit.endLocal;
+                
+                // Render the live gradient fill preview into the mask region
+                this._renderGradientMaskPreview(s, end);
+                
+                // Convert frame-local to canvas coords
+                const sx = s.x + edit.originX - this.viewportX;
+                const sy = s.y + edit.originY - this.viewportY;
+                const ex = end.x + edit.originX - this.viewportX;
+                const ey = end.y + edit.originY - this.viewportY;
+                
+                const ctx = this.ctx;
+                ctx.save();
+                
+                const mx = (sx + ex) / 2;
+                const my = (sy + ey) / 2;
+                
+                // Gradient line
+                ctx.beginPath();
+                ctx.moveTo(sx, sy);
+                ctx.lineTo(ex, ey);
+                ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([6, 4]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // Shadow line underneath for contrast
+                ctx.beginPath();
+                ctx.moveTo(sx, sy);
+                ctx.lineTo(ex, ey);
+                ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+                ctx.lineWidth = 4;
+                ctx.setLineDash([6, 4]);
+                ctx.lineDashOffset = 3;
+                ctx.stroke();
+                ctx.setLineDash([]);
+                ctx.lineDashOffset = 0;
+                
+                // Color A handle (start) — larger, with label
+                const handleRadius = 10;
+                ctx.beginPath();
+                ctx.arc(sx, sy, handleRadius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+                ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                
+                // "A" label
+                ctx.fillStyle = '#fff';
+                ctx.font = 'bold 9px system-ui, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                // Check luminance to pick label color
+                const aRgb = this.hexToRgb(this.color);
+                const aLum = (aRgb.r * 299 + aRgb.g * 587 + aRgb.b * 114) / 1000;
+                ctx.fillStyle = aLum > 128 ? '#000' : '#fff';
+                ctx.fillText('A', sx, sy);
+                
+                // Color B handle (end)
+                ctx.beginPath();
+                ctx.arc(ex, ey, handleRadius, 0, Math.PI * 2);
+                ctx.fillStyle = this.colorB;
+                ctx.fill();
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+                ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+                
+                // "B" label
+                const bRgb = this.hexToRgb(this.colorB);
+                const bLum = (bRgb.r * 299 + bRgb.g * 587 + bRgb.b * 114) / 1000;
+                ctx.fillStyle = bLum > 128 ? '#000' : '#fff';
+                ctx.font = 'bold 9px system-ui, sans-serif';
+                ctx.fillText('B', ex, ey);
+                
+                // Gradient preview bar at midpoint
+                const angle = Math.atan2(ey - sy, ex - sx);
+                const previewW = Math.min(80, Math.hypot(ex - sx, ey - sy) * 0.6);
+                const previewH = 14;
+                
+                if (previewW > 15) {
+                    ctx.save();
+                    ctx.translate(mx, my);
+                    ctx.rotate(angle);
+                    
+                    let pg;
+                    if (this.gradientType === 'radial') {
+                        pg = ctx.createRadialGradient(0, 0, 0, 0, 0, previewW / 2);
+                    } else {
+                        pg = ctx.createLinearGradient(-previewW / 2, 0, previewW / 2, 0);
+                    }
+                    pg.addColorStop(0, this.color);
+                    pg.addColorStop(1, this.colorB);
+                    
+                    ctx.fillStyle = pg;
+                    ctx.beginPath();
+                    ctx.roundRect(-previewW / 2, -previewH / 2, previewW, previewH, 5);
+                    ctx.fill();
+                    ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                    ctx.restore();
+                }
+                
+                // Hint text
+                ctx.fillStyle = 'rgba(255,255,255,0.55)';
+                ctx.font = '11px system-ui, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                const hintY = Math.max(sy, ey) + 24;
+                ctx.fillText('Drag handles to adjust · Enter to apply · Esc to cancel', mx, hintY);
+                
+                ctx.restore();
+            }
+            
+            // Finalize the gradient edit — apply the fill
+            _finalizeGradient() {
+                if (!this._gradientEdit) return;
+                const edit = this._gradientEdit;
+                
+                const gradDef = {
+                    type: this.gradientType,
+                    colorA: this.color,
+                    colorB: this.colorB,
+                    x0: edit.startLocal.x,
+                    y0: edit.startLocal.y,
+                    x1: edit.endLocal.x,
+                    y1: edit.endLocal.y,
+                };
+                
+                this._gradientEdit = null;
+                this._gradientMaskCache = null;
+                this.gradientFill(Math.floor(gradDef.x0), Math.floor(gradDef.y0), gradDef);
+            }
+            
+            // Cancel the gradient edit — discard without filling
+            _cancelGradient() {
+                if (!this._gradientEdit) return;
+                this._gradientEdit = null;
+                this._gradientMaskCache = null;
+                this.renderCanvasOnly();
+            }
+            
+            // Refresh the gradient edit preview (call when colors or type change during edit)
+            _refreshGradientEdit() {
+                if (!this._gradientEdit) return;
+                this.renderCanvasOnly();
+            }
+            
+            // Compute the fill mask for gradient preview — same neighbor-walk as gradientFill
+            // Returns { mask: Uint8Array, width, height, originX, originY } or null
+            _computeGradientMask(frame, startX, startY) {
+                const width = frame.width;
+                const height = frame.height;
+                if (startX < 0 || startX >= width || startY < 0 || startY >= height) return null;
+                
+                const imageData = frame.getContext('2d').getImageData(0, 0, width, height);
+                const data = imageData.data;
+                const startPos = (startY * width + startX) * 4;
+                
+                if (data[startPos + 3] < 5) {
+                    // Clicked on transparent — do a simple transparent-region fill
+                    const visited = new Uint8Array(width * height);
+                    const startIdx = startX + startY * width;
+                    const stack = [startIdx];
+                    visited[startIdx] = 1;
+                    while (stack.length > 0) {
+                        const idx = stack.pop();
+                        const cx = idx % width;
+                        const cy = (idx - cx) / width;
+                        const neighbors = [];
+                        if (cx > 0) neighbors.push(idx - 1);
+                        if (cx < width - 1) neighbors.push(idx + 1);
+                        if (cy > 0) neighbors.push(idx - width);
+                        if (cy < height - 1) neighbors.push(idx + width);
+                        for (const nIdx of neighbors) {
+                            if (visited[nIdx]) continue;
+                            if (data[nIdx * 4 + 3] < 30) {
+                                visited[nIdx] = 1;
+                                stack.push(nIdx);
+                            }
+                        }
+                    }
+                    // Expand by 3px
+                    const expanded = new Uint8Array(visited);
+                    for (let pass = 0; pass < 3; pass++) {
+                        const src = new Uint8Array(expanded);
+                        for (let y = 0; y < height; y++) {
+                            for (let x = 0; x < width; x++) {
+                                const idx = y * width + x;
+                                if (src[idx]) continue;
+                                if ((x > 0 && src[idx - 1]) || (x < width - 1 && src[idx + 1]) ||
+                                    (y > 0 && src[idx - width]) || (y < height - 1 && src[idx + width])) {
+                                    expanded[idx] = 1;
+                                }
+                            }
+                        }
+                    }
+                    return { mask: expanded, width, height, originX: frame._originX || 0, originY: frame._originY || 0 };
+                }
+                
+                const stepTolerance = 32;
+                const visited = new Uint8Array(width * height);
+                const startIdx = startX + startY * width;
+                const stack = [startIdx];
+                visited[startIdx] = 1;
+                
+                while (stack.length > 0) {
+                    const idx = stack.pop();
+                    const cx = idx % width;
+                    const cy = (idx - cx) / width;
+                    const cPos = idx * 4;
+                    const cR = data[cPos], cG = data[cPos + 1], cB = data[cPos + 2], cA = data[cPos + 3];
+                    
+                    const neighbors = [];
+                    if (cx > 0) neighbors.push(idx - 1);
+                    if (cx < width - 1) neighbors.push(idx + 1);
+                    if (cy > 0) neighbors.push(idx - width);
+                    if (cy < height - 1) neighbors.push(idx + width);
+                    
+                    for (const nIdx of neighbors) {
+                        if (visited[nIdx]) continue;
+                        const nPos = nIdx * 4;
+                        const nA = data[nPos + 3];
+                        if (nA < 30 && cA < 30) { visited[nIdx] = 1; stack.push(nIdx); continue; }
+                        if (nA < 30 || cA < 30) continue;
+                        if (Math.abs(data[nPos] - cR) <= stepTolerance &&
+                            Math.abs(data[nPos + 1] - cG) <= stepTolerance &&
+                            Math.abs(data[nPos + 2] - cB) <= stepTolerance &&
+                            Math.abs(nA - cA) <= stepTolerance) {
+                            visited[nIdx] = 1;
+                            stack.push(nIdx);
+                        }
+                    }
+                }
+                
+                // Expand by 3px
+                const expanded = new Uint8Array(visited);
+                for (let pass = 0; pass < 3; pass++) {
+                    const src = new Uint8Array(expanded);
+                    for (let y = 0; y < height; y++) {
+                        for (let x = 0; x < width; x++) {
+                            const idx = y * width + x;
+                            if (src[idx]) continue;
+                            if ((x > 0 && src[idx - 1]) || (x < width - 1 && src[idx + 1]) ||
+                                (y > 0 && src[idx - width]) || (y < height - 1 && src[idx + width])) {
+                                expanded[idx] = 1;
+                            }
+                        }
+                    }
+                }
+                
+                return { mask: expanded, width, height, originX: frame._originX || 0, originY: frame._originY || 0 };
+            }
+            
+            // Render a live gradient preview into the cached mask region on the display canvas
+            _renderGradientMaskPreview(startLocal, endLocal) {
+                const mc = this._gradientMaskCache;
+                if (!mc) return;
+                
+                // Only render on the exact frame where the mask was computed
+                if (mc.frameIndex !== this.currentFrameIndex || 
+                    mc.layerId !== this.currentLayerId) return;
+                
+                // Build a temporary canvas with the gradient masked to the fill region
+                const tmp = document.createElement('canvas');
+                tmp.width = mc.width;
+                tmp.height = mc.height;
+                const tCtx = tmp.getContext('2d');
+                
+                // Draw gradient onto temp canvas
+                let grad;
+                if (this.gradientType === 'radial') {
+                    const radius = Math.max(1, Math.hypot(endLocal.x - startLocal.x, endLocal.y - startLocal.y));
+                    grad = tCtx.createRadialGradient(startLocal.x, startLocal.y, 0, startLocal.x, startLocal.y, radius);
+                } else {
+                    grad = tCtx.createLinearGradient(startLocal.x, startLocal.y, endLocal.x, endLocal.y);
+                }
+                grad.addColorStop(0, this.color);
+                grad.addColorStop(1, this.colorB);
+                tCtx.fillStyle = grad;
+                tCtx.fillRect(0, 0, mc.width, mc.height);
+                
+                // Mask: zero out alpha outside the fill region
+                const imgData = tCtx.getImageData(0, 0, mc.width, mc.height);
+                const d = imgData.data;
+                for (let i = 0; i < mc.width * mc.height; i++) {
+                    if (!mc.mask[i]) {
+                        d[i * 4 + 3] = 0;
+                    }
+                    // Full opacity inside mask — no more 85% reduction
+                }
+                tCtx.putImageData(imgData, 0, 0);
+                
+                // Draw onto the main display canvas at the frame's position
+                const drawX = mc.originX - this.viewportX;
+                const drawY = mc.originY - this.viewportY;
+                this.ctx.drawImage(tmp, drawX, drawY);
+            }
+            gradientFill(startX, startY, gradDef) {
+                // Flush any pending async saveState from a previous brush stroke
+                if (this._pendingSaveTimer) {
+                    clearTimeout(this._pendingSaveTimer);
+                    this._pendingSaveTimer = null;
+                    if (this._pendingSnapshot) {
+                        this._pushUndo(this._pendingSnapshot);
+                        this._pendingSnapshot = null;
+                    } else {
+                        this.saveState();
+                    }
+                }
+                
+                const layer = this.getCurrentLayer();
+                const frame = layer.frames[this.currentFrameIndex];
+                const frameCtx = frame.getContext('2d');
+                const width = frame.width;
+                const height = frame.height;
+                
+                const imageData = frameCtx.getImageData(0, 0, width, height);
+                const data = imageData.data;
+                
+                if (startX < 0 || startX >= width || startY < 0 || startY >= height) return;
+                
+                const startPos = (startY * width + startX) * 4;
+                const targetR = data[startPos];
+                const targetG = data[startPos + 1];
+                const targetB = data[startPos + 2];
+                const targetA = data[startPos + 3];
+                
+                this.saveState();
+                
+                const stepTolerance = 32; // per-neighbor step tolerance (captures smooth gradients)
+                
+                // === PASS 1: Neighbor-walk flood fill → build region mask ===
+                // Unlike solid fill, we compare each pixel to its NEIGHBOR, not the start pixel.
+                // This naturally follows gradients since each step is a small color change.
+                const visited = new Uint8Array(width * height);
+                
+                const startIdx = startX + startY * width;
+                const stack = [startIdx];
+                visited[startIdx] = 1;
+                let filledCount = 1;
+                
+                while (stack.length > 0) {
+                    const idx = stack.pop();
+                    const cx = idx % width;
+                    const cy = (idx - cx) / width;
+                    const cPos = idx * 4;
+                    const cR = data[cPos], cG = data[cPos + 1], cB = data[cPos + 2], cA = data[cPos + 3];
+                    
+                    const neighbors = [];
+                    if (cx > 0) neighbors.push(idx - 1);
+                    if (cx < width - 1) neighbors.push(idx + 1);
+                    if (cy > 0) neighbors.push(idx - width);
+                    if (cy < height - 1) neighbors.push(idx + width);
+                    
+                    for (const nIdx of neighbors) {
+                        if (visited[nIdx]) continue;
+                        const nPos = nIdx * 4;
+                        const nA = data[nPos + 3];
+                        
+                        // Both transparent — include (interior transparent)
+                        if (nA < 30 && cA < 30) {
+                            visited[nIdx] = 1;
+                            filledCount++;
+                            stack.push(nIdx);
+                            continue;
+                        }
+                        // One transparent = edge boundary
+                        if (nA < 30 || cA < 30) continue;
+                        
+                        // Compare neighbor to current pixel (not start pixel)
+                        if (Math.abs(data[nPos] - cR) <= stepTolerance &&
+                            Math.abs(data[nPos + 1] - cG) <= stepTolerance &&
+                            Math.abs(data[nPos + 2] - cB) <= stepTolerance &&
+                            Math.abs(nA - cA) <= stepTolerance) {
+                            visited[nIdx] = 1;
+                            filledCount++;
+                            stack.push(nIdx);
+                        }
+                    }
+                }
+                
+                if (filledCount === 0) return;
+                
+                // === PASS 2: Expand fill mask by 3px ===
+                const expanded = new Uint8Array(visited);
+                for (let pass = 0; pass < 3; pass++) {
+                    const src = new Uint8Array(expanded);
+                    for (let y = 0; y < height; y++) {
+                        for (let x = 0; x < width; x++) {
+                            const idx = y * width + x;
+                            if (src[idx]) continue;
+                            if ((x > 0 && src[idx - 1]) ||
+                                (x < width - 1 && src[idx + 1]) ||
+                                (y > 0 && src[idx - width]) ||
+                                (y < height - 1 && src[idx + width])) {
+                                expanded[idx] = 1;
+                            }
+                        }
+                    }
+                }
+                
+                // === PASS 3a: Strip old fill from the region ===
+                // Pixels inside the neighbor-walk region are fill — clear them.
+                // Pixels in the expanded fringe but NOT visited are edge-bleed —
+                // preserve anything that looks like linework (high contrast from its neighbors).
+                for (let i = 0; i < width * height; i++) {
+                    if (!expanded[i]) continue;
+                    const pos = i * 4;
+                    const a = data[pos + 3];
+                    if (a === 0) continue;
+                    
+                    if (visited[i]) {
+                        // Inside the walked region → clear it for new gradient
+                        data[pos + 3] = 0;
+                    } else {
+                        // Edge fringe — check if this pixel is close to a visited neighbor
+                        // If so, it's fill bleed → strip. If not, it's linework → keep.
+                        const px = i % width;
+                        const py = (i - px) / width;
+                        let nearestVisitedDiff = 999;
+                        const offsets = [
+                            px > 0 ? i - 1 : -1,
+                            px < width - 1 ? i + 1 : -1,
+                            py > 0 ? i - width : -1,
+                            py < height - 1 ? i + width : -1,
+                        ];
+                        for (const ni of offsets) {
+                            if (ni < 0 || !visited[ni]) continue;
+                            const np = ni * 4;
+                            if (data[np + 3] === 0) continue; // already cleared
+                            const d = Math.max(
+                                Math.abs(data[pos] - data[np]),
+                                Math.abs(data[pos + 1] - data[np + 1]),
+                                Math.abs(data[pos + 2] - data[np + 2])
+                            );
+                            nearestVisitedDiff = Math.min(nearestVisitedDiff, d);
+                        }
+                        if (nearestVisitedDiff < 60) {
+                            // Close to fill color → strip with soft fade
+                            const fade = nearestVisitedDiff / 60;
+                            data[pos + 3] = Math.round(a * fade);
+                        }
+                        // Otherwise keep as-is (linework)
+                    }
+                }
+                
+                // === PASS 3b: Paint gradient into fill region ===
+                // Create full-canvas gradient, then mask to the expanded region
+                const fillLayer = document.createElement('canvas');
+                fillLayer.width = width;
+                fillLayer.height = height;
+                const fillLayerCtx = fillLayer.getContext('2d');
+                
+                // Build the CanvasGradient
+                let canvasGrad;
+                if (gradDef.type === 'radial') {
+                    const cx = gradDef.x0;
+                    const cy = gradDef.y0;
+                    const radius = Math.hypot(gradDef.x1 - gradDef.x0, gradDef.y1 - gradDef.y0);
+                    canvasGrad = fillLayerCtx.createRadialGradient(cx, cy, 0, cx, cy, Math.max(1, radius));
+                } else {
+                    canvasGrad = fillLayerCtx.createLinearGradient(gradDef.x0, gradDef.y0, gradDef.x1, gradDef.y1);
+                }
+                canvasGrad.addColorStop(0, gradDef.colorA);
+                canvasGrad.addColorStop(1, gradDef.colorB);
+                
+                // Fill entire canvas with gradient
+                fillLayerCtx.fillStyle = canvasGrad;
+                fillLayerCtx.fillRect(0, 0, width, height);
+                
+                // Mask: zero alpha outside expanded region
+                const gradImgData = fillLayerCtx.getImageData(0, 0, width, height);
+                const gd = gradImgData.data;
+                for (let i = 0; i < width * height; i++) {
+                    if (!expanded[i]) {
+                        gd[i * 4 + 3] = 0;
+                    }
+                }
+                fillLayerCtx.putImageData(gradImgData, 0, 0);
+                
+                // Put the stripped original into a temp canvas
+                const strippedCanvas = document.createElement('canvas');
+                strippedCanvas.width = width;
+                strippedCanvas.height = height;
+                const strippedCtx = strippedCanvas.getContext('2d');
+                strippedCtx.putImageData(imageData, 0, 0);
+                
+                // Composite: gradient fill on bottom, stripped original on top
+                frameCtx.clearRect(0, 0, width, height);
+                frameCtx.drawImage(fillLayer, 0, 0);
+                frameCtx.drawImage(strippedCanvas, 0, 0);
+                
+                // Store the gradient def so it can be replayed
+                this.gradientDef = { ...gradDef };
+                this._syncGradientUI();
+                
+                this._dirtyThumb(frame);
+                this._invalidateCompositeCache();
+                this.render();
+            }
+            
             // Eyedropper — sample composited pixel color from the display canvas
             _pickColor(e) {
                 const canvas = e.target === this.selectionCanvas ? this.selectionCanvas : this.canvas;
@@ -10263,6 +11393,49 @@
                 this.color = hex;
                 document.getElementById('colorPicker').value = hex;
                 
+                // Now try to detect a gradient in the connected region
+                const layer = this.getCurrentLayer();
+                const frame = layer.frames[this.currentFrameIndex];
+                if (frame) {
+                    // Convert screen to frame-local coords
+                    const worldX = px + this.viewportX;
+                    const worldY = py + this.viewportY;
+                    const local = this.worldToLocal(worldX, worldY, frame);
+                    const lx = Math.floor(local.x);
+                    const ly = Math.floor(local.y);
+                    
+                    const detected = this._detectGradient(frame, lx, ly);
+                    if (detected) {
+                        // Set both colors and store gradient def
+                        this.color = detected.colorA;
+                        this.colorB = detected.colorB;
+                        this.gradientType = detected.type;
+                        this.gradientDef = detected;
+                        document.getElementById('colorPicker').value = detected.colorA;
+                        document.getElementById('colorPickerB').value = detected.colorB;
+                        document.querySelectorAll('.grad-type-btn').forEach(b => {
+                            b.classList.toggle('active', b.dataset.gradtype === detected.type);
+                        });
+                        
+                        // Sync all gradient UI state
+                        this._syncGradientUI();
+                        
+                        // Flash the gradient swatch to confirm gradient pick
+                        const swatch = document.getElementById('gradientSwatch');
+                        swatch.style.transition = 'box-shadow 0.15s';
+                        swatch.style.boxShadow = '0 0 0 3px rgba(106,173,255,0.7), 0 0 12px rgba(106,173,255,0.4)';
+                        setTimeout(() => {
+                            swatch.style.boxShadow = '';
+                            setTimeout(() => { swatch.style.transition = ''; }, 200);
+                        }, 500);
+                        return;
+                    }
+                }
+                
+                // No gradient detected — clear any stored gradient, show solid color feedback
+                this.gradientDef = null;
+                this._syncGradientUI();
+                
                 // Brief visual flash on the color picker to confirm the pick
                 const cp = document.getElementById('colorPicker');
                 cp.style.transition = 'box-shadow 0.15s';
@@ -10271,6 +11444,243 @@
                     cp.style.boxShadow = '';
                     setTimeout(() => { cp.style.transition = ''; }, 200);
                 }, 300);
+            }
+            
+            // Detect if a region contains a gradient. Returns a gradientDef or null.
+            _detectGradient(frame, startX, startY) {
+                const frameCtx = frame.getContext('2d');
+                const width = frame.width;
+                const height = frame.height;
+                
+                if (startX < 0 || startX >= width || startY < 0 || startY >= height) return null;
+                
+                const imageData = frameCtx.getImageData(0, 0, width, height);
+                const data = imageData.data;
+                
+                const startPos = (startY * width + startX) * 4;
+                const targetR = data[startPos];
+                const targetG = data[startPos + 1];
+                const targetB = data[startPos + 2];
+                const targetA = data[startPos + 3];
+                
+                if (targetA < 30) return null;
+                
+                // Relaxed flood fill to find the gradient region (higher tolerance)
+                const tolerance = 120;
+                const visited = new Uint8Array(width * height);
+                
+                const colorMatch = (idx) => {
+                    const pos = idx * 4;
+                    const a = data[pos + 3];
+                    if (a < 30) return false; // Don't include transparent pixels
+                    return Math.abs(data[pos] - targetR) <= tolerance &&
+                           Math.abs(data[pos + 1] - targetG) <= tolerance &&
+                           Math.abs(data[pos + 2] - targetB) <= tolerance &&
+                           Math.abs(a - targetA) <= tolerance;
+                };
+                
+                const stack = [startX + startY * width];
+                let minX = startX, maxX = startX, minY = startY, maxY = startY;
+                let count = 0;
+                
+                while (stack.length > 0) {
+                    let idx = stack.pop();
+                    let x = idx % width;
+                    const y = (idx - x) / width;
+                    
+                    while (x > 0 && !visited[idx - 1] && colorMatch(idx - 1)) { x--; idx--; }
+                    
+                    let spanAbove = false, spanBelow = false;
+                    
+                    while (x < width && !visited[idx] && colorMatch(idx)) {
+                        visited[idx] = 1;
+                        count++;
+                        if (x < minX) minX = x;
+                        if (x > maxX) maxX = x;
+                        if (y < minY) minY = y;
+                        if (y > maxY) maxY = y;
+                        
+                        if (y > 0) {
+                            const aboveIdx = idx - width;
+                            if (!visited[aboveIdx] && colorMatch(aboveIdx)) {
+                                if (!spanAbove) { stack.push(aboveIdx); spanAbove = true; }
+                            } else { spanAbove = false; }
+                        }
+                        if (y < height - 1) {
+                            const belowIdx = idx + width;
+                            if (!visited[belowIdx] && colorMatch(belowIdx)) {
+                                if (!spanBelow) { stack.push(belowIdx); spanBelow = true; }
+                            } else { spanBelow = false; }
+                        }
+                        x++; idx++;
+                    }
+                }
+                
+                // Too small a region — no gradient
+                if (count < 50) return null;
+                
+                const regionW = maxX - minX;
+                const regionH = maxY - minY;
+                if (regionW < 4 && regionH < 4) return null;
+                
+                // Sample colors along multiple axes through the region center
+                const cx = Math.floor((minX + maxX) / 2);
+                const cy = Math.floor((minY + maxY) / 2);
+                
+                // Helper: sample average color at a point (3x3 area)
+                const sampleColor = (sx, sy) => {
+                    let rr = 0, gg = 0, bb = 0, n = 0;
+                    for (let dy = -1; dy <= 1; dy++) {
+                        for (let dx = -1; dx <= 1; dx++) {
+                            const xx = sx + dx, yy = sy + dy;
+                            if (xx < 0 || xx >= width || yy < 0 || yy >= height) continue;
+                            const idx = yy * width + xx;
+                            if (!visited[idx]) continue;
+                            const pos = idx * 4;
+                            if (data[pos + 3] < 30) continue;
+                            rr += data[pos]; gg += data[pos + 1]; bb += data[pos + 2]; n++;
+                        }
+                    }
+                    if (n === 0) return null;
+                    return { r: Math.round(rr / n), g: Math.round(gg / n), b: Math.round(bb / n) };
+                };
+                
+                // Sample along an axis: returns { variance, startColor, endColor, x0, y0, x1, y1 }
+                const sampleAxis = (x0, y0, x1, y1) => {
+                    const steps = 10;
+                    const colors = [];
+                    let firstColor = null, lastColor = null;
+                    let firstX = x0, firstY = y0, lastX = x1, lastY = y1;
+                    
+                    for (let s = 0; s <= steps; s++) {
+                        const t = s / steps;
+                        const sx = Math.floor(x0 + (x1 - x0) * t);
+                        const sy = Math.floor(y0 + (y1 - y0) * t);
+                        const c = sampleColor(sx, sy);
+                        if (c) {
+                            colors.push(c);
+                            if (!firstColor) { firstColor = c; firstX = sx; firstY = sy; }
+                            lastColor = c; lastX = sx; lastY = sy;
+                        }
+                    }
+                    
+                    if (colors.length < 3 || !firstColor || !lastColor) {
+                        return { variance: 0, startColor: null, endColor: null };
+                    }
+                    
+                    // Calculate color variance along the axis
+                    const avgR = colors.reduce((s, c) => s + c.r, 0) / colors.length;
+                    const avgG = colors.reduce((s, c) => s + c.g, 0) / colors.length;
+                    const avgB = colors.reduce((s, c) => s + c.b, 0) / colors.length;
+                    const variance = colors.reduce((s, c) => {
+                        return s + (c.r - avgR) ** 2 + (c.g - avgG) ** 2 + (c.b - avgB) ** 2;
+                    }, 0) / colors.length;
+                    
+                    return {
+                        variance,
+                        startColor: firstColor,
+                        endColor: lastColor,
+                        x0: firstX, y0: firstY,
+                        x1: lastX, y1: lastY,
+                    };
+                };
+                
+                // Test multiple axes through the region
+                const pad = 3; // Slight inset so we sample inside region edges
+                const axes = [
+                    // Horizontal
+                    sampleAxis(minX + pad, cy, maxX - pad, cy),
+                    // Vertical
+                    sampleAxis(cx, minY + pad, cx, maxY - pad),
+                    // Diagonal TL → BR
+                    sampleAxis(minX + pad, minY + pad, maxX - pad, maxY - pad),
+                    // Diagonal TR → BL
+                    sampleAxis(maxX - pad, minY + pad, minX + pad, maxY - pad),
+                ];
+                
+                // Also check for radial: center vs edges
+                const centerColor = sampleColor(cx, cy);
+                let radialVariance = 0;
+                let edgeColors = [];
+                if (centerColor) {
+                    const edgePoints = [
+                        sampleColor(minX + pad, cy),
+                        sampleColor(maxX - pad, cy),
+                        sampleColor(cx, minY + pad),
+                        sampleColor(cx, maxY - pad),
+                    ].filter(Boolean);
+                    
+                    if (edgePoints.length >= 2) {
+                        // Check if edges are similar to each other but different from center
+                        const edgeAvgR = edgePoints.reduce((s, c) => s + c.r, 0) / edgePoints.length;
+                        const edgeAvgG = edgePoints.reduce((s, c) => s + c.g, 0) / edgePoints.length;
+                        const edgeAvgB = edgePoints.reduce((s, c) => s + c.b, 0) / edgePoints.length;
+                        
+                        const centerEdgeDiff = Math.sqrt(
+                            (centerColor.r - edgeAvgR) ** 2 +
+                            (centerColor.g - edgeAvgG) ** 2 +
+                            (centerColor.b - edgeAvgB) ** 2
+                        );
+                        
+                        // Edge consistency: low variance among edges = likely radial
+                        const edgeVariance = edgePoints.reduce((s, c) => {
+                            return s + (c.r - edgeAvgR) ** 2 + (c.g - edgeAvgG) ** 2 + (c.b - edgeAvgB) ** 2;
+                        }, 0) / edgePoints.length;
+                        
+                        if (edgeVariance < 400 && centerEdgeDiff > 25) {
+                            radialVariance = centerEdgeDiff * centerEdgeDiff;
+                            edgeColors = edgePoints;
+                        }
+                    }
+                }
+                
+                // Find axis with highest variance
+                let bestAxis = axes[0];
+                for (const ax of axes) {
+                    if (ax.variance > bestAxis.variance) bestAxis = ax;
+                }
+                
+                // Minimum variance threshold to consider it a gradient
+                const minVariance = 150;
+                
+                // Check radial vs linear
+                if (radialVariance > bestAxis.variance && radialVariance > minVariance && centerColor) {
+                    // Radial gradient detected
+                    const edgeAvg = {
+                        r: Math.round(edgeColors.reduce((s, c) => s + c.r, 0) / edgeColors.length),
+                        g: Math.round(edgeColors.reduce((s, c) => s + c.g, 0) / edgeColors.length),
+                        b: Math.round(edgeColors.reduce((s, c) => s + c.b, 0) / edgeColors.length),
+                    };
+                    const radius = Math.max(regionW, regionH) / 2;
+                    const cA = '#' + [centerColor.r, centerColor.g, centerColor.b].map(v => v.toString(16).padStart(2, '0')).join('');
+                    const cB = '#' + [edgeAvg.r, edgeAvg.g, edgeAvg.b].map(v => v.toString(16).padStart(2, '0')).join('');
+                    
+                    return {
+                        type: 'radial',
+                        colorA: cA,
+                        colorB: cB,
+                        x0: cx, y0: cy,
+                        x1: cx + radius, y1: cy,
+                    };
+                }
+                
+                if (bestAxis.variance > minVariance && bestAxis.startColor && bestAxis.endColor) {
+                    // Linear gradient detected
+                    const sc = bestAxis.startColor;
+                    const ec = bestAxis.endColor;
+                    const cA = '#' + [sc.r, sc.g, sc.b].map(v => v.toString(16).padStart(2, '0')).join('');
+                    const cB = '#' + [ec.r, ec.g, ec.b].map(v => v.toString(16).padStart(2, '0')).join('');
+                    
+                    return {
+                        type: 'linear',
+                        colorA: cA,
+                        colorB: cB,
+                        x0: bestAxis.x0, y0: bestAxis.y0,
+                        x1: bestAxis.x1, y1: bestAxis.y1,
+                    };
+                }
+                
+                return null; // No gradient detected
             }
             
             // Flood Fill (Paint Bucket) Algorithm
@@ -10444,6 +11854,7 @@
                 frameCtx.drawImage(strippedCanvas, 0, 0);
                 
                 this._dirtyThumb(frame);
+                this._invalidateCompositeCache();
                 this.render();
             }
             
@@ -10510,6 +11921,11 @@
                 // When pasteboard is not active, keep current viewport — it IS the camera view
                 
                 this.isPlaying = true;
+                
+                // Clear any gradient edit state
+                this._gradientEdit = null;
+                this._gradientDrag = null;
+                this._gradientMaskCache = null;
                 
                 // Hide onion canvas during playback (not needed, saves compositing)
                 this.onionCanvas.style.display = 'none';
@@ -11173,6 +12589,18 @@
             }
             
             render() {
+                // Cancel gradient edit/drag if we navigated away from its frame
+                if (this._gradientEdit && 
+                    (this._gradientEdit.frameIndex !== this.currentFrameIndex ||
+                     this._gradientEdit.layerId !== this.currentLayerId)) {
+                    this._gradientEdit = null;
+                    this._gradientMaskCache = null;
+                }
+                if (this._gradientDrag && !this.isDrawing) {
+                    this._gradientDrag = null;
+                    this._gradientMaskCache = null;
+                }
+                
                 // Position onion canvas (skip during playback — it's hidden)
                 if (!this.isPlaying) {
                     this.positionOnionCanvas();
@@ -11211,6 +12639,9 @@
                             }
                         }
                     }
+                } else if (!this.isPlaying) {
+                    // Onion skin disabled — clear stale content
+                    this.onionCtx.clearRect(0, 0, this.onionCanvas.width, this.onionCanvas.height);
                 }
                 
                 // Draw all visible layers for current frame ON THE MAIN CANVAS
@@ -11247,6 +12678,11 @@
                     this._drawSelectionPreview(this.ctx);
                 }
                 
+                // Draw gradient edit overlay if active
+                if (this._gradientEdit && !this.isPlaying) {
+                    this._drawGradientEditPreview();
+                }
+                
                 // Only rebuild timeline DOM when structure changed; otherwise lightweight update
                 // Force rebuild if properties panel is open (slider values need updating)
                 if (this._timelineDirty || (this._openTransformLayers && this._openTransformLayers.size > 0)) {
@@ -11257,6 +12693,14 @@
             }
             
             renderCanvasOnly() {
+                // Cancel gradient edit if frame changed
+                if (this._gradientEdit && 
+                    (this._gradientEdit.frameIndex !== this.currentFrameIndex ||
+                     this._gradientEdit.layerId !== this.currentLayerId)) {
+                    this._gradientEdit = null;
+                    this._gradientMaskCache = null;
+                }
+                
                 // Lightweight: redraws canvas composite without rebuilding timeline DOM
                 this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
                 
@@ -11278,6 +12722,9 @@
                             this.drawOnionFrame(curLayer.frames[frameIdx], this.onionNextColor, fadeOpacity);
                         }
                     }
+                } else if (!this.isPlaying) {
+                    // Onion skin disabled — clear stale content
+                    this.onionCtx.clearRect(0, 0, this.onionCanvas.width, this.onionCanvas.height);
                 }
                 
                 const playheadPos = this.getPlayheadPosition();
@@ -11293,6 +12740,11 @@
                 
                 if (this.selection && !this.isPlaying) {
                     this._drawSelectionPreview(this.ctx);
+                }
+                
+                // Draw gradient edit overlay if active
+                if (this._gradientEdit && !this.isPlaying) {
+                    this._drawGradientEditPreview();
                 }
             }
             
