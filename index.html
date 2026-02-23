@@ -7130,7 +7130,9 @@
                     }
                     
                     // Check if clicking near first point to close path
-                    if (this._penPoints.length >= 2) {
+                    // Guard: skip if last point was just placed (prevents duplicate event finalization on iPad)
+                    const _timeSinceLastPt = performance.now() - (this._penLastPointTime || 0);
+                    if (this._penPoints.length >= 2 && _timeSinceLastPt > 150) {
                         const fp = this._penPoints[0];
                         if (Math.hypot(x - fp.x, y - fp.y) < hitRadius) {
                             this._penFinalize(true);
