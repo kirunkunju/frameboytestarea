@@ -2811,6 +2811,30 @@
             margin: 4px 0;
         }
 
+        .pressure-toggle {
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            border: none;
+            border-radius: 6px;
+            background: #36393f;
+            color: #555;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-left: 4px;
+            transition: all 0.15s;
+            box-shadow: 2px 2px 4px rgba(0,0,0,0.35), -1px -1px 3px rgba(255,255,255,0.03);
+        }
+        .pressure-toggle:hover { background: #3e4147; }
+        .pressure-toggle.active {
+            color: #6aadff;
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.35), inset -1px -1px 3px rgba(255,255,255,0.03);
+            background: #2b2d31;
+        }
+
         /* Make responsive for smaller screens */
         @media (max-width: 1024px) {
             .timeline-layers-section {
@@ -3872,6 +3896,7 @@
                 this._penDragType = null;
                 this._penMousePos = null;
                 this._penShiftHeld = false;
+                this._penLastPointTime = 0;
                 
                 // Panning state
                 this.isPanning = false;
@@ -5167,8 +5192,12 @@
                         e.preventDefault();
                         e.stopPropagation();
                         // Pen tool: double-click finalizes open path
+                        // But suppress if a point was just placed (e.g. fast Apple Pencil taps)
                         if (this.tool === 'pen' && this._penActive) {
-                            this._penFinalize(false);
+                            const timeSinceLastPoint = performance.now() - (this._penLastPointTime || 0);
+                            if (timeSinceLastPoint > 400) {
+                                this._penFinalize(false);
+                            }
                         }
                     });
                     
@@ -7147,6 +7176,7 @@
                         py = snapped.y;
                     }
                     this._penPoints.push({ x: px, y: py, handleIn: null, handleOut: null });
+                    this._penLastPointTime = performance.now();
                     this._penDragIdx = this._penPoints.length - 1;
                     this._penDragType = 'newHandle';
                     this._penNewHandleOrigin = { x: px, y: py };
