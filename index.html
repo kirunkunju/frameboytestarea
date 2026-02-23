@@ -3934,6 +3934,7 @@
                 this._penMousePos = null;
                 this._penShiftHeld = false;
                 this._penLastPointTime = 0;
+                this._penFinalizeTime = 0;
                 
                 // Create floating pen confirm/cancel buttons
                 this._penConfirmBtns = document.createElement('div');
@@ -3947,14 +3948,25 @@
                     </button>
                 `;
                 this.canvasContainer.appendChild(this._penConfirmBtns);
+                // Block touch events from reaching canvas underneath
+                this._penConfirmBtns.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }, { passive: false });
+                this._penConfirmBtns.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }, { passive: false });
                 this._penConfirmBtns.querySelector('.cancel').addEventListener('pointerdown', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
+                    this._penFinalizeTime = performance.now();
                     this._penCancel();
                 });
                 this._penConfirmBtns.querySelector('.confirm').addEventListener('pointerdown', (e) => {
                     e.preventDefault();
                     e.stopPropagation();
+                    this._penFinalizeTime = performance.now();
                     this._penFinalize(false);
                 });
                 
@@ -7190,6 +7202,11 @@
                         return;
                     }
                     
+                    // Guard: skip events immediately after finalize/cancel (button tap bleed-through)
+                    if (this._penFinalizeTime && (performance.now() - this._penFinalizeTime) < 300) {
+                        return;
+                    }
+                    
                     if (!this._penActive) {
                         // Save state before first pen point
                         this.saveState();
@@ -8522,6 +8539,7 @@
             
             _penFinalize(close) {
                 this._penHideConfirmBtns();
+                this._penFinalizeTime = performance.now();
                 if (this._penPoints.length < 2) {
                     this._penCancel();
                     return;
@@ -8566,6 +8584,7 @@
             
             _penCancel() {
                 this._penHideConfirmBtns();
+                this._penFinalizeTime = performance.now();
                 this._penPoints = [];
                 this._penActive = false;
                 this._penDragIdx = -1;
