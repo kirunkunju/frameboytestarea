@@ -1603,6 +1603,43 @@
             pointer-events: none;
         }
         
+        /* Pen tool floating confirm/cancel buttons */
+        .pen-confirm-btns {
+            position: absolute;
+            display: none;
+            gap: 6px;
+            z-index: 100;
+            pointer-events: auto;
+        }
+        .pen-confirm-btns.show {
+            display: flex;
+        }
+        .pen-confirm-btn {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06);
+            transition: transform 0.15s, background 0.15s;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+        .pen-confirm-btn:active { transform: scale(0.9); }
+        .pen-confirm-btn.confirm {
+            background: #4a9eff;
+            color: #fff;
+        }
+        .pen-confirm-btn.confirm:hover { background: #5aadff; }
+        .pen-confirm-btn.cancel {
+            background: #3a3d42;
+            color: #999;
+        }
+        .pen-confirm-btn.cancel:hover { background: #4a4d52; color: #ccc; }
+        
         .timeline-body {
             flex: 1;
             display: flex;
@@ -3897,6 +3934,29 @@
                 this._penMousePos = null;
                 this._penShiftHeld = false;
                 this._penLastPointTime = 0;
+                
+                // Create floating pen confirm/cancel buttons
+                this._penConfirmBtns = document.createElement('div');
+                this._penConfirmBtns.className = 'pen-confirm-btns';
+                this._penConfirmBtns.innerHTML = `
+                    <button class="pen-confirm-btn cancel" title="Cancel (Esc)">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3l8 8M11 3l-8 8"/></svg>
+                    </button>
+                    <button class="pen-confirm-btn confirm" title="Done (Enter)">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 7l4 4 6-7"/></svg>
+                    </button>
+                `;
+                this.canvasContainer.appendChild(this._penConfirmBtns);
+                this._penConfirmBtns.querySelector('.cancel').addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this._penCancel();
+                });
+                this._penConfirmBtns.querySelector('.confirm').addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this._penFinalize(false);
+                });
                 
                 // Panning state
                 this.isPanning = false;
@@ -8398,6 +8458,9 @@
                         this.ctx.restore();
                     }
                 }
+                
+                // Update floating confirm/cancel buttons position
+                this._penUpdateConfirmBtns();
             }
             
             // Snap a point to the nearest 45° angle relative to a reference point
@@ -8417,7 +8480,42 @@
                 };
             }
             
+            _penUpdateConfirmBtns() {
+                const btns = this._penConfirmBtns;
+                if (!this._penActive || this._penPoints.length < 2) {
+                    btns.classList.remove('show');
+                    return;
+                }
+                // Position near the last anchor point in screen space
+                const last = this._penPoints[this._penPoints.length - 1];
+                const rect = this.canvas.getBoundingClientRect();
+                const sx = rect.width / this.canvas.width;
+                const sy = rect.height / this.canvas.height;
+                // Convert canvas coords to container-relative coords
+                const containerRect = this.canvasContainer.getBoundingClientRect();
+                let screenX = rect.left + last.x * sx - containerRect.left;
+                let screenY = rect.top + last.y * sy - containerRect.top;
+                // Offset: place buttons to the right and slightly above
+                const offsetX = 24;
+                const offsetY = -20;
+                let bx = screenX + offsetX;
+                let by = screenY + offsetY;
+                // Clamp to stay within container bounds
+                const bw = 74; // approx width of 2 buttons + gap
+                const bh = 34;
+                bx = Math.max(4, Math.min(bx, containerRect.width - bw - 4));
+                by = Math.max(4, Math.min(by, containerRect.height - bh - 4));
+                btns.style.left = bx + 'px';
+                btns.style.top = by + 'px';
+                btns.classList.add('show');
+            }
+            
+            _penHideConfirmBtns() {
+                this._penConfirmBtns.classList.remove('show');
+            }
+            
             _penFinalize(close) {
+                this._penHideConfirmBtns();
                 if (this._penPoints.length < 2) {
                     this._penCancel();
                     return;
@@ -8461,6 +8559,7 @@
             }
             
             _penCancel() {
+                this._penHideConfirmBtns();
                 this._penPoints = [];
                 this._penActive = false;
                 this._penDragIdx = -1;
