@@ -2290,6 +2290,17 @@
             box-shadow: inset 0 0 0 1.5px rgba(91,141,239,0.35);
         }
         
+        .hold-block-selection {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            background: rgba(91,141,239,0.30);
+            pointer-events: none;
+            z-index: 3;
+            border-radius: 4px;
+            box-shadow: inset 0 0 0 2px rgba(91,141,239,0.6);
+        }
+        
         .hold-block .frame-number {
             font-size: 9px;
             color: #888;
@@ -3445,11 +3456,11 @@
                         <button id="prevFrame" title="Previous Frame (,)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M10 3L5 8l5 5"/></svg></button>
                         <button id="nextFrame" title="Next Frame (.)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M6 3l5 5-5 5"/></svg></button>
                         <button id="lastFrame" title="Last Frame (Shift+.)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M4 3l5 5-5 5"/><line x1="12" y1="3" x2="12" y2="13"/></svg></button>
-                        <button id="insertFrame" title="Insert Frame (F6)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v10M3 8h10"/></svg> <span class="btn-label">Insert</span></button>
+                        <button id="insertFrame" title="Insert Frame (F7)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v10M3 8h10"/></svg> <span class="btn-label">Insert</span></button>
                         <button id="holdFrame" title="Hold Frame (F5)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="5" height="5" rx="0.5"/><rect x="10" y="4" width="5" height="5" rx="0.5"/><path d="M6 6.5h4"/></svg> <span class="btn-label">Hold</span></button>
-                        <button id="duplicateFrame" title="Duplicate Frame (Ctrl+D)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="4" width="8" height="8" rx="1"/><rect x="5.5" y="1" width="8" height="8" rx="1"/></svg> <span class="btn-label">Duplicate</span></button>
+                        <button id="duplicateFrame" title="Duplicate Frame (⌘D / F6)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="4" width="8" height="8" rx="1"/><rect x="5.5" y="1" width="8" height="8" rx="1"/></svg> <span class="btn-label">Duplicate</span></button>
                         <button id="clearFrame" title="Clear Frame (Backspace)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M5.5 5.5l5 5M10.5 5.5l-5 5"/></svg> <span class="btn-label">Clear</span></button>
-                        <button id="deleteFrame" title="Delete Frame (F7)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h12M6 4V2.5h4V4M5 4v9h6V4"/><path d="M7 7v3M9 7v3"/></svg> <span class="btn-label">Delete</span></button>
+                        <button id="deleteFrame" title="Delete Frame (⇧F5)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h12M6 4V2.5h4V4M5 4v9h6V4"/><path d="M7 7v3M9 7v3"/></svg> <span class="btn-label">Delete</span></button>
                     </div>
                     <div class="fps-control" id="fpsControl">
                         <button class="fps-step-btn" id="fpsDown" title="Decrease FPS">−</button>
@@ -5593,16 +5604,21 @@
                                 this.updateBrushCursor();
                                 break;
                             case 'F5':
-                                e.preventDefault();
-                                this.holdFrame();
+                                if (e.shiftKey) {
+                                    e.preventDefault();
+                                    this.deleteCurrentFrame();
+                                } else {
+                                    e.preventDefault();
+                                    this.holdFrame();
+                                }
                                 break;
                             case 'F6':
                                 e.preventDefault();
-                                this.insertFrameAfterCurrent();
+                                this.duplicateFrame();
                                 break;
                             case 'F7':
                                 e.preventDefault();
-                                this.deleteCurrentFrame();
+                                this.insertFrameAfterCurrent();
                                 break;
                             case 'Backspace':
                                 if (!this.selection) {
@@ -12446,10 +12462,22 @@
                         
                         // === Selection mode: tap toggles frames ===
                         if (this.frameSelectMode && layerId === this.currentLayerId) {
-                            if (this.selectedFrames.has(frameIdx)) {
-                                this.selectedFrames.delete(frameIdx);
+                            if (holdBlock) {
+                                // Toggle entire hold block
+                                const holdStart = parseInt(holdBlock.dataset.holdStart, 10);
+                                const holdLength = parseInt(holdBlock.dataset.holdLength, 10);
+                                const allSelected = Array.from({length: holdLength}, (_, k) => holdStart + k)
+                                    .every(fi => this.selectedFrames.has(fi));
+                                for (let fi = holdStart; fi < holdStart + holdLength; fi++) {
+                                    if (allSelected) this.selectedFrames.delete(fi);
+                                    else this.selectedFrames.add(fi);
+                                }
                             } else {
-                                this.selectedFrames.add(frameIdx);
+                                if (this.selectedFrames.has(frameIdx)) {
+                                    this.selectedFrames.delete(frameIdx);
+                                } else {
+                                    this.selectedFrames.add(frameIdx);
+                                }
                             }
                             this._updateSelectBanner();
                             this.renderTimeline();
@@ -12473,8 +12501,19 @@
                         
                         // Shift+click: range select
                         if (e.shiftKey) {
-                            const from = Math.min(this.currentFrameIndex, frameIdx);
-                            const to = Math.max(this.currentFrameIndex, frameIdx);
+                            let selFrom = frameIdx;
+                            let selTo = frameIdx;
+                            
+                            // If shift-clicking a hold block, expand to include entire block
+                            if (holdBlock) {
+                                const holdStart = parseInt(holdBlock.dataset.holdStart, 10);
+                                const holdLength = parseInt(holdBlock.dataset.holdLength, 10);
+                                selFrom = holdStart;
+                                selTo = holdStart + holdLength - 1;
+                            }
+                            
+                            const from = Math.min(this.currentFrameIndex, selFrom);
+                            const to = Math.max(this.currentFrameIndex, selTo);
                             this.selectedFrames.clear();
                             for (let si = from; si <= to; si++) {
                                 this.selectedFrames.add(si);
@@ -12817,6 +12856,26 @@
                     ph.style.left = phOffset + 'px';
                     ph.style.width = v.frameW + 'px';
                     bar.appendChild(ph);
+                }
+                
+                // Selection overlays within block
+                if (v.isActive && this.selectedFrames.size > 0) {
+                    // Find contiguous runs of selected frames within this block
+                    let runStart = null;
+                    for (let fi = startIndex; fi <= startIndex + length; fi++) {
+                        const isSel = fi < startIndex + length && this.selectedFrames.has(fi);
+                        if (isSel && runStart === null) {
+                            runStart = fi;
+                        } else if (!isSel && runStart !== null) {
+                            // Emit selection overlay for run [runStart, fi)
+                            const sel = document.createElement('div');
+                            sel.className = 'hold-block-selection';
+                            sel.style.left = ((runStart - startIndex) * v.cellW) + 'px';
+                            sel.style.width = ((fi - runStart) * v.cellW) + 'px';
+                            bar.appendChild(sel);
+                            runStart = null;
+                        }
+                    }
                 }
                 
                 block.appendChild(bar);
