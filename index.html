@@ -5628,6 +5628,23 @@
                 document.getElementById('lastFrame').addEventListener('click', () => this.goToLastFrame());
                 document.getElementById('insertFrame').addEventListener('click', () => this.insertFrameAfterCurrent());
                 document.getElementById('holdFrame').addEventListener('click', () => this.holdFrame());
+                // Hold button: press and hold to keep adding hold frames
+                const holdBtn = document.getElementById('holdFrame');
+                holdBtn.addEventListener('pointerdown', (e) => {
+                    if (e.button && e.button !== 0) return;
+                    this._holdRepeatTimer = setTimeout(() => {
+                        this._holdRepeatInterval = setInterval(() => {
+                            this.holdFrame();
+                        }, 120);
+                    }, 300); // initial delay before repeating
+                });
+                const stopHoldRepeat = () => {
+                    if (this._holdRepeatTimer) { clearTimeout(this._holdRepeatTimer); this._holdRepeatTimer = null; }
+                    if (this._holdRepeatInterval) { clearInterval(this._holdRepeatInterval); this._holdRepeatInterval = null; }
+                };
+                holdBtn.addEventListener('pointerup', stopHoldRepeat);
+                holdBtn.addEventListener('pointercancel', stopHoldRepeat);
+                holdBtn.addEventListener('pointerleave', stopHoldRepeat);
                 document.getElementById('duplicateFrame').addEventListener('click', () => this.duplicateFrame());
                 document.getElementById('deleteFrame').addEventListener('click', () => this.deleteCurrentFrame());
                 document.getElementById('frameSelectDone').addEventListener('click', () => this.exitFrameSelectMode());
