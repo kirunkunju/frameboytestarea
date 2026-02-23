@@ -2105,6 +2105,11 @@
             z-index: 1;
         }
         
+        /* Active source — playhead is on the first frame of the hold */
+        .hold-block-source.source-active {
+            box-shadow: inset 0 0 0 2px rgba(91,141,239,0.5), inset 2px 2px 4px rgba(0,0,0,0.3), inset -1px -1px 3px rgba(255,255,255,0.03);
+        }
+        
         /* Single-frame hold block (length=1) rounds both sides */
         .hold-block[data-hold-length="1"] .hold-block-source {
             border-radius: 6px;
@@ -11148,6 +11153,8 @@
                     this._activeHoldBlock.classList.remove('has-active');
                     const oldPh = this._activeHoldBlock.querySelector('.hold-block-playhead');
                     if (oldPh) oldPh.remove();
+                    const oldSource = this._activeHoldBlock.querySelector('.hold-block-source');
+                    if (oldSource) oldSource.classList.remove('source-active');
                     this._activeHoldBlock = null;
                 }
                 
@@ -11184,6 +11191,13 @@
                         // Update source indicator
                         const sourceEl = holdBlockEl.querySelector('.hold-block-source');
                         if (sourceEl) {
+                            // Toggle source-active when playhead is on the first frame
+                            if (this.currentFrameIndex === seg.startIndex) {
+                                sourceEl.classList.add('source-active');
+                            } else {
+                                sourceEl.classList.remove('source-active');
+                            }
+                            
                             const frame = layer.frames[seg.startIndex];
                             const hasContent = frame && this._frameHasContent(frame);
                             const existingInd = sourceEl.querySelector('.frame-indicator');
@@ -12575,7 +12589,8 @@
                 
                 // Source cell (left side — full frame-thumb size)
                 const source = document.createElement('div');
-                source.className = 'hold-block-source';
+                const sourceIsActive = hasActive && playheadLocal === startIndex;
+                source.className = 'hold-block-source' + (sourceIsActive ? ' source-active' : '');
                 
                 // Content indicator in source
                 const frame = v.layer.frames[startIndex];
