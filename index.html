@@ -4582,6 +4582,22 @@
                             this.doMagnifier(e.clientX, e.clientY);
                             return;
                         }
+                        
+                        // Use coalesced events for brush/eraser — captures all
+                        // intermediate pen positions between frames (120-240Hz on stylus)
+                        if (this.isDrawing && (this.tool === 'brush' || this.tool === 'eraser') && e.getCoalescedEvents) {
+                            const coalesced = e.getCoalescedEvents();
+                            if (coalesced.length > 1) {
+                                for (const ce of coalesced) {
+                                    if (ce.pointerType === 'pen' && ce.pressure > 0) {
+                                        this.currentPressure = ce.pressure;
+                                    }
+                                    this.draw(ce);
+                                }
+                                return;
+                            }
+                        }
+                        
                         if (e.pointerType === 'pen' && e.pressure > 0) {
                             this.currentPressure = e.pressure;
                         }
@@ -6880,12 +6896,13 @@
                     
                     const smoothing = this.getSmoothing();
                     
-                    // Safety: if pointer jumped too far (lost events near edge, etc.),
-                    // start a new stroke segment instead of connecting with a long line
+                    // Safety: if pointer teleported (edge glitch during playback, etc.),
+                    // start a new stroke segment instead of connecting with a long line.
+                    // Threshold is very high — only catches actual glitches, not fast drawing.
                     const jumpDx = tx - this.lastX;
                     const jumpDy = ty - this.lastY;
                     const jumpDist = Math.sqrt(jumpDx * jumpDx + jumpDy * jumpDy);
-                    const maxJump = Math.max(this.brushSize * 6, 80);
+                    const maxJump = Math.max(this.brushSize * 30, 400);
                     if (jumpDist > maxJump) {
                         this.lastX = tx;
                         this.lastY = ty;
