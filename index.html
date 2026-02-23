@@ -8554,6 +8554,8 @@
                 this.saveFullState();
                 
                 const currentLayer = this.getCurrentLayer();
+                // Map original canvas → cloned canvas to preserve hold frame shared references
+                const canvasMap = new Map();
                 const newLayer = {
                     id: this.nextLayerId++,
                     name: currentLayer.name + ' copy',
@@ -8561,12 +8563,15 @@
                     opacity: currentLayer.opacity,
                     frames: currentLayer.frames.map(frame => {
                         if (!frame) return null;
+                        // If we already cloned this canvas, reuse it (hold frame)
+                        if (canvasMap.has(frame)) return canvasMap.get(frame);
                         const copy = document.createElement('canvas');
                         copy.width = frame.width;
                         copy.height = frame.height;
                         copy._originX = frame._originX || 0;
                         copy._originY = frame._originY || 0;
                         copy.getContext('2d').drawImage(frame, 0, 0);
+                        canvasMap.set(frame, copy);
                         return copy;
                     }),
                     transformKeyframes: (currentLayer.transformKeyframes || []).map(kf => ({...kf})),
@@ -14315,6 +14320,14 @@
                         const tick = document.createElement('div');
                         tick.className = 'hold-block-tick';
                         tick.style.width = v.cellW + 'px';
+                        // Keyframe diamond on interior hold frames
+                        const interiorIdx = startIndex + 1 + t;
+                        if (v.keyframeSet.has(interiorIdx)) {
+                            const diamond = document.createElement('div');
+                            diamond.className = 'keyframe-diamond';
+                            diamond.style.left = 'calc(50% - 3.5px)';
+                            tick.appendChild(diamond);
+                        }
                         ticks.appendChild(tick);
                     }
                     tail.appendChild(ticks);
@@ -14328,6 +14341,16 @@
                     handle.dataset.holdLength = length;
                     handle.dataset.layerId = v.layer.id;
                     bar.appendChild(handle);
+                    
+                    // Keyframe diamond on last frame of hold block
+                    const lastIdx = startIndex + length - 1;
+                    if (v.keyframeSet.has(lastIdx)) {
+                        const diamond = document.createElement('div');
+                        diamond.className = 'keyframe-diamond';
+                        // Position at the last frame's center within the bar
+                        diamond.style.left = ((lastIdx - startIndex) * v.cellW + v.frameW / 2 - 3.5) + 'px';
+                        bar.appendChild(diamond);
+                    }
                 }
                 
                 // Playhead marker within block
