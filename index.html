@@ -9,8 +9,84 @@
     <meta name="theme-color" content="#2b2d31">
     <link rel="manifest" href="manifest.json">
     <title>FrameBoy</title>
-    <!-- Gifshot library for GIF export (more reliable than gif.js) -->
-    <script src="https://cdn.jsdelivr.net/npm/gifshot@0.4.5/dist/gifshot.min.js"></script>
+    <!-- GIF encoder is built-in, no external dependency needed -->
+    <script>
+    window.GIFEncoder = class GIFEncoder {
+        constructor(w, h) { this.w = w; this.h = h; this.frames = []; }
+        addFrame(data, delay) { this.frames.push({ data, delay: delay || 100 }); }
+        encode() {
+            const o = [];
+            const w = v => o.push(v & 0xFF);
+            const w2 = v => { o.push(v & 0xFF); o.push((v >> 8) & 0xFF); };
+            const { palette, indexed } = this._quant();
+            [0x47,0x49,0x46,0x38,0x39,0x61].forEach(w);
+            w2(this.w); w2(this.h);
+            w(0xF7); w(0); w(0);
+            for (let i = 0; i < 256; i++) { w(palette[i*3]||0); w(palette[i*3+1]||0); w(palette[i*3+2]||0); }
+            w(0x21); w(0xFF); w(0x0B);
+            [0x4E,0x45,0x54,0x53,0x43,0x41,0x50,0x45,0x32,0x2E,0x30].forEach(w);
+            w(3); w(1); w2(0); w(0);
+            for (let f = 0; f < this.frames.length; f++) {
+                const dl = Math.round(this.frames[f].delay / 10);
+                w(0x21); w(0xF9); w(4); w(0); w2(dl); w(0); w(0);
+                w(0x2C); w2(0); w2(0); w2(this.w); w2(this.h); w(0);
+                this._lzw(indexed[f], 8, o);
+            }
+            w(0x3B);
+            return new Uint8Array(o);
+        }
+        _quant() {
+            const px = this.w * this.h;
+            const sr = Math.max(1, Math.floor((px * this.frames.length) / 40000));
+            const cols = [];
+            for (const fr of this.frames) { const d = fr.data; for (let i = 0; i < d.length; i += 4 * sr) cols.push([d[i], d[i+1], d[i+2]]); }
+            const pc = this._mcut(cols, 256);
+            const palette = new Uint8Array(768);
+            for (let i = 0; i < pc.length && i < 256; i++) { palette[i*3] = pc[i][0]; palette[i*3+1] = pc[i][1]; palette[i*3+2] = pc[i][2]; }
+            const indexed = [];
+            for (const fr of this.frames) {
+                const d = fr.data, idx = new Uint8Array(px);
+                for (let i = 0; i < px; i++) { const r = d[i*4], g = d[i*4+1], b = d[i*4+2]; let best = 0, bd = Infinity; for (let j = 0; j < pc.length; j++) { const dr = r-pc[j][0], dg = g-pc[j][1], db = b-pc[j][2], dd = dr*dr+dg*dg+db*db; if (dd < bd) { bd = dd; best = j; } } idx[i] = best; }
+                indexed.push(idx);
+            }
+            return { palette, indexed };
+        }
+        _mcut(colors, max) {
+            if (!colors.length) { const p = []; for (let i = 0; i < max; i++) p.push([0,0,0]); return p; }
+            let bk = [colors];
+            while (bk.length < max) {
+                let bi = 0, br = -1;
+                for (let i = 0; i < bk.length; i++) { const b = bk[i]; if (b.length < 2) continue; for (let c = 0; c < 3; c++) { let mn = 255, mx = 0; for (const cl of b) { mn = Math.min(mn, cl[c]); mx = Math.max(mx, cl[c]); } if (mx-mn > br) { br = mx-mn; bi = i; } } }
+                if (br <= 0) break;
+                const b = bk[bi]; let sc = 0, mr = 0;
+                for (let c = 0; c < 3; c++) { let mn = 255, mx = 0; for (const cl of b) { mn = Math.min(mn, cl[c]); mx = Math.max(mx, cl[c]); } if (mx-mn > mr) { mr = mx-mn; sc = c; } }
+                b.sort((a, c) => a[sc] - c[sc]); const m = b.length >> 1;
+                bk.splice(bi, 1, b.slice(0, m), b.slice(m));
+            }
+            return bk.map(b => { let r=0,g=0,bl=0; for (const c of b){r+=c[0];g+=c[1];bl+=c[2];} const n=b.length||1; return [Math.round(r/n),Math.round(g/n),Math.round(bl/n)]; });
+        }
+        _lzw(indexed, mcs, out) {
+            const w = v => out.push(v & 0xFF);
+            w(mcs);
+            const cc = 1 << mcs, eoi = cc + 1;
+            let cs = mcs + 1, nc = eoi + 1;
+            let bits = 0, bc = 0; const sb = [];
+            const wb = (code, sz) => { bits |= (code << bc); bc += sz; while (bc >= 8) { sb.push(bits & 0xFF); bits >>= 8; bc -= 8; if (sb.length === 255) { w(255); sb.forEach(b => w(b)); sb.length = 0; } } };
+            let tbl = new Map();
+            const reset = () => { tbl = new Map(); for (let i = 0; i < cc; i++) tbl.set(String(i), i); nc = eoi + 1; cs = mcs + 1; };
+            wb(cc, cs); reset();
+            let cur = String(indexed[0]);
+            for (let i = 1; i < indexed.length; i++) {
+                const nx = cur + ',' + indexed[i];
+                if (tbl.has(nx)) { cur = nx; } else { wb(tbl.get(cur), cs); if (nc < 4096) { tbl.set(nx, nc++); if (nc > (1 << cs) && cs < 12) cs++; } else { wb(cc, cs); reset(); } cur = String(indexed[i]); }
+            }
+            wb(tbl.get(cur), cs); wb(eoi, cs);
+            if (bc > 0) sb.push(bits & 0xFF);
+            if (sb.length) { w(sb.length); sb.forEach(b => w(b)); }
+            w(0);
+        }
+    };
+    </script>
     <style>
         * {
             margin: 0;
@@ -168,7 +244,7 @@
             min-width: 150px;
             z-index: 1000;
             box-shadow: 6px 6px 16px rgba(0,0,0,0.5), -3px -3px 10px rgba(255,255,255,0.03);
-            overflow: hidden;
+            overflow: visible;
         }
         
         .dropdown-menu.show {
@@ -189,6 +265,17 @@
             border-radius: 0;
             font-size: 14px;
             box-shadow: none;
+        }
+        
+        .dropdown-menu > .dropdown-item:first-child,
+        .dropdown-menu > :first-child .dropdown-item {
+            border-radius: 10px 10px 0 0;
+        }
+        
+        .dropdown-menu > .dropdown-item:last-child,
+        .dropdown-menu > :last-child .dropdown-item,
+        .dropdown-menu > :last-child .submenu-trigger {
+            border-radius: 0 0 10px 10px;
         }
         
         .dropdown-item .shortcut {
@@ -223,14 +310,19 @@
         .dropdown-submenu {
             display: none;
             position: absolute;
-            left: 100%;
-            top: 0;
+            left: calc(100% - 4px);
+            top: -1px;
+            padding-left: 4px; /* invisible bridge so hover doesn't break crossing the gap */
+            z-index: 1001;
+        }
+        
+        .dropdown-submenu-inner {
             background: #2b2d31;
             border: 1px solid rgba(255,255,255,0.05);
             border-radius: 10px;
             min-width: 180px;
-            z-index: 1001;
             box-shadow: 6px 6px 16px rgba(0,0,0,0.5), -3px -3px 10px rgba(255,255,255,0.03);
+            overflow: hidden;
         }
         
         .dropdown-submenu-container:hover > .dropdown-submenu,
@@ -2809,6 +2901,10 @@
             /* Submenu: inline on mobile instead of fly-out */
             .dropdown-submenu {
                 position: static !important;
+                padding-left: 0 !important;
+            }
+            
+            .dropdown-submenu-inner {
                 border: none !important;
                 box-shadow: none !important;
                 border-radius: 0 !important;
@@ -3112,15 +3208,24 @@
                         <div class="dropdown-divider"></div>
                         <button class="dropdown-item" id="saveProjectBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M3 1.5h8l3 3V13a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 012 13V3a1.5 1.5 0 011-1.5z"/><path d="M5 1.5v4h6v-4"/><path d="M5 14.5v-4h6v4"/></svg> Save Project (.fby) <span class="shortcut">⌘S</span></button>
                         <button class="dropdown-item" id="loadProjectBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M2 4v9a1 1 0 001 1h10a1 1 0 001-1V6a1 1 0 00-1-1H8L6.5 3H3a1 1 0 00-1 1z"/></svg> Load Project (.fby) <span class="shortcut">⌘O</span></button>
-                        <button class="dropdown-item" id="importSequenceBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="1" y="3" width="8" height="8" rx="1"/><rect x="4" y="1.5" width="8" height="8" rx="1"/><path d="M13 6v5M10.5 8.5h5"/></svg> Import Image Sequence…</button>
-                        <button class="dropdown-item" id="importAudioBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M8 2v9"/><circle cx="5.5" cy="11" r="2.5" fill="none"/><path d="M1 7v2c0 1 .5 1.5 1.5 1.5M15 7v2c0 1-.5 1.5-1.5 1.5"/><path d="M3 5v4M5 3.5v7M13 5v4M11 3.5v7"/></svg> Import Audio…</button>
                         <div class="dropdown-divider"></div>
+                        <div class="dropdown-submenu-container">
+                            <button class="dropdown-item submenu-trigger"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M8 1v5m-2-2l2 2 2-2"/><rect x="2" y="6" width="12" height="8" rx="1"/></svg> Import <span class="submenu-arrow">▶</span></button>
+                            <div class="dropdown-submenu">
+                              <div class="dropdown-submenu-inner">
+                                <button class="dropdown-item" id="importSequenceBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="1" y="3" width="8" height="8" rx="1"/><rect x="4" y="1.5" width="8" height="8" rx="1"/><path d="M13 6v5M10.5 8.5h5"/></svg> Image Sequence…</button>
+                                <button class="dropdown-item" id="importAudioBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M8 2v9"/><circle cx="5.5" cy="11" r="2.5" fill="none"/><path d="M1 7v2c0 1 .5 1.5 1.5 1.5M15 7v2c0 1-.5 1.5-1.5 1.5"/><path d="M3 5v4M5 3.5v7M13 5v4M11 3.5v7"/></svg> Audio…</button>
+                              </div>
+                            </div>
+                        </div>
                         <div class="dropdown-submenu-container">
                             <button class="dropdown-item submenu-trigger"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="2" y="3" width="12" height="10" rx="1"/><path d="M8 1v5m-2-2l2 2 2-2"/></svg> Export <span class="submenu-arrow">▶</span></button>
                             <div class="dropdown-submenu">
+                              <div class="dropdown-submenu-inner">
                                 <button class="dropdown-item" id="exportPngZip"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="2" y="2" width="12" height="12" rx="1"/><circle cx="6" cy="7" r="1.5"/><path d="M2 11l3-3 2 2 3-3 4 4"/></svg> PNG Frames (ZIP)</button>
                                 <button class="dropdown-item" id="exportGifBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="4" y="1" width="8" height="14" rx="1"/><path d="M6 1v14M10 1v14M4 5h8M4 9h8M4 13h8"/></svg> GIF Animation</button>
                                 <button class="dropdown-item" id="exportMp4Btn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="1" y="3" width="14" height="10" rx="1"/><path d="M6 6.5v3.5l3.5-1.75z" fill="currentColor" stroke="none"/></svg> MP4 Video</button>
+                              </div>
                             </div>
                         </div>
                     </div>
@@ -4498,10 +4603,19 @@
                 for (const layer of this.layers) {
                     maxEnd = Math.max(maxEnd, (layer.startFrame || 0) + layer.frames.length);
                 }
-                // Include audio track ends
+                // Include audio track ends (for ruler/UI width only)
                 for (const track of this.audioTracks) {
                     const audioFrames = Math.ceil(track.audioBuffer.duration * this.fps);
                     maxEnd = Math.max(maxEnd, (track.startFrame || 0) + audioFrames);
+                }
+                return maxEnd;
+            }
+            
+            // Length based on drawing layers only — used for playback duration
+            getDrawingTimelineLength() {
+                let maxEnd = 1;
+                for (const layer of this.layers) {
+                    maxEnd = Math.max(maxEnd, (layer.startFrame || 0) + layer.frames.length);
                 }
                 return maxEnd;
             }
@@ -4915,6 +5029,8 @@
                         const el = document.getElementById(id);
                         if (el) el.classList.remove('show');
                     }
+                    // Also close any open submenus
+                    document.querySelectorAll('.dropdown-submenu-container.touch-open').forEach(c => c.classList.remove('touch-open'));
                 };
                 
                 brushBtn.addEventListener('click', (e) => {
@@ -5100,7 +5216,7 @@
                 document.addEventListener('pointerdown', (e) => {
                     if (!e.target || !e.target.closest) return;
                     // Don't close if interacting with dropdown content or toolbar/playback controls
-                    if (e.target.closest('.dropdown-menu, .brush-dropdown, .onion-skin-dropdown, .play-mode-menu, .fps-popover, .fps-control, .toolbar, .playback-controls')) return;
+                    if (e.target.closest('.dropdown-menu, .dropdown-submenu, .brush-dropdown, .onion-skin-dropdown, .play-mode-menu, .fps-popover, .fps-control, .toolbar, .playback-controls')) return;
                     _closeAllDropdowns();
                 });
                 
@@ -5776,6 +5892,7 @@
                 });
                 document.getElementById('importSequenceBtn').addEventListener('click', () => {
                     fileMenuDropdown.classList.remove('show');
+                    document.querySelectorAll('.dropdown-submenu-container').forEach(c => c.classList.remove('touch-open'));
                     document.getElementById('importSequenceInput').click();
                 });
                 document.getElementById('importSequenceInput').addEventListener('change', (e) => {
@@ -5788,6 +5905,7 @@
                 // Audio import
                 document.getElementById('importAudioBtn').addEventListener('click', () => {
                     fileMenuDropdown.classList.remove('show');
+                    document.querySelectorAll('.dropdown-submenu-container').forEach(c => c.classList.remove('touch-open'));
                     document.getElementById('importAudioInput').click();
                 });
                 document.getElementById('importAudioInput').addEventListener('change', (e) => {
@@ -5875,27 +5993,33 @@
                 });
                 document.getElementById('exportPngZip').addEventListener('click', () => {
                     fileMenuDropdown.classList.remove('show');
+                    document.querySelectorAll('.dropdown-submenu-container').forEach(c => c.classList.remove('touch-open'));
                     this.exportGif();
                 });
                 document.getElementById('exportGifBtn').addEventListener('click', () => {
                     fileMenuDropdown.classList.remove('show');
+                    document.querySelectorAll('.dropdown-submenu-container').forEach(c => c.classList.remove('touch-open'));
                     this.exportAsGif();
                 });
                 document.getElementById('exportMp4Btn').addEventListener('click', () => {
                     fileMenuDropdown.classList.remove('show');
+                    document.querySelectorAll('.dropdown-submenu-container').forEach(c => c.classList.remove('touch-open'));
                     this.exportAsMp4();
                 });
                 
-                // Touch support for Export submenu — toggle on tap since hover doesn't work on touch
-                const submenuTrigger = document.querySelector('.submenu-trigger');
-                if (submenuTrigger) {
-                    submenuTrigger.addEventListener('click', (e) => {
+                // Touch support for submenus — toggle on tap since hover doesn't work on touch
+                document.querySelectorAll('.submenu-trigger').forEach(trigger => {
+                    trigger.addEventListener('click', (e) => {
                         e.stopPropagation();
                         e.preventDefault();
-                        const container = submenuTrigger.closest('.dropdown-submenu-container');
+                        const container = trigger.closest('.dropdown-submenu-container');
+                        // Close other submenus first
+                        document.querySelectorAll('.dropdown-submenu-container.touch-open').forEach(c => {
+                            if (c !== container) c.classList.remove('touch-open');
+                        });
                         container.classList.toggle('touch-open');
                     });
-                }
+                });
                 
                 // Canvas Size modal
                 const csModal = document.getElementById('canvasSizeModal');
@@ -10382,19 +10506,28 @@
                 let frameIndex, maxFrames;
                 
                 if (mode === 'timeline') {
-                    // Full timeline: iterate over timeline positions
-                    maxFrames = this.getTimelineLength();
-                    frameIndex = 0; // start from timeline pos 0
+                    // Full timeline: iterate over drawing layer positions only
+                    maxFrames = this.getDrawingTimelineLength();
+                    frameIndex = 0;
                     this._playbackTimelinePos = 0;
-                    // Set frame to match timeline start so audio syncs
                     const localIdx = 0 - layerOffset;
                     this.currentFrameIndex = Math.max(0, Math.min(layer.frames.length - 1, localIdx >= 0 ? localIdx : 0));
+                    // Audio window: timeline position 0 to maxFrames
+                    this._playbackStartPos = 0;
+                    this._playbackEndPos = maxFrames;
                 } else {
                     // Active layer only
                     maxFrames = layer.frames.length;
                     frameIndex = 0;
                     this.currentFrameIndex = 0;
+                    // Audio window: layer's timeline span
+                    this._playbackStartPos = layerOffset;
+                    this._playbackEndPos = layerOffset + maxFrames;
                 }
+                
+                // Store playback duration so audio knows when to stop
+                this._playbackMaxFrames = maxFrames;
+                this._playbackDuration = maxFrames / this.fps;
                 
                 let lastFrameTime = performance.now(); // legacy — kept for compatibility
                 const frameDelay = 1000 / this.fps;
@@ -10434,9 +10567,10 @@
                         // Detect loop — restart audio aligned to loop boundary
                         const currentLoop = Math.floor(totalElapsedFrames / maxFrames);
                         if (currentLoop > this._lastPlayLoop && this.audioTracks.length > 0) {
-                            this._lastPlayLoop = currentLoop;
                             this.stopAudioPlayback();
+                            // Reset timing so elapsed counts from this loop's start
                             this._playStartTime = currentTime - (elapsed % (maxFrames * frameDelay));
+                            this._lastPlayLoop = 0; // reset so next loop is detected from new start time
                             this.startAudioPlayback();
                         }
                         
@@ -10457,6 +10591,10 @@
                 this._activePlayMode = null;
                 this._playbackTimelinePos = undefined;
                 this._lastPlayLoop = undefined;
+                this._playbackStartPos = undefined;
+                this._playbackEndPos = undefined;
+                this._playbackDuration = undefined;
+                this._playbackMaxFrames = undefined;
                 if (this.playbackInterval) {
                     clearInterval(this.playbackInterval);
                     this.playbackInterval = null;
@@ -10823,31 +10961,38 @@
                 const ctx = this.getAudioContext();
                 
                 this._audioSourceNodes = [];
+                
+                // The animation plays between these timeline positions
+                const animStart = this._playbackStartPos || 0;
+                const animEnd = this._playbackEndPos || Infinity;
+                const animStartTime = animStart / this.fps;
+                const animEndTime = animEnd / this.fps;
+                const animDuration = animEndTime - animStartTime;
+                
+                // Current playhead in timeline frames
                 const playheadPos = this.getPlayheadPosition();
+                // How far into the animation we are (in seconds)
+                const animElapsed = (playheadPos - animStart) / this.fps;
+                const animRemaining = animDuration - animElapsed;
+                
+                if (animRemaining <= 0) return;
                 
                 for (const track of this.audioTracks) {
                     if (track.muted) continue;
                     
                     const trackOffset = (track.startFrame || 0);
-                    const timeOffset = (playheadPos - trackOffset) / this.fps;
+                    const trackStartTime = trackOffset / this.fps;
+                    const trackEndTime = trackStartTime + track.audioBuffer.duration;
                     
-                    // Skip if playhead is before this track starts
-                    if (timeOffset < 0) {
-                        // Schedule delayed start
-                        const delay = -timeOffset;
-                        const source = ctx.createBufferSource();
-                        source.buffer = track.audioBuffer;
-                        const gain = ctx.createGain();
-                        gain.gain.value = track.volume;
-                        source.connect(gain);
-                        gain.connect(ctx.destination);
-                        source.start(ctx.currentTime + delay, 0);
-                        this._audioSourceNodes.push({ trackId: track.id, source, gain });
-                        continue;
-                    }
+                    // Current playhead time in absolute timeline seconds
+                    const nowTime = playheadPos / this.fps;
                     
-                    // Skip if past end
-                    if (timeOffset >= track.audioBuffer.duration) continue;
+                    // Where in the audio buffer should we start?
+                    const audioOffset = Math.max(0, nowTime - trackStartTime);
+                    
+                    // Is the track's audio relevant at all within the remaining animation?
+                    if (audioOffset >= track.audioBuffer.duration) continue;
+                    if (trackStartTime >= animEndTime) continue;
                     
                     const source = ctx.createBufferSource();
                     source.buffer = track.audioBuffer;
@@ -10855,7 +11000,19 @@
                     gain.gain.value = track.volume;
                     source.connect(gain);
                     gain.connect(ctx.destination);
-                    source.start(0, timeOffset);
+                    
+                    if (nowTime >= trackStartTime) {
+                        // Playhead is within or past track start — play immediately from offset
+                        const audioRemaining = track.audioBuffer.duration - audioOffset;
+                        const playDuration = Math.min(audioRemaining, animRemaining);
+                        source.start(0, audioOffset, playDuration);
+                    } else {
+                        // Track starts later — schedule delayed start
+                        const delay = trackStartTime - nowTime;
+                        if (delay >= animRemaining) continue; // starts after animation ends
+                        const playDuration = Math.min(track.audioBuffer.duration, animRemaining - delay);
+                        source.start(ctx.currentTime + delay, 0, playDuration);
+                    }
                     
                     this._audioSourceNodes.push({ trackId: track.id, source, gain });
                 }
@@ -13411,19 +13568,11 @@
                 
                 const originalText = exportBtn.innerHTML;
                 
-                exportBtn.textContent = 'Creating ZIP...';
+                exportBtn.textContent = 'Exporting PNGs...';
                 exportBtn.disabled = true;
                 
                 try {
-                    // Load JSZip library
-                    if (typeof JSZip === 'undefined') {
-                        await this.loadJSZip();
-                    }
-                    
-                    const zip = new JSZip();
-                    
-                    // Calculate max frames
-                    const maxFrames = this.getTimelineLength();
+                    const maxFrames = this.getDrawingTimelineLength();
                     
                     if (maxFrames === 0) {
                         alert('No frames to export!');
@@ -13438,89 +13587,79 @@
                     compositeCanvas.height = this.projectHeight;
                     const compositeCtx = compositeCanvas.getContext('2d');
                     
-                    // Create folders for each layer and composite
-                    const compositeFolderName = 'composite-all-layers';
-                    const compositeFolder = zip.folder(compositeFolderName);
-                    
-                    // Export each layer into its own folder
-                    for (const layer of this.layers) {
-                        if (layer.frames.length > 0) {
-                            const layerFolderName = layer.name.replace(/[^a-z0-9]/gi, '_');
-                            const layerFolder = zip.folder(layerFolderName);
-                            
-                            for (let i = 0; i < layer.frames.length; i++) {
-                                const frame = layer.frames[i];
-                                if (frame) {
-                                    // Convert frame to blob
-                                    const blob = await new Promise(resolve => {
-                                        frame.toBlob(resolve, 'image/png');
-                                    });
-                                    
-                                    // Add to layer folder
-                                    const filename = `frame_${String(i + 1).padStart(3, '0')}.png`;
-                                    layerFolder.file(filename, blob);
-                                }
-                            }
-                        }
-                    }
-                    
-                    // Export composite frames (all visible layers combined)
-                    // Render at home viewport for export
                     const _savedVpX = this.viewportX, _savedVpY = this.viewportY;
                     this.viewportX = 0; this.viewportY = 0;
+                    
+                    // Try JSZip first (may be available if loaded from CDN)
+                    let useZip = false;
+                    let zip = null;
+                    try {
+                        if (typeof JSZip === 'undefined') await this.loadJSZip();
+                        zip = new JSZip();
+                        useZip = true;
+                    } catch (e) {
+                        // JSZip not available — will download individual files
+                        useZip = false;
+                    }
+                    
+                    const zipFolder = useZip ? zip.folder('frames') : null;
+                    
                     for (let i = 0; i < maxFrames; i++) {
-                        // Clear canvas with project background color
-                        compositeCtx.fillStyle = this.bgColor;
-                        compositeCtx.fillRect(0, 0, compositeCanvas.width, compositeCanvas.height);
+                        // Clear to transparent for PNG
+                        compositeCtx.clearRect(0, 0, compositeCanvas.width, compositeCanvas.height);
                         
-                        // Draw all visible layers for this frame
                         for (const layer of this.layers) {
                             this.drawLayerWithTransform(compositeCtx, layer, i);
                         }
                         
-                        // Convert composite to blob
-                        const blob = await new Promise(resolve => {
-                            compositeCanvas.toBlob(resolve, 'image/png');
-                        });
-                        
-                        // Add to composite folder
                         const filename = `frame_${String(i + 1).padStart(3, '0')}.png`;
-                        compositeFolder.file(filename, blob);
                         
-                        // Update progress
-                        const totalProgress = Math.round((i / maxFrames) * 100);
-                        exportBtn.textContent = `Creating composite... ${totalProgress}%`;
+                        if (useZip) {
+                            const blob = await new Promise(resolve => compositeCanvas.toBlob(resolve, 'image/png'));
+                            zipFolder.file(filename, blob);
+                        } else {
+                            // Download individually with staggered timing
+                            const dataUrl = compositeCanvas.toDataURL('image/png');
+                            const a = document.createElement('a');
+                            a.href = dataUrl;
+                            a.download = filename;
+                            a.click();
+                            // Small delay between downloads to not overwhelm browser
+                            if (i < maxFrames - 1) await new Promise(r => setTimeout(r, 100));
+                        }
+                        
+                        const progress = Math.round((i / maxFrames) * 100);
+                        exportBtn.textContent = `Exporting PNGs... ${progress}%`;
+                        
+                        // Yield to UI
+                        if (i % 3 === 0) await new Promise(r => setTimeout(r, 0));
                     }
                     this.viewportX = _savedVpX; this.viewportY = _savedVpY;
                     
-                    // Generate zip file
-                    exportBtn.textContent = 'Generating ZIP file...';
-                    const zipBlob = await zip.generateAsync({
-                        type: 'blob',
-                        compression: 'DEFLATE',
-                        compressionOptions: { level: 6 }
-                    }, (metadata) => {
-                        const progress = Math.round(metadata.percent);
-                        exportBtn.textContent = `Compressing... ${progress}%`;
-                    });
+                    if (useZip) {
+                        exportBtn.textContent = 'Generating ZIP...';
+                        const zipBlob = await zip.generateAsync({
+                            type: 'blob', compression: 'DEFLATE',
+                            compressionOptions: { level: 6 }
+                        }, (meta) => {
+                            exportBtn.textContent = `Compressing... ${Math.round(meta.percent)}%`;
+                        });
+                        this.downloadBlob(zipBlob, `animation-frames-${Date.now()}.zip`);
+                        exportBtn.textContent = '✓ ZIP Downloaded!';
+                    } else {
+                        exportBtn.textContent = '✓ PNGs Downloaded!';
+                    }
                     
-                    // Download the zip
-                    this.downloadBlob(zipBlob, `animation-frames-${Date.now()}.zip`);
-                    
-                    exportBtn.textContent = '✓ ZIP Downloaded!';
                     setTimeout(() => {
                         exportBtn.innerHTML = originalText;
                         exportBtn.disabled = false;
                     }, 2000);
                     
                 } catch (error) {
-                    console.error('ZIP export error:', error);
+                    console.error('PNG export error:', error);
                     exportBtn.innerHTML = originalText;
                     exportBtn.disabled = false;
-                    alert(`Failed to create ZIP file: ${error.message}\n\nFrames will download individually instead.`);
-                    
-                    // Fallback to individual downloads
-                    this.exportFramesIndividually();
+                    alert(`PNG export failed: ${error.message}`);
                 }
             }
             
@@ -13538,8 +13677,7 @@
                     exportBtn.textContent = 'Preparing GIF...';
                     exportBtn.disabled = true;
                     
-                    // Calculate total frames
-                    const maxFrames = this.getTimelineLength();
+                    const maxFrames = this.getDrawingTimelineLength();
                     
                     if (maxFrames === 0) {
                         alert('No frames to export!');
@@ -13548,91 +13686,56 @@
                         return;
                     }
                     
-                    // Check if gifshot is loaded
-                    if (typeof gifshot === 'undefined') {
-                        throw new Error('GIF library not loaded. Please refresh the page.');
-                    }
-                    
                     // Create temporary canvas for rendering
                     const tempCanvas = document.createElement('canvas');
                     tempCanvas.width = this.projectWidth;
                     tempCanvas.height = this.projectHeight;
                     const tempCtx = tempCanvas.getContext('2d');
                     
-                    // Render all frames as data URLs
-                    exportBtn.textContent = 'Rendering frames...';
-                    const frameImages = [];
+                    // Use built-in GIF encoder
+                    const encoder = new GIFEncoder(this.projectWidth, this.projectHeight);
+                    const frameDelay = Math.round(1000 / this.fps);
+                    
                     const _svpX2 = this.viewportX, _svpY2 = this.viewportY;
                     this.viewportX = 0; this.viewportY = 0;
                     
                     for (let i = 0; i < maxFrames; i++) {
-                        // Project background for GIF export
-                        tempCtx.fillStyle = this.bgColor;
+                        // White background for GIF (no transparency support in GIF89a easily)
+                        tempCtx.fillStyle = this.bgColor || '#ffffff';
                         tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
                         
-                        // Render all visible layers for this frame
                         for (const layer of this.layers) {
                             this.drawLayerWithTransform(tempCtx, layer, i);
                         }
                         
-                        // Convert to data URL
-                        frameImages.push(tempCanvas.toDataURL('image/png'));
+                        const imageData = tempCtx.getImageData(0, 0, this.projectWidth, this.projectHeight);
+                        encoder.addFrame(imageData.data, frameDelay);
                         
-                        // Update progress
-                        const progress = Math.round((i / maxFrames) * 50);
-                        exportBtn.textContent = `Rendering frames... ${progress}%`;
+                        const progress = Math.round((i / maxFrames) * 80);
+                        exportBtn.textContent = `Creating GIF... ${progress}%`;
+                        
+                        // Yield to UI
+                        if (i % 5 === 0) await new Promise(r => setTimeout(r, 0));
                     }
                     this.viewportX = _svpX2; this.viewportY = _svpY2;
                     
-                    // Create GIF from frames
-                    exportBtn.textContent = 'Creating GIF... 50%';
+                    exportBtn.textContent = 'Encoding GIF... 90%';
+                    await new Promise(r => setTimeout(r, 0));
                     
-                    gifshot.createGIF({
-                        images: frameImages,
-                        gifWidth: this.canvas.width,
-                        gifHeight: this.canvas.height,
-                        interval: 1 / this.fps,
-                        numFrames: maxFrames,
-                        frameDuration: 1,
-                        sampleInterval: 10,
-                        numWorkers: 2
-                    }, (obj) => {
-                        if (!obj.error) {
-                            // Convert base64 to blob
-                            const base64Data = obj.image.split(',')[1];
-                            const byteCharacters = atob(base64Data);
-                            const byteArrays = [];
-                            
-                            for (let offset = 0; offset < byteCharacters.length; offset += 512) {
-                                const slice = byteCharacters.slice(offset, offset + 512);
-                                const byteNumbers = new Array(slice.length);
-                                for (let i = 0; i < slice.length; i++) {
-                                    byteNumbers[i] = slice.charCodeAt(i);
-                                }
-                                byteArrays.push(new Uint8Array(byteNumbers));
-                            }
-                            
-                            const blob = new Blob(byteArrays, { type: 'image/gif' });
-                            
-                            // Download
-                            this.downloadBlob(blob, `frameboy-animation-${Date.now()}.gif`);
-                            
-                            // Restore button
-                            exportBtn.textContent = '✓ GIF Downloaded!';
-                            exportBtn.disabled = false;
-                            setTimeout(() => {
-                                exportBtn.innerHTML = originalText;
-                            }, 2000);
-                        } else {
-                            throw new Error(obj.error);
-                        }
-                    });
+                    const gifData = encoder.encode();
+                    const blob = new Blob([gifData], { type: 'image/gif' });
+                    
+                    this.downloadBlob(blob, `frameboy-animation-${Date.now()}.gif`);
+                    
+                    exportBtn.textContent = '✓ GIF Downloaded!';
+                    exportBtn.disabled = false;
+                    setTimeout(() => { exportBtn.innerHTML = originalText; }, 2000);
                     
                 } catch (error) {
                     console.error('GIF export error:', error);
                     exportBtn.innerHTML = originalText;
                     exportBtn.disabled = false;
-                    alert(`Failed to create GIF: ${error.message}\n\nTry PNG ZIP export instead.`);
+                    alert(`Failed to create GIF: ${error.message}`);
                 }
             }
             
@@ -13644,7 +13747,7 @@
                     exportBtn.textContent = 'Creating MP4...';
                     exportBtn.disabled = true;
                     
-                    const maxFrames = this.getTimelineLength();
+                    const maxFrames = this.getDrawingTimelineLength();
                     
                     if (maxFrames === 0) {
                         alert('No frames to export!');
@@ -13678,9 +13781,61 @@
                         fileExt = 'mp4';
                     }
                     
-                    // Get canvas stream
-                    const stream = recordCanvas.captureStream(this.fps);
-                    const mediaRecorder = new MediaRecorder(stream, {
+                    // Get canvas video stream
+                    const videoStream = recordCanvas.captureStream(this.fps);
+                    
+                    // Build combined stream with audio if we have audio tracks
+                    let combinedStream;
+                    let exportAudioCtx = null;
+                    let exportAudioSources = [];
+                    const animDuration = maxFrames / this.fps;
+                    
+                    if (this.audioTracks.length > 0 && this.audioTracks.some(t => !t.muted)) {
+                        // Create a dedicated AudioContext for export
+                        exportAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                        const dest = exportAudioCtx.createMediaStreamDestination();
+                        
+                        // Schedule all audio tracks to play through the destination
+                        for (const track of this.audioTracks) {
+                            if (track.muted) continue;
+                            
+                            const trackStartTime = (track.startFrame || 0) / this.fps;
+                            
+                            // Skip if track starts after animation ends
+                            if (trackStartTime >= animDuration) continue;
+                            
+                            const source = exportAudioCtx.createBufferSource();
+                            source.buffer = track.audioBuffer;
+                            const gain = exportAudioCtx.createGain();
+                            gain.gain.value = track.volume;
+                            source.connect(gain);
+                            gain.connect(dest);
+                            
+                            // Calculate how much audio to play
+                            const audioAvailable = track.audioBuffer.duration;
+                            const playDuration = Math.min(audioAvailable, animDuration - trackStartTime);
+                            
+                            if (trackStartTime > 0) {
+                                // Delayed start
+                                source.start(exportAudioCtx.currentTime + trackStartTime, 0, playDuration);
+                            } else {
+                                // Immediate start
+                                source.start(exportAudioCtx.currentTime, 0, playDuration);
+                            }
+                            
+                            exportAudioSources.push(source);
+                        }
+                        
+                        // Combine video + audio tracks into one stream
+                        combinedStream = new MediaStream([
+                            ...videoStream.getVideoTracks(),
+                            ...dest.stream.getAudioTracks()
+                        ]);
+                    } else {
+                        combinedStream = videoStream;
+                    }
+                    
+                    const mediaRecorder = new MediaRecorder(combinedStream, {
                         mimeType: mimeType,
                         videoBitsPerSecond: 5000000
                     });
@@ -13694,6 +13849,15 @@
                     };
                     
                     mediaRecorder.onstop = () => {
+                        // Clean up audio sources
+                        for (const src of exportAudioSources) {
+                            try { src.stop(); } catch(e) {}
+                            try { src.disconnect(); } catch(e) {}
+                        }
+                        if (exportAudioCtx) {
+                            try { exportAudioCtx.close(); } catch(e) {}
+                        }
+                        
                         const blob = new Blob(chunks, { type: mimeType.split(';')[0] });
                         this.downloadBlob(blob, `frameboy-animation-${Date.now()}.${fileExt}`);
                         
@@ -13706,6 +13870,12 @@
                     
                     mediaRecorder.onerror = (e) => {
                         console.error('MediaRecorder error:', e);
+                        for (const src of exportAudioSources) {
+                            try { src.stop(); } catch(ex) {}
+                        }
+                        if (exportAudioCtx) {
+                            try { exportAudioCtx.close(); } catch(ex) {}
+                        }
                         exportBtn.innerHTML = originalText;
                         exportBtn.disabled = false;
                         alert('Video recording failed.');
@@ -13714,21 +13884,18 @@
                     // Start recording
                     mediaRecorder.start();
                     
-                    // Play through all frames
+                    // Play through all frames in real-time so audio stays synced
                     const frameDelay = 1000 / this.fps;
                     let currentFrame = 0;
                     
                     const drawNextFrame = () => {
                         if (currentFrame < maxFrames) {
-                            // Export at home viewport
                             const _rvpx = this.viewportX, _rvpy = this.viewportY;
                             this.viewportX = 0; this.viewportY = 0;
                             
-                            // Project background
                             recordCtx.fillStyle = this.bgColor;
                             recordCtx.fillRect(0, 0, recordCanvas.width, recordCanvas.height);
                             
-                            // Draw all visible layers for this frame
                             for (const layer of this.layers) {
                                 this.drawLayerWithTransform(recordCtx, layer, currentFrame);
                             }
@@ -13741,6 +13908,7 @@
                             currentFrame++;
                             setTimeout(drawNextFrame, frameDelay);
                         } else {
+                            // Wait a moment for final audio to flush, then stop
                             setTimeout(() => {
                                 mediaRecorder.stop();
                             }, frameDelay * 2);
