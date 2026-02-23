@@ -10363,60 +10363,70 @@
                     // Full timeline: iterate over timeline positions
                     maxFrames = this.getTimelineLength();
                     frameIndex = 0; // start from timeline pos 0
+                    this._playbackTimelinePos = 0;
+                    // Set frame to match timeline start so audio syncs
+                    const localIdx = 0 - layerOffset;
+                    this.currentFrameIndex = Math.max(0, Math.min(layer.frames.length - 1, localIdx >= 0 ? localIdx : 0));
                 } else {
                     // Active layer only
                     maxFrames = layer.frames.length;
                     frameIndex = 0;
+                    this.currentFrameIndex = 0;
                 }
                 
-                let lastFrameTime = performance.now();
+                let lastFrameTime = performance.now(); // legacy — kept for compatibility
                 const frameDelay = 1000 / this.fps;
                 this._playStartTime = performance.now();
                 
-                // Set initial timeline position for audio sync
-                if (mode === 'timeline') {
-                    this._playbackTimelinePos = 0;
-                }
+                // Start audio playback (must be after currentFrameIndex is set to start position)
                 
                 // Start audio playback
                 this.startAudioPlayback();
                 
+                // Track the last rendered frame to avoid redundant draws
+                let lastRenderedFrame = -1;
+                
                 const playbackLoop = (currentTime) => {
                     if (!this.isPlaying) return;
                     
-                    const elapsed = currentTime - lastFrameTime;
+                    // Derive frame index from elapsed time — stays synced with audio
+                    const elapsed = currentTime - this._playStartTime;
+                    const totalElapsedFrames = Math.floor(elapsed / frameDelay);
+                    frameIndex = totalElapsedFrames % maxFrames;
                     
-                    if (elapsed >= frameDelay) {
+                    // Only render if frame actually changed
+                    if (frameIndex !== lastRenderedFrame) {
+                        lastRenderedFrame = frameIndex;
+                        
                         if (mode === 'timeline') {
                             this._playbackTimelinePos = frameIndex;
-                            // Map timeline position to active layer's local index
                             const localIdx = frameIndex - layerOffset;
                             if (localIdx >= 0 && localIdx < layer.frames.length) {
                                 this.currentFrameIndex = localIdx;
                             }
-                            // Keep currentFrameIndex in valid range for drawing
                             this.currentFrameIndex = Math.max(0, Math.min(layer.frames.length - 1, this.currentFrameIndex));
                         } else {
                             this.currentFrameIndex = frameIndex;
                         }
                         
-                        // Lightweight render during playback: canvas only + playhead
+                        // Detect loop — restart audio aligned to loop boundary
+                        const currentLoop = Math.floor(totalElapsedFrames / maxFrames);
+                        if (currentLoop > this._lastPlayLoop && this.audioTracks.length > 0) {
+                            this._lastPlayLoop = currentLoop;
+                            this.stopAudioPlayback();
+                            this._playStartTime = currentTime - (elapsed % (maxFrames * frameDelay));
+                            this.startAudioPlayback();
+                        }
+                        
                         this.renderCanvasOnly();
                         this.updatePlayheadPosition();
                         this.updateAudioPlayhead(this.getPlayheadPosition(), maxFrames);
-                        frameIndex = (frameIndex + 1) % maxFrames;
-                        lastFrameTime = currentTime - (elapsed % frameDelay);
-                        
-                        // Loop audio when animation loops
-                        if (frameIndex === 0 && this.audioTracks.length > 0) {
-                            this.stopAudioPlayback();
-                            this.startAudioPlayback();
-                        }
                     }
                     
                     this.playbackAnimationFrame = requestAnimationFrame(playbackLoop);
                 };
                 
+                this._lastPlayLoop = 0;
                 this.playbackAnimationFrame = requestAnimationFrame(playbackLoop);
             }
             
@@ -10424,6 +10434,7 @@
                 this.isPlaying = false;
                 this._activePlayMode = null;
                 this._playbackTimelinePos = undefined;
+                this._lastPlayLoop = undefined;
                 if (this.playbackInterval) {
                     clearInterval(this.playbackInterval);
                     this.playbackInterval = null;
