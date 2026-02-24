@@ -4183,6 +4183,9 @@
                 this._openTransformLayers = new Set();
                 this._copiedKeyframe = null; // clipboard for copy/paste keyframes
                 this._timelineDirty = true; // flag to avoid unnecessary timeline DOM rebuilds
+                this._prevSelectedFrames = new Set(); // track previous selection for diffing
+                this._prevPlayhead = -1; // track previous playhead position
+                this._prevLayerId = -1; // track previous active layer
                 this._showAnchorIndicator = false;
                 this._curveEditorActive = false;
                 
@@ -5827,6 +5830,7 @@
                         if (this.frameSelectMode) {
                             this.frameSelectMode = false;
                             document.getElementById('frameSelectBanner').classList.remove('show');
+                            this._timelineDirty = true;
                             this.renderTimeline();
                         }
                     }
@@ -5908,6 +5912,7 @@
                             if (this.frameSelectMode) {
                                 this.frameSelectMode = false;
                                 document.getElementById('frameSelectBanner').classList.remove('show');
+                                this._timelineDirty = true;
                                 this.renderTimeline();
                             }
                         }
@@ -8901,6 +8906,7 @@
                 }
                 this._updateSelectBanner();
                 document.getElementById('frameSelectBanner').classList.add('show');
+                this._timelineDirty = true;
                 this.renderTimeline();
             }
             
@@ -8909,6 +8915,7 @@
                 this.selectedFrames.clear();
                 this._longPressTimer = null;
                 document.getElementById('frameSelectBanner').classList.remove('show');
+                this._timelineDirty = true;
                 this.renderTimeline();
             }
             
@@ -9688,6 +9695,7 @@
                 requestAnimationFrame(() => {
                     this.renderCurveEditor();
                 });
+                this._timelineDirty = true;
                 this.renderTimeline(); // update button states
             }
             
@@ -9696,6 +9704,7 @@
                 this._curveEditorLayerId = null;
                 document.getElementById('curveEditor').classList.remove('active');
                 document.getElementById('timelineFramesSection').style.display = '';
+                this._timelineDirty = true;
                 this.renderTimeline();
             }
             
@@ -13145,8 +13154,11 @@
                 }
                 
                 // Only rebuild timeline DOM when structure changed; otherwise lightweight update
+                // Skip entirely during active drawing — canvas is the focus, timeline unchanged
                 // Force rebuild if properties panel is open (slider values need updating)
-                if (this._timelineDirty || (this._openTransformLayers && this._openTransformLayers.size > 0)) {
+                if (this.isDrawing) {
+                    // Defer timeline update until stroke ends
+                } else if (this._timelineDirty || (this._openTransformLayers && this._openTransformLayers.size > 0)) {
                     this._scheduleRenderTimeline();
                 } else {
                     this._updateTimelineActive();
@@ -13335,6 +13347,37 @@
                 
                 // Update playhead position
                 this.updatePlayheadPosition();
+                
+                // Selection diffing — only toggle classes on changed frames
+                const container2 = document.getElementById('framesContainer');
+                if (container2) {
+                    const prev = this._prevSelectedFrames;
+                    const curr = this.selectedFrames;
+                    // Find deselected frames
+                    for (const i of prev) {
+                        if (!curr.has(i)) {
+                            const el = container2.querySelector(
+                                `.frame[data-frame-index="${i}"][data-layer-id="${this.currentLayerId}"],` +
+                                `.hold-block[data-layer-id="${this.currentLayerId}"][data-hold-start="${i}"]`
+                            );
+                            if (el) el.classList.remove('selected');
+                        }
+                    }
+                    // Find newly selected frames
+                    for (const i of curr) {
+                        if (!prev.has(i)) {
+                            const el = container2.querySelector(
+                                `.frame[data-frame-index="${i}"][data-layer-id="${this.currentLayerId}"],` +
+                                `.hold-block[data-layer-id="${this.currentLayerId}"][data-hold-start="${i}"]`
+                            );
+                            if (el) el.classList.add('selected');
+                        }
+                    }
+                }
+                
+                // Update tracking state
+                this._prevPlayhead = this.currentFrameIndex;
+                this._prevSelectedFrames = new Set(this.selectedFrames);
             }
             
             _reorderLayer(dragId, targetId, position) {
@@ -13362,6 +13405,13 @@
             renderTimeline() {
                 // Cancel any pending debounced render
                 if (this._rtRaf) { cancelAnimationFrame(this._rtRaf); this._rtRaf = null; }
+                
+                // Fast path: if only playhead/selection changed, skip full DOM rebuild
+                if (!this._timelineDirty && this._prevLayerId === this.currentLayerId) {
+                    this._updateTimelineActive();
+                    return;
+                }
+                
                 this._renderTimelineImpl();
             }
             
@@ -13378,6 +13428,9 @@
                 this._timelineDirty = false; // Clear flag — we're doing a full rebuild
                 this._activeFrameEl = null; // Old DOM elements destroyed
                 this._activeHoldBlock = null; // Old hold block DOM destroyed
+                this._prevPlayhead = this.currentFrameIndex;
+                this._prevLayerId = this.currentLayerId;
+                this._prevSelectedFrames = new Set(this.selectedFrames);
                 
                 // Invalidate holdGroups caches
                 for (const layer of this.layers) {
@@ -13435,6 +13488,7 @@
                         } else {
                             this._openTransformLayers.add(layer.id);
                         }
+                        this._timelineDirty = true;
                         this.renderTimeline();
                     });
                     
@@ -13476,6 +13530,7 @@
                                 if (newName && newName !== layer.name) {
                                     layer.name = newName;
                                 }
+                                this._timelineDirty = true;
                                 this.renderTimeline();
                             };
                             
@@ -14107,6 +14162,7 @@
                             document.removeEventListener('pointermove', onMove);
                             document.removeEventListener('pointerup', onUp);
                             document.removeEventListener('pointercancel', onUp);
+                            this._timelineDirty = true;
                             this.renderTimeline();
                         };
                         document.addEventListener('pointermove', onMove);
@@ -15016,6 +15072,7 @@
             applyTimelineScale() {
                 const { frameW } = this.getTimelineMetrics();
                 document.documentElement.style.setProperty('--frame-w', frameW + 'px');
+                this._timelineDirty = true;
                 this.renderTimeline();
             }
             
