@@ -4062,6 +4062,37 @@
                     this._penFinalize(false);
                 });
                 
+                // Gradient confirm/cancel floating buttons (same design as pen tool)
+                this._gradConfirmBtns = document.createElement('div');
+                this._gradConfirmBtns.className = 'pen-confirm-btns';
+                this._gradConfirmBtns.innerHTML = `
+                    <button class="pen-confirm-btn cancel" title="Cancel (Esc)">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3l8 8M11 3l-8 8"/></svg>
+                    </button>
+                    <button class="pen-confirm-btn confirm" title="Done (Enter)">
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 7l4 4 6-7"/></svg>
+                    </button>
+                `;
+                this.canvasContainer.appendChild(this._gradConfirmBtns);
+                this._gradConfirmBtns.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }, { passive: false });
+                this._gradConfirmBtns.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                }, { passive: false });
+                this._gradConfirmBtns.querySelector('.cancel').addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this._cancelGradient();
+                });
+                this._gradConfirmBtns.querySelector('.confirm').addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this._finalizeGradient();
+                });
+                
                 // Panning state
                 this.isPanning = false;
                 this._spaceHeld = false;
@@ -4688,6 +4719,7 @@
                 // Clear any gradient preview/edit state when changing frames
                 if (this._gradientEdit) {
                     this._gradientEdit = null;
+                    this._hideGradConfirmBtns();
                 }
                 if (this._gradientDrag) {
                     this._gradientDrag = null;
@@ -11385,6 +11417,32 @@
                 ctx.fillText('Drag handles to adjust · Enter to apply · Esc to cancel', mx, hintY);
                 
                 ctx.restore();
+                
+                // Position floating confirm/cancel buttons near end handle
+                this._updateGradConfirmBtns(ex, ey);
+            }
+            
+            // Position gradient confirm/cancel buttons near a canvas point
+            _updateGradConfirmBtns(canvasX, canvasY) {
+                if (!this._gradConfirmBtns) return;
+                const rect = this.canvas.getBoundingClientRect();
+                const containerRect = this.canvasContainer.getBoundingClientRect();
+                const scaleX = rect.width / this.canvas.width;
+                const scaleY = rect.height / this.canvas.height;
+                let left = rect.left - containerRect.left + canvasX * scaleX + 24;
+                let top = rect.top - containerRect.top + canvasY * scaleY - 20;
+                // Clamp to container bounds
+                left = Math.max(4, Math.min(left, containerRect.width - 80));
+                top = Math.max(4, Math.min(top, containerRect.height - 40));
+                this._gradConfirmBtns.style.left = left + 'px';
+                this._gradConfirmBtns.style.top = top + 'px';
+                this._gradConfirmBtns.classList.add('show');
+            }
+            
+            _hideGradConfirmBtns() {
+                if (this._gradConfirmBtns) {
+                    this._gradConfirmBtns.classList.remove('show');
+                }
             }
             
             // Finalize the gradient edit — apply the fill
@@ -11404,6 +11462,7 @@
                 
                 this._gradientEdit = null;
                 this._gradientMaskCache = null;
+                this._hideGradConfirmBtns();
                 this.gradientFill(Math.floor(gradDef.x0), Math.floor(gradDef.y0), gradDef);
             }
             
@@ -11412,6 +11471,7 @@
                 if (!this._gradientEdit) return;
                 this._gradientEdit = null;
                 this._gradientMaskCache = null;
+                this._hideGradConfirmBtns();
                 this.renderCanvasOnly();
             }
             
