@@ -7435,6 +7435,10 @@
                     this._strokeSmoothing = this.getSmoothing();
                     this._strokeCompositeOp = this.tool === 'eraser' ? 'destination-out' : 'source-over';
                     this._strokeColor = this.color;
+                    // Initialize velocity-adaptive + Catmull-Rom smoothing state
+                    this._strokeBuffer = []; // ring buffer for Catmull-Rom (last 4 smoothed points)
+                    this._strokeLastTime = performance.now();
+                    this._strokeVelocity = 0;
                     if (frame) {
                         const growth = this.ensureFrameCovers(frame, worldX, worldY);
                         if ((growth.dx !== 0 || growth.dy !== 0) && this._lastStrokeEnd) {
@@ -7469,6 +7473,11 @@
                         this._lastStrokeEnd = { x: this.lastX, y: this.lastY };
                     }
                     this.drawPoint(this.lastX, this.lastY);
+                    // Seed the Catmull-Rom buffer with the starting point (duplicated for boundary)
+                    if (this._strokeBuffer) {
+                        const p = { x: this.lastX, y: this.lastY };
+                        this._strokeBuffer.push(p, p);
+                    }
                     
                     // Push the pre-stroke snapshot to undo stack asynchronously
                     // (the snapshot is already captured — this just defers the stack push)
@@ -7700,6 +7709,12 @@
                             this.lastY = local.y;
                             this.smoothX = local.x;
                             this.smoothY = local.y;
+                            // Reset Catmull-Rom buffer for new frame
+                            if (this._strokeBuffer) {
+                                this._strokeBuffer.length = 0;
+                                const p = { x: local.x, y: local.y };
+                                this._strokeBuffer.push(p, p);
+                            }
                             this.drawPoint(local.x, local.y);
                         }
                         return;
@@ -7748,11 +7763,52 @@
                         this.lastY = ty;
                         this.smoothX = tx;
                         this.smoothY = ty;
+                        if (this._strokeBuffer) {
+                            this._strokeBuffer.length = 0;
+                            const p = { x: tx, y: ty };
+                            this._strokeBuffer.push(p, p);
+                        }
                         this.drawPoint(tx, ty);
                         return;
                     }
                     
-                    if (smoothing > 0) {
+                    if (smoothing > 0 && this._strokeBuffer) {
+                        // --- Velocity-adaptive + Catmull-Rom smoothing ---
+                        const now = performance.now();
+                        const dt = Math.max(1, now - this._strokeLastTime);
+                        this._strokeLastTime = now;
+                        
+                        // Velocity in pixels per millisecond
+                        const rawDist = Math.sqrt((tx - this.smoothX) ** 2 + (ty - this.smoothY) ** 2);
+                        const velocity = rawDist / dt;
+                        // Smooth velocity to avoid sudden changes
+                        this._strokeVelocity = this._strokeVelocity * 0.6 + velocity * 0.4;
+                        
+                        // Adaptive factor: fast motion (>1.5 px/ms) = low smoothing, slow (<0.3) = high
+                        // Base factor from slider (0-100), velocity scales it
+                        const baseFactor = (smoothing / 100) * 0.95;
+                        const speedRatio = Math.min(1, Math.max(0, (this._strokeVelocity - 0.15) / 1.5));
+                        const adaptiveFactor = 1 - baseFactor * (1 - speedRatio * 0.7);
+                        
+                        // EMA with adaptive factor
+                        this.smoothX += (tx - this.smoothX) * adaptiveFactor;
+                        this.smoothY += (ty - this.smoothY) * adaptiveFactor;
+                        
+                        // Push smoothed point to Catmull-Rom buffer
+                        this._strokeBuffer.push({ x: this.smoothX, y: this.smoothY });
+                        
+                        // Draw Catmull-Rom curve when we have enough points
+                        // Buffer: [p0, p1, p2, p3, ...] — draw curve between p1-p2 using p0 and p3 as guides
+                        const buf = this._strokeBuffer;
+                        while (buf.length >= 4) {
+                            const p0 = buf[0], p1 = buf[1], p2 = buf[2], p3 = buf[3];
+                            this._drawCatmullRom(p0, p1, p2, p3);
+                            this.lastX = p2.x;
+                            this.lastY = p2.y;
+                            buf.shift();
+                        }
+                    } else if (smoothing > 0) {
+                        // Fallback: simple EMA (no buffer)
                         const factor = 1 - (smoothing / 100) * 0.95;
                         this.smoothX += (tx - this.smoothX) * factor;
                         this.smoothY += (ty - this.smoothY) * factor;
@@ -8080,6 +8136,25 @@
                 
                 // Save last position for shift+click straight line
                 if (this.tool === 'brush' || this.tool === 'eraser') {
+                    // Flush remaining Catmull-Rom buffer points
+                    if (this._strokeBuffer && this._strokeBuffer.length >= 3) {
+                        const buf = this._strokeBuffer;
+                        // Duplicate the last point as p3 guide for final segment
+                        buf.push({ x: buf[buf.length - 1].x, y: buf[buf.length - 1].y });
+                        while (buf.length >= 4) {
+                            const p0 = buf[0], p1 = buf[1], p2 = buf[2], p3 = buf[3];
+                            this._drawCatmullRom(p0, p1, p2, p3);
+                            this.lastX = p2.x;
+                            this.lastY = p2.y;
+                            buf.shift();
+                        }
+                    } else if (this._strokeBuffer && this._strokeBuffer.length >= 2) {
+                        // Very short stroke — draw remaining as line
+                        const last = this._strokeBuffer[this._strokeBuffer.length - 1];
+                        this.drawLine(this.lastX, this.lastY, last.x, last.y);
+                        this.lastX = last.x;
+                        this.lastY = last.y;
+                    }
                     this._lastStrokeEnd = { x: this.lastX, y: this.lastY };
                 }
                 
@@ -8093,6 +8168,9 @@
                 this._strokeSmoothing = undefined;
                 this._strokeCompositeOp = undefined;
                 this._strokeColor = undefined;
+                this._strokeBuffer = null;
+                this._strokeLastTime = 0;
+                this._strokeVelocity = 0;
                 // Invalidate thumbnail cache so timeline indicators update
                 const _layer = this.getCurrentLayer();
                 if (_layer) this._dirtyThumb(_layer.frames[this.currentFrameIndex]);
@@ -8228,6 +8306,39 @@
                     this.ctx.stroke();
                     this.ctx.globalCompositeOperation = 'source-over';
                     this.ctx.restore();
+                }
+            }
+            
+            // Draw a Catmull-Rom spline segment between p1 and p2,
+            // using p0 and p3 as tangent guides. Subdivides into small
+            // line segments to maintain brush shape/pressure rendering.
+            _drawCatmullRom(p0, p1, p2, p3) {
+                // Centripetal Catmull-Rom (alpha=0.5) for better cusp handling
+                const subdivisions = 4;
+                let prevX = p1.x, prevY = p1.y;
+                
+                for (let i = 1; i <= subdivisions; i++) {
+                    const t = i / subdivisions;
+                    const t2 = t * t;
+                    const t3 = t2 * t;
+                    
+                    // Catmull-Rom basis matrix (tension = 0.5)
+                    const x = 0.5 * (
+                        (2 * p1.x) +
+                        (-p0.x + p2.x) * t +
+                        (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 +
+                        (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3
+                    );
+                    const y = 0.5 * (
+                        (2 * p1.y) +
+                        (-p0.y + p2.y) * t +
+                        (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
+                        (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3
+                    );
+                    
+                    this.drawLine(prevX, prevY, x, y);
+                    prevX = x;
+                    prevY = y;
                 }
             }
             
