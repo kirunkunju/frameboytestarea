@@ -7430,6 +7430,11 @@
                     const layer = this.getCurrentLayer();
                     const frame = layer.frames[this.currentFrameIndex];
                     this._drawingFrameIndex = this.currentFrameIndex; // Track which frame the stroke started on
+                    // Cache per-stroke values to avoid method calls on every pointermove
+                    this._strokeShape = this.getCurrentBrushShape();
+                    this._strokeSmoothing = this.getSmoothing();
+                    this._strokeCompositeOp = this.tool === 'eraser' ? 'destination-out' : 'source-over';
+                    this._strokeColor = this.color;
                     if (frame) {
                         const growth = this.ensureFrameCovers(frame, worldX, worldY);
                         if ((growth.dx !== 0 || growth.dy !== 0) && this._lastStrokeEnd) {
@@ -7729,7 +7734,7 @@
                         ty = c.y;
                     }
                     
-                    const smoothing = this.getSmoothing();
+                    const smoothing = this._strokeSmoothing !== undefined ? this._strokeSmoothing : this.getSmoothing();
                     
                     // Safety: if pointer teleported (edge glitch during playback, etc.),
                     // start a new stroke segment instead of connecting with a long line.
@@ -8083,6 +8088,11 @@
                 this.shapeStart = null;
                 this._shiftAnchor = null;
                 this._shiftLockedAngle = null;
+                // Clear cached per-stroke values
+                this._strokeShape = undefined;
+                this._strokeSmoothing = undefined;
+                this._strokeCompositeOp = undefined;
+                this._strokeColor = undefined;
                 // Invalidate thumbnail cache so timeline indicators update
                 const _layer = this.getCurrentLayer();
                 if (_layer) this._dirtyThumb(_layer.frames[this.currentFrameIndex]);
@@ -8093,12 +8103,14 @@
                 const layer = this.getCurrentLayer();
                 const frame = layer.frames[this.currentFrameIndex];
                 const frameCtx = frame.getContext('2d');
-                const shape = this.getCurrentBrushShape();
+                const shape = this._strokeShape || this.getCurrentBrushShape();
                 const size = this.getPressureBrushSize();
                 const radius = size / 2;
+                const compositeOp = this._strokeCompositeOp || (this.tool === 'eraser' ? 'destination-out' : 'source-over');
+                const color = this._strokeColor || this.color;
                 
-                frameCtx.globalCompositeOperation = this.tool === 'eraser' ? 'destination-out' : 'source-over';
-                frameCtx.fillStyle = this.color;
+                frameCtx.globalCompositeOperation = compositeOp;
+                frameCtx.fillStyle = color;
                 if (shape === 'square') {
                     frameCtx.fillRect(x - radius, y - radius, size, size);
                 } else if (shape === 'oval-h') {
@@ -8120,8 +8132,8 @@
                 const off = this.frameToDisplayOffset(frame);
                 this.ctx.save();
                 this.ctx.translate(off.x, off.y);
-                this.ctx.globalCompositeOperation = this.tool === 'eraser' ? 'destination-out' : 'source-over';
-                this.ctx.fillStyle = this.color;
+                this.ctx.globalCompositeOperation = compositeOp;
+                this.ctx.fillStyle = color;
                 if (shape === 'square') {
                     this.ctx.fillRect(x - radius, y - radius, size, size);
                 } else if (shape === 'oval-h') {
@@ -8145,9 +8157,11 @@
                 const layer = this.getCurrentLayer();
                 const frame = layer.frames[this.currentFrameIndex];
                 const frameCtx = frame.getContext('2d');
-                const shape = this.getCurrentBrushShape();
+                const shape = this._strokeShape || this.getCurrentBrushShape();
                 const size = this.getPressureBrushSize();
                 const off = this.frameToDisplayOffset(frame);
+                const compositeOp = this._strokeCompositeOp || (this.tool === 'eraser' ? 'destination-out' : 'source-over');
+                const color = this._strokeColor || this.color;
                 
                 if (shape === 'oval-h' || shape === 'oval-v') {
                     const rx = shape === 'oval-h' ? size / 2 : size * 0.2;
@@ -8156,11 +8170,9 @@
                     const step = Math.max(1, Math.min(rx, ry) * 0.3);
                     const steps = Math.max(1, Math.ceil(dist / step));
                     
-                    const compositeOp = this.tool === 'eraser' ? 'destination-out' : 'source-over';
-                    
                     // Draw to frame canvas (frame-local coords)
                     frameCtx.globalCompositeOperation = compositeOp;
-                    frameCtx.fillStyle = this.color;
+                    frameCtx.fillStyle = color;
                     for (let i = 0; i <= steps; i++) {
                         const t = i / steps;
                         const px = x1 + (x2 - x1) * t;
@@ -8175,7 +8187,7 @@
                     this.ctx.save();
                     this.ctx.translate(off.x, off.y);
                     this.ctx.globalCompositeOperation = compositeOp;
-                    this.ctx.fillStyle = this.color;
+                    this.ctx.fillStyle = color;
                     for (let i = 0; i <= steps; i++) {
                         const t = i / steps;
                         const px = x1 + (x2 - x1) * t;
@@ -8189,11 +8201,10 @@
                 } else {
                     const cap = shape === 'square' ? 'square' : 'round';
                     const join = shape === 'square' ? 'miter' : 'round';
-                    const compositeOp = this.tool === 'eraser' ? 'destination-out' : 'source-over';
                     
                     // Draw to frame canvas
                     frameCtx.globalCompositeOperation = compositeOp;
-                    frameCtx.strokeStyle = this.color;
+                    frameCtx.strokeStyle = color;
                     frameCtx.lineWidth = size;
                     frameCtx.lineCap = cap;
                     frameCtx.lineJoin = join;
@@ -8207,7 +8218,7 @@
                     this.ctx.save();
                     this.ctx.translate(off.x, off.y);
                     this.ctx.globalCompositeOperation = compositeOp;
-                    this.ctx.strokeStyle = this.color;
+                    this.ctx.strokeStyle = color;
                     this.ctx.lineWidth = size;
                     this.ctx.lineCap = cap;
                     this.ctx.lineJoin = join;
