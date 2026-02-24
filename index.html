@@ -14458,6 +14458,7 @@
                                 }
                             }
                             this._updateSelectBanner();
+                            this._timelineDirty = true;
                             this.renderTimeline();
                             return;
                         }
@@ -14496,6 +14497,7 @@
                             for (let si = from; si <= to; si++) {
                                 this.selectedFrames.add(si);
                             }
+                            this._timelineDirty = true;
                             this.renderTimeline();
                             return;
                         }
