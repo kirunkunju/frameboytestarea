@@ -2237,6 +2237,39 @@
             cursor: grabbing;
         }
         
+        /* Single frame right-edge drag handle (to create hold frames) */
+        .frame-extend-handle {
+            position: absolute;
+            right: -2px;
+            top: 0;
+            width: 8px;
+            height: 100%;
+            cursor: ew-resize;
+            z-index: 4;
+            border-radius: 0 6px 6px 0;
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+        .frame-extend-handle::after {
+            content: '';
+            position: absolute;
+            right: 2px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 2px;
+            height: 20px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 1px;
+        }
+        .frame:hover .frame-extend-handle,
+        .frame-extend-handle:hover {
+            opacity: 1;
+        }
+        .frame-extend-handle:hover::after {
+            background: rgba(91,141,239,0.6);
+            height: 28px;
+        }
+        
         .frame.dragging {
             opacity: 0.3;
             transform: scale(0.9);
@@ -8983,60 +9016,47 @@
                 
                 // Save undo state before modifying
                 let undoSaved = false;
+                let currentLength = originalLength;
                 
                 const onMove = (ev) => {
                     const dx = ev.clientX - startX;
-                    const deltaFrames = Math.round(dx / cellW);
-                    let newLength = Math.max(1, originalLength + deltaFrames);
+                    const newLength = Math.max(1, originalLength + Math.round(dx / cellW));
                     
-                    // Don't extend past another frame's content
-                    const maxExtend = holdStart + originalLength;
-                    for (let fi = maxExtend; fi < layer.frames.length; fi++) {
-                        if (layer.frames[fi] && layer.frames[fi] !== canvas) break;
-                        if (fi >= holdStart + newLength - 1) break;
-                    }
-                    // Clamp: can't go past existing unique frames
-                    const maxLen = layer.frames.length - holdStart;
-                    for (let fi = holdStart + originalLength; fi < layer.frames.length; fi++) {
-                        if (layer.frames[fi] && layer.frames[fi] !== canvas && layer.frames[fi] !== null) {
-                            newLength = Math.min(newLength, fi - holdStart);
-                            break;
-                        }
-                    }
-                    newLength = Math.min(newLength, Math.max(maxLen, originalLength + 30)); // reasonable max
-                    
-                    if (newLength === originalLength) return;
+                    if (newLength === currentLength) return;
                     
                     if (!undoSaved) {
                         this.saveFullState();
                         undoSaved = true;
                     }
                     
-                    // Apply the resize
-                    if (newLength > originalLength) {
-                        // Extend: add hold references
-                        const endIdx = holdStart + newLength;
-                        // Ensure frames array is long enough
-                        while (layer.frames.length < endIdx) {
-                            layer.frames.push(null);
-                        }
-                        // Fill new positions with the same canvas reference
-                        for (let fi = holdStart + originalLength; fi < endIdx; fi++) {
-                            layer.frames[fi] = canvas;
-                        }
+                    const delta = newLength - currentLength;
+                    
+                    if (delta > 0) {
+                        // Extend: splice in hold frames at end of current block (pushes neighbors right)
+                        const insertAt = holdStart + currentLength;
+                        const holdFrames = new Array(delta).fill(canvas);
+                        layer.frames.splice(insertAt, 0, ...holdFrames);
                     } else {
-                        // Shorten: remove hold references (set to null)
-                        for (let fi = holdStart + newLength; fi < holdStart + originalLength; fi++) {
-                            if (layer.frames[fi] === canvas) {
-                                layer.frames[fi] = null;
-                            }
+                        // Shorten: splice out hold frames from end of block
+                        const removeCount = -delta;
+                        const removeAt = holdStart + newLength;
+                        // Only remove frames that belong to this hold block
+                        let toRemove = 0;
+                        for (let fi = removeAt; fi < removeAt + removeCount && fi < layer.frames.length; fi++) {
+                            if (layer.frames[fi] === canvas) toRemove++;
+                            else break;
                         }
-                        // Trim trailing nulls
-                        while (layer.frames.length > 1 && layer.frames[layer.frames.length - 1] === null) {
-                            layer.frames.pop();
+                        if (toRemove > 0) {
+                            layer.frames.splice(removeAt, toRemove);
                         }
                     }
                     
+                    currentLength = newLength;
+                    // Trim trailing nulls
+                    while (layer.frames.length > 1 && layer.frames[layer.frames.length - 1] === null) {
+                        layer.frames.pop();
+                    }
+                    layer._holdSegmentsCache = null;
                     handle.dataset.holdLength = newLength;
                     this._invalidateCompositeCache();
                     this._timelineDirty = true;
@@ -9048,6 +9068,80 @@
                     document.removeEventListener('pointerup', onUp);
                     document.removeEventListener('pointercancel', onUp);
                     if (undoSaved) {
+                        // Final cleanup: trim any trailing nulls
+                        while (layer.frames.length > 1 && layer.frames[layer.frames.length - 1] === null) {
+                            layer.frames.pop();
+                        }
+                        layer._holdSegmentsCache = null;
+                        this._invalidateCompositeCache();
+                        this.render();
+                    }
+                };
+                
+                document.addEventListener('pointermove', onMove);
+                document.addEventListener('pointerup', onUp);
+                document.addEventListener('pointercancel', onUp);
+            }
+            
+            // Drag right edge of a single frame to extend it into a hold frame
+            _startFrameExtend(handle, e) {
+                const layerId = parseInt(handle.dataset.layerId, 10);
+                const frameIdx = parseInt(handle.dataset.frameIndex, 10);
+                const layer = this.layers.find(l => l.id === layerId);
+                if (!layer) return;
+                
+                const canvas = layer.frames[frameIdx];
+                if (!canvas) return;
+                
+                const startX = e.clientX;
+                const { cellW } = this.getTimelineMetrics();
+                let undoSaved = false;
+                let currentExtension = 0;
+                
+                const onMove = (ev) => {
+                    const dx = ev.clientX - startX;
+                    const newExtension = Math.max(0, Math.round(dx / cellW));
+                    
+                    if (newExtension === currentExtension) return;
+                    
+                    if (!undoSaved) {
+                        this.saveFullState();
+                        undoSaved = true;
+                    }
+                    
+                    // Remove previously inserted hold frames
+                    if (currentExtension > 0) {
+                        layer.frames.splice(frameIdx + 1, currentExtension);
+                    }
+                    
+                    // Insert new hold frames (pushes everything right)
+                    currentExtension = newExtension;
+                    if (currentExtension > 0) {
+                        const holdFrames = new Array(currentExtension).fill(canvas);
+                        layer.frames.splice(frameIdx + 1, 0, ...holdFrames);
+                    }
+                    
+                    // Trim trailing nulls
+                    while (layer.frames.length > 1 && layer.frames[layer.frames.length - 1] === null) {
+                        layer.frames.pop();
+                    }
+                    
+                    layer._holdSegmentsCache = null;
+                    this._invalidateCompositeCache();
+                    this._timelineDirty = true;
+                    this.renderTimeline();
+                };
+                
+                const onUp = () => {
+                    document.removeEventListener('pointermove', onMove);
+                    document.removeEventListener('pointerup', onUp);
+                    document.removeEventListener('pointercancel', onUp);
+                    if (undoSaved) {
+                        // Final cleanup: trim any trailing nulls
+                        while (layer.frames.length > 1 && layer.frames[layer.frames.length - 1] === null) {
+                            layer.frames.pop();
+                        }
+                        layer._holdSegmentsCache = null;
                         this._invalidateCompositeCache();
                         this.render();
                     }
@@ -14028,6 +14122,15 @@
                     // === DELEGATED FRAME EVENT HANDLERS (set up once) ===
                     // Instead of per-frame listeners, one listener on the container handles all frames
                     container.addEventListener('pointerdown', (e) => {
+                        // Handle single frame extend handle drag
+                        const extendHandle = e.target.closest('.frame-extend-handle');
+                        if (extendHandle) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            this._startFrameExtend(extendHandle, e);
+                            return;
+                        }
+                        
                         // Handle hold block resize handle drag
                         const resizeHandle = e.target.closest('.hold-block-handle');
                         if (resizeHandle) {
@@ -14358,6 +14461,15 @@
                 }
                 
                 frameDiv.appendChild(thumb);
+                
+                // Right-edge drag handle to extend into hold frame
+                if (v.layer.frames[i] && v.isActive) {
+                    const extHandle = document.createElement('div');
+                    extHandle.className = 'frame-extend-handle';
+                    extHandle.dataset.frameIndex = i;
+                    extHandle.dataset.layerId = v.layer.id;
+                    thumb.appendChild(extHandle);
+                }
                 
                 const frameNumber = document.createElement('div');
                 frameNumber.className = 'frame-number';
