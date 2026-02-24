@@ -2757,71 +2757,128 @@
             bottom: 100%;
             right: 0;
             background: #2b2d31;
-            border: 1px solid rgba(255,255,255,0.05);
-            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.04);
+            border-radius: 14px;
             margin-bottom: 6px;
-            min-width: 220px;
+            width: 224px;
             z-index: 1000;
-            box-shadow: 6px 6px 16px rgba(0,0,0,0.5), -3px -3px 10px rgba(255,255,255,0.03);
-            padding: 10px;
+            box-shadow: 6px 6px 16px rgba(0,0,0,0.5), -3px -3px 10px rgba(255,255,255,0.02);
+            padding: 4px 0;
         }
         
         .onion-skin-dropdown.show {
             display: block;
         }
         
-        .onion-setting-row {
+        .onion-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 8px;
-            font-size: 12px;
+            padding: 7px 14px;
+            font-size: 11px;
         }
-        
-        .onion-setting-row:last-child {
-            margin-bottom: 0;
+        .onion-row + .onion-row {
+            border-top: 1px solid rgba(255,255,255,0.04);
         }
-        
-        .onion-setting-row label {
-            margin-right: 8px;
-            white-space: nowrap;
+        .onion-row-label {
+            color: #888;
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
-        
-        .onion-setting-row input[type="range"] {
-            width: 80px;
+        .onion-color-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            border: 1.5px solid rgba(255,255,255,0.1);
+            cursor: pointer;
+            flex-shrink: 0;
+            padding: 0;
+            appearance: none;
+            -webkit-appearance: none;
         }
-        
-        .onion-setting-row input[type="number"] {
-            width: 45px;
-            background: #2b2d31;
-            border: none;
+        .onion-color-dot::-webkit-color-swatch-wrapper { padding: 0; }
+        .onion-color-dot::-webkit-color-swatch { border: none; border-radius: 50%; }
+        .onion-color-dot::-moz-color-swatch { border: none; border-radius: 50%; }
+        .onion-inline-stepper {
+            display: flex;
+            align-items: center;
+            background: rgba(255,255,255,0.04);
             border-radius: 6px;
-            color: #d0d0d0;
-            padding: 2px 4px;
-            font-size: 12px;
-            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.35), inset -1px -1px 3px rgba(255,255,255,0.03);
+            overflow: hidden;
         }
-        
-        .onion-setting-row input[type="color"] {
-            width: 28px;
+        .onion-inline-stepper button {
+            width: 22px;
             height: 22px;
             border: none;
-            border-radius: 3px;
+            background: none;
+            color: #888;
+            font-size: 12px;
             cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             padding: 0;
+            transition: background 0.1s;
         }
-        
-        .onion-setting-value {
+        .onion-inline-stepper button:hover {
+            background: rgba(255,255,255,0.06);
+        }
+        .onion-inline-stepper button:active {
+            background: rgba(255,255,255,0.1);
+        }
+        .onion-inline-stepper .onion-stepper-val {
+            width: 20px;
+            text-align: center;
+            font-size: 11px;
+            font-weight: 600;
+            color: #ddd;
+        }
+        .onion-inline-stepper .onion-stepper-val-wide {
+            width: 32px;
+            text-align: center;
+            font-size: 11px;
+            font-weight: 600;
+            color: #ddd;
+        }
+        .onion-mini-toggle {
+            width: 32px;
+            height: 18px;
+            border-radius: 9px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.2s;
+            flex-shrink: 0;
+        }
+        .onion-mini-toggle.on { background: #4a9eff; }
+        .onion-mini-toggle.off { background: rgba(255,255,255,0.12); }
+        .onion-mini-toggle::after {
+            content: '';
+            width: 14px;
+            height: 14px;
+            background: #fff;
+            border-radius: 50%;
+            position: absolute;
+            top: 2px;
+            transition: left 0.2s;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+        }
+        .onion-mini-toggle.on::after { left: 16px; }
+        .onion-mini-toggle.off::after { left: 2px; }
+        .onion-opacity-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 7px 14px;
+            border-top: 1px solid rgba(255,255,255,0.04);
+            font-size: 11px;
+        }
+        .onion-opacity-label { color: #888; white-space: nowrap; }
+        .onion-opacity-val {
+            font-size: 10px;
+            color: #999;
             min-width: 28px;
             text-align: right;
-            font-size: 11px;
-            color: #aaa;
-        }
-        
-        .onion-divider {
-            height: 1px;
-            background: rgba(255,255,255,0.05);
-            margin: 8px 0;
         }
 
         /* Frame context menu */
@@ -3513,7 +3570,7 @@
                     <div class="brush-dropdown" id="brushDropdown">
                         <div class="brush-setting-row">
                             <label>Pressure:</label>
-                            <input type="checkbox" id="pressureEnabled" checked>
+                            <div class="onion-mini-toggle on" id="pressureEnabled"></div>
                         </div>
                         <div class="brush-setting-row">
                             <label>Shape:</label>
@@ -3539,8 +3596,8 @@
                         </div>
                         <div class="brush-setting-row">
                             <label>Smoothing:</label>
-                            <input type="range" id="brushSmoothing" min="0" max="100" value="50">
-                            <span class="brush-setting-value" id="brushSmoothingValue">50%</span>
+                            <input type="range" id="brushSmoothing" min="0" max="100" value="80">
+                            <span class="brush-setting-value" id="brushSmoothingValue">80%</span>
                         </div>
                     </div>
                 </div>
@@ -3549,7 +3606,7 @@
                     <div class="brush-dropdown" id="eraserDropdown">
                         <div class="brush-setting-row">
                             <label>Pressure:</label>
-                            <input type="checkbox" id="eraserPressureEnabled" checked>
+                            <div class="onion-mini-toggle on" id="eraserPressureEnabled"></div>
                         </div>
                         <div class="brush-setting-row">
                             <label>Shape:</label>
@@ -3703,37 +3760,39 @@
                     <div class="dropdown-container" style="position:relative; margin-left:auto;">
                         <button id="onionSkinToggle" title="Onion Skin (O)" style="background:none; border:none; color:#aab; cursor:pointer; padding:4px 6px; border-radius:4px; display:flex; align-items:center;" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='none'"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 16" width="22" height="15" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1" y="3" width="10" height="10" rx="1.5" opacity="0.35"/><rect x="7" y="1" width="10" height="10" rx="1.5" fill="currentColor" fill-opacity="0.15"/><rect x="13" y="3" width="10" height="10" rx="1.5" opacity="0.35"/></svg></button>
                         <div class="onion-skin-dropdown" id="onionSkinDropdown">
-                            <div class="onion-setting-row">
-                                <label>Enabled:</label>
-                                <input type="checkbox" id="onionEnabled" checked>
+                            <div class="onion-row">
+                                <span class="onion-row-label">Onion Skin</span>
+                                <div class="onion-mini-toggle on" id="onionToggleSwitch"></div>
                             </div>
-                            <div class="onion-divider"></div>
-                            <div class="onion-setting-row">
-                                <label>Opacity:</label>
-                                <input type="range" id="onionOpacity" min="5" max="80" value="30">
-                                <span class="onion-setting-value" id="onionOpacityValue">30%</span>
+                            <div class="onion-row">
+                                <div class="onion-row-label">
+                                    <input type="color" class="onion-color-dot" id="onionPrevColor" value="#ff0000">
+                                    <span>Before</span>
+                                </div>
+                                <div class="onion-inline-stepper">
+                                    <button id="onionBeforeMinus">−</button>
+                                    <span class="onion-stepper-val" id="onionBeforeVal">1</span>
+                                    <button id="onionBeforePlus">+</button>
+                                </div>
                             </div>
-                            <div class="onion-divider"></div>
-                            <div class="onion-setting-row">
-                                <label>Frames Before:</label>
-                                <button class="size-step-btn" id="onionBeforeMinus" title="Decrease">−</button>
-                                <input type="number" id="onionFramesBefore" min="0" max="10" value="1">
-                                <button class="size-step-btn" id="onionBeforePlus" title="Increase">+</button>
+                            <div class="onion-row">
+                                <div class="onion-row-label">
+                                    <input type="color" class="onion-color-dot" id="onionNextColor" value="#00cc00">
+                                    <span>After</span>
+                                </div>
+                                <div class="onion-inline-stepper">
+                                    <button id="onionAfterMinus">−</button>
+                                    <span class="onion-stepper-val" id="onionAfterVal">1</span>
+                                    <button id="onionAfterPlus">+</button>
+                                </div>
                             </div>
-                            <div class="onion-setting-row">
-                                <label>Previous Color:</label>
-                                <input type="color" id="onionPrevColor" value="#ff0000">
-                            </div>
-                            <div class="onion-divider"></div>
-                            <div class="onion-setting-row">
-                                <label>Frames After:</label>
-                                <button class="size-step-btn" id="onionAfterMinus" title="Decrease">−</button>
-                                <input type="number" id="onionFramesAfter" min="0" max="10" value="1">
-                                <button class="size-step-btn" id="onionAfterPlus" title="Increase">+</button>
-                            </div>
-                            <div class="onion-setting-row">
-                                <label>Next Color:</label>
-                                <input type="color" id="onionNextColor" value="#00cc00">
+                            <div class="onion-opacity-row">
+                                <span class="onion-opacity-label">Opacity</span>
+                                <div class="onion-inline-stepper">
+                                    <button id="onionOpacityMinus">−</button>
+                                    <span class="onion-stepper-val-wide" id="onionOpacityValue">30%</span>
+                                    <button id="onionOpacityPlus">+</button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -3930,7 +3989,7 @@
                 this.brushSize = 8;
                 this.brushShape = 'round';    // 'round', 'square', 'oval-h', 'oval-v'
                 this.eraserShape = 'round';
-                this.brushSmoothing = 50;      // 0-100
+                this.brushSmoothing = 80;      // 0-100
                 this.eraserSmoothing = 0;
                 this.smoothPoints = [];       // Buffer for smoothing
                 this.isDrawing = false;
@@ -5416,20 +5475,20 @@
                     document.getElementById('brushSmoothingValue').textContent = e.target.value + '%';
                 });
                 
-                // Pressure toggle — keep brush and eraser checkboxes + toolbar toggle synced
-                const brushPressureCb = document.getElementById('pressureEnabled');
-                const eraserPressureCb = document.getElementById('eraserPressureEnabled');
+                // Pressure toggle — keep brush and eraser toggles + toolbar toggle synced
+                const brushPressureToggle = document.getElementById('pressureEnabled');
+                const eraserPressureToggle = document.getElementById('eraserPressureEnabled');
                 const pressureToggleBtn = document.getElementById('pressureToggle');
                 
                 const syncPressure = (enabled) => {
                     this.pressureEnabled = enabled;
-                    brushPressureCb.checked = enabled;
-                    eraserPressureCb.checked = enabled;
+                    brushPressureToggle.className = 'onion-mini-toggle ' + (enabled ? 'on' : 'off');
+                    eraserPressureToggle.className = 'onion-mini-toggle ' + (enabled ? 'on' : 'off');
                     pressureToggleBtn.classList.toggle('active', enabled);
                 };
                 
-                brushPressureCb.addEventListener('change', (e) => syncPressure(e.target.checked));
-                eraserPressureCb.addEventListener('change', (e) => syncPressure(e.target.checked));
+                brushPressureToggle.addEventListener('click', () => syncPressure(!this.pressureEnabled));
+                eraserPressureToggle.addEventListener('click', () => syncPressure(!this.pressureEnabled));
                 pressureToggleBtn.addEventListener('click', () => syncPressure(!this.pressureEnabled));
                 
                 // Eraser dropdown controls
@@ -5662,48 +5721,62 @@
                 });
                 onionDropdown.addEventListener('click', (e) => e.stopPropagation());
                 
-                document.getElementById('onionEnabled').addEventListener('change', (e) => {
-                    this.onionSkinEnabled = e.target.checked;
+                // Onion skin toggle switch
+                const onionToggle = document.getElementById('onionToggleSwitch');
+                const updateOnionToggle = () => {
+                    onionToggle.className = 'onion-mini-toggle ' + (this.onionSkinEnabled ? 'on' : 'off');
                     onionBtn.style.opacity = this.onionSkinEnabled ? '1' : '0.5';
+                };
+                onionToggle.addEventListener('click', () => {
+                    this.onionSkinEnabled = !this.onionSkinEnabled;
+                    updateOnionToggle();
                     this.render();
                 });
-                document.getElementById('onionOpacity').addEventListener('input', (e) => {
-                    this.onionSkinOpacity = parseInt(e.target.value) / 100;
-                    document.getElementById('onionOpacityValue').textContent = e.target.value + '%';
-                    this.render();
-                });
-                document.getElementById('onionFramesBefore').addEventListener('change', (e) => {
-                    this.onionFramesBefore = parseInt(e.target.value);
-                    this.render();
-                });
+                
+                // Before frames stepper
+                const beforeVal = document.getElementById('onionBeforeVal');
                 document.getElementById('onionBeforeMinus').addEventListener('click', () => {
-                    const input = document.getElementById('onionFramesBefore');
-                    input.value = Math.max(0, parseInt(input.value) - 1);
-                    this.onionFramesBefore = parseInt(input.value);
+                    this.onionFramesBefore = Math.max(0, this.onionFramesBefore - 1);
+                    beforeVal.textContent = this.onionFramesBefore;
                     this.render();
                 });
                 document.getElementById('onionBeforePlus').addEventListener('click', () => {
-                    const input = document.getElementById('onionFramesBefore');
-                    input.value = Math.min(10, parseInt(input.value) + 1);
-                    this.onionFramesBefore = parseInt(input.value);
+                    this.onionFramesBefore = Math.min(10, this.onionFramesBefore + 1);
+                    beforeVal.textContent = this.onionFramesBefore;
                     this.render();
                 });
-                document.getElementById('onionFramesAfter').addEventListener('change', (e) => {
-                    this.onionFramesAfter = parseInt(e.target.value);
-                    this.render();
-                });
+                
+                // After frames stepper
+                const afterVal = document.getElementById('onionAfterVal');
                 document.getElementById('onionAfterMinus').addEventListener('click', () => {
-                    const input = document.getElementById('onionFramesAfter');
-                    input.value = Math.max(0, parseInt(input.value) - 1);
-                    this.onionFramesAfter = parseInt(input.value);
+                    this.onionFramesAfter = Math.max(0, this.onionFramesAfter - 1);
+                    afterVal.textContent = this.onionFramesAfter;
                     this.render();
                 });
                 document.getElementById('onionAfterPlus').addEventListener('click', () => {
-                    const input = document.getElementById('onionFramesAfter');
-                    input.value = Math.min(10, parseInt(input.value) + 1);
-                    this.onionFramesAfter = parseInt(input.value);
+                    this.onionFramesAfter = Math.min(10, this.onionFramesAfter + 1);
+                    afterVal.textContent = this.onionFramesAfter;
                     this.render();
                 });
+                
+                // Opacity stepper (+/- by 5%)
+                const opacityVal = document.getElementById('onionOpacityValue');
+                document.getElementById('onionOpacityMinus').addEventListener('click', () => {
+                    const cur = Math.round(this.onionSkinOpacity * 100);
+                    const next = Math.max(5, cur - 5);
+                    this.onionSkinOpacity = next / 100;
+                    opacityVal.textContent = next + '%';
+                    this.render();
+                });
+                document.getElementById('onionOpacityPlus').addEventListener('click', () => {
+                    const cur = Math.round(this.onionSkinOpacity * 100);
+                    const next = Math.min(80, cur + 5);
+                    this.onionSkinOpacity = next / 100;
+                    opacityVal.textContent = next + '%';
+                    this.render();
+                });
+                
+                // Color pickers
                 document.getElementById('onionPrevColor').addEventListener('input', (e) => {
                     this.onionPrevColor = e.target.value;
                     this.render();
@@ -6048,7 +6121,8 @@
                             case 'o':
                                 e.preventDefault();
                                 this.onionSkinEnabled = !this.onionSkinEnabled;
-                                document.getElementById('onionEnabled').checked = this.onionSkinEnabled;
+                                const ot = document.getElementById('onionToggleSwitch');
+                                if (ot) ot.className = 'onion-mini-toggle ' + (this.onionSkinEnabled ? 'on' : 'off');
                                 document.getElementById('onionSkinToggle').style.opacity = this.onionSkinEnabled ? '1' : '0.5';
                                 this.render();
                                 break;
@@ -9011,53 +9085,85 @@
                 
                 const startX = e.clientX;
                 const { cellW } = this.getTimelineMetrics();
-                const originalLength = holdLength;
-                const canvas = layer.frames[holdStart]; // the shared canvas object
+                const draggedCanvas = layer.frames[holdStart];
                 
-                // Save undo state before modifying
+                // Collect all selected hold blocks (plus the dragged one)
+                // Each entry: { canvas, startIndex, originalLength }
+                const { segments: holdSegs } = this.getHoldSegments(layer);
+                const selectedBlocks = [];
+                const addedCanvases = new Set();
+                
+                // Add dragged block first
+                addedCanvases.add(draggedCanvas);
+                selectedBlocks.push({ canvas: draggedCanvas, originalLength: holdLength });
+                
+                // Find other selected hold blocks
+                if (this.selectedFrames.size > 0) {
+                    for (const seg of holdSegs) {
+                        if (addedCanvases.has(seg.canvas)) continue;
+                        // Check if any frame in this segment is selected
+                        for (let fi = seg.startIndex; fi < seg.startIndex + seg.length; fi++) {
+                            if (this.selectedFrames.has(fi)) {
+                                addedCanvases.add(seg.canvas);
+                                selectedBlocks.push({ canvas: seg.canvas, originalLength: seg.length });
+                                break;
+                            }
+                        }
+                    }
+                }
+                
                 let undoSaved = false;
-                let currentLength = originalLength;
+                let snapshotFrames = null;
+                let appliedDelta = 0;
                 
                 const onMove = (ev) => {
                     const dx = ev.clientX - startX;
-                    const newLength = Math.max(1, originalLength + Math.round(dx / cellW));
+                    const rawDelta = Math.round(dx / cellW);
                     
-                    if (newLength === currentLength) return;
+                    // Clamp so no block goes below length 1
+                    let newDelta = rawDelta;
+                    for (const blk of selectedBlocks) {
+                        newDelta = Math.max(newDelta, 1 - blk.originalLength);
+                    }
+                    if (newDelta === appliedDelta) return;
                     
                     if (!undoSaved) {
                         this.saveFullState();
                         undoSaved = true;
+                        // Clean snapshot: trim trailing empty frames first
+                        this._trimTrailingEmptyFrames(layer);
+                        snapshotFrames = [...layer.frames];
                     }
                     
-                    const delta = newLength - currentLength;
+                    // Reset to snapshot
+                    layer.frames = [...snapshotFrames];
                     
-                    if (delta > 0) {
-                        // Extend: splice in hold frames at end of current block (pushes neighbors right)
-                        const insertAt = holdStart + currentLength;
-                        const holdFrames = new Array(delta).fill(canvas);
-                        layer.frames.splice(insertAt, 0, ...holdFrames);
-                    } else {
-                        // Shorten: splice out hold frames from end of block
-                        const removeCount = -delta;
-                        const removeAt = holdStart + newLength;
-                        // Only remove frames that belong to this hold block
-                        let toRemove = 0;
-                        for (let fi = removeAt; fi < removeAt + removeCount && fi < layer.frames.length; fi++) {
-                            if (layer.frames[fi] === canvas) toRemove++;
-                            else break;
+                    // Apply delta to each block from right to left (so splices don't shift earlier blocks)
+                    const blockInfos = selectedBlocks.map(blk => {
+                        let start = -1;
+                        for (let fi = 0; fi < layer.frames.length; fi++) {
+                            if (layer.frames[fi] === blk.canvas) { start = fi; break; }
                         }
-                        if (toRemove > 0) {
-                            layer.frames.splice(removeAt, toRemove);
+                        return { canvas: blk.canvas, start, originalLength: blk.originalLength };
+                    }).filter(b => b.start >= 0).sort((a, b) => b.start - a.start);
+                    
+                    for (const blk of blockInfos) {
+                        const targetLen = Math.max(1, blk.originalLength + newDelta);
+                        const delta = targetLen - blk.originalLength;
+                        
+                        if (delta > 0) {
+                            const insertAt = blk.start + blk.originalLength;
+                            const holdFrames = new Array(delta).fill(blk.canvas);
+                            layer.frames.splice(insertAt, 0, ...holdFrames);
+                        } else if (delta < 0) {
+                            const removeAt = blk.start + targetLen;
+                            layer.frames.splice(removeAt, -delta);
                         }
                     }
                     
-                    currentLength = newLength;
-                    // Trim trailing nulls
-                    while (layer.frames.length > 1 && layer.frames[layer.frames.length - 1] === null) {
-                        layer.frames.pop();
-                    }
+                    appliedDelta = newDelta;
+                    this._trimTrailingEmptyFrames(layer);
                     layer._holdSegmentsCache = null;
-                    handle.dataset.holdLength = newLength;
                     this._invalidateCompositeCache();
                     this._timelineDirty = true;
                     this.renderTimeline();
@@ -9068,10 +9174,7 @@
                     document.removeEventListener('pointerup', onUp);
                     document.removeEventListener('pointercancel', onUp);
                     if (undoSaved) {
-                        // Final cleanup: trim any trailing nulls
-                        while (layer.frames.length > 1 && layer.frames[layer.frames.length - 1] === null) {
-                            layer.frames.pop();
-                        }
+                        this._trimTrailingEmptyFrames(layer);
                         layer._holdSegmentsCache = null;
                         this._invalidateCompositeCache();
                         this.render();
@@ -9107,6 +9210,8 @@
                     if (!undoSaved) {
                         this.saveFullState();
                         undoSaved = true;
+                        // Clean any trailing empty frames upfront
+                        this._trimTrailingEmptyFrames(layer);
                     }
                     
                     // Remove previously inserted hold frames
@@ -9121,10 +9226,8 @@
                         layer.frames.splice(frameIdx + 1, 0, ...holdFrames);
                     }
                     
-                    // Trim trailing nulls
-                    while (layer.frames.length > 1 && layer.frames[layer.frames.length - 1] === null) {
-                        layer.frames.pop();
-                    }
+                    // Trim trailing empty frames
+                    this._trimTrailingEmptyFrames(layer);
                     
                     layer._holdSegmentsCache = null;
                     this._invalidateCompositeCache();
@@ -9137,10 +9240,7 @@
                     document.removeEventListener('pointerup', onUp);
                     document.removeEventListener('pointercancel', onUp);
                     if (undoSaved) {
-                        // Final cleanup: trim any trailing nulls
-                        while (layer.frames.length > 1 && layer.frames[layer.frames.length - 1] === null) {
-                            layer.frames.pop();
-                        }
+                        this._trimTrailingEmptyFrames(layer);
                         layer._holdSegmentsCache = null;
                         this._invalidateCompositeCache();
                         this.render();
@@ -9197,6 +9297,54 @@
                 frame._hasContentCached = result;
                 frame._hasContentVer = ver;
                 return result;
+            }
+            
+            // Trim trailing frames that are null or standalone blank canvases
+            // Hold frames (canvas shared by 2+ array entries) are always preserved
+            _trimTrailingEmptyFrames(layer) {
+                // Precompute: which canvases appear more than once (hold groups)
+                const refCount = new Map();
+                for (const f of layer.frames) {
+                    if (f) refCount.set(f, (refCount.get(f) || 0) + 1);
+                }
+                
+                // Walk backwards — find the last frame we must keep
+                let keepUntil = 0; // keep at least 1 frame
+                for (let i = layer.frames.length - 1; i >= 0; i--) {
+                    const f = layer.frames[i];
+                    if (f === null) continue;
+                    
+                    // Part of a hold group — always keep
+                    if (refCount.get(f) > 1) {
+                        keepUntil = i + 1;
+                        break;
+                    }
+                    
+                    // Standalone frame — keep only if it has drawn content
+                    if (f.width > 0 && f.height > 0) {
+                        const ctx = f.getContext('2d');
+                        const data = ctx.getImageData(0, 0, f.width, f.height).data;
+                        let hasPixels = false;
+                        for (let j = 3, len = data.length; j < len; j += 4) {
+                            if (data[j] > 0) { hasPixels = true; break; }
+                        }
+                        if (hasPixels) {
+                            keepUntil = i + 1;
+                            break;
+                        }
+                    }
+                    // Empty standalone frame — continue walking backwards
+                }
+                
+                // Truncate, keeping at least 1 frame
+                const newLen = Math.max(1, keepUntil);
+                if (layer.frames.length > newLen) {
+                    layer.frames.length = newLen;
+                }
+                // Always clamp playhead — array may have been shortened by splices before trim
+                if (layer.id === this.currentLayerId && this.currentFrameIndex >= layer.frames.length) {
+                    this.currentFrameIndex = layer.frames.length - 1;
+                }
             }
             
             releaseHoldFrame() {
