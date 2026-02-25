@@ -2750,6 +2750,30 @@
             color: #aaa;
         }
 
+        .smoothing-mode-toggle {
+            display: flex;
+            background: rgba(0,0,0,0.25);
+            border-radius: 7px;
+            padding: 2px;
+        }
+        .smoothing-mode-toggle .smt-btn {
+            flex: 1;
+            border: none;
+            background: none !important;
+            color: #555 !important;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 4px 10px;
+            cursor: pointer;
+            letter-spacing: 0.4px;
+            text-transform: uppercase;
+            transition: none !important;
+            box-shadow: none !important;
+            min-width: 0;
+            min-height: 0;
+        }
+        .smoothing-mode-toggle .smt-btn.active { color: #eee !important; }
+
         /* Onion skin dropdown panel */
         .onion-skin-dropdown {
             display: none;
@@ -3599,6 +3623,13 @@
                             <input type="range" id="brushSmoothing" min="0" max="100" value="80">
                             <span class="brush-setting-value" id="brushSmoothingValue">80%</span>
                         </div>
+                        <div class="brush-setting-row">
+                            <label>Mode:</label>
+                            <div class="smoothing-mode-toggle" id="smoothingModeToggle">
+                                <button class="smt-btn active" data-mode="standard" style="color:#eee">Standard</button>
+                                <button class="smt-btn" data-mode="smooth" style="color:#555">Smooth</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="dropdown-container">
@@ -3990,6 +4021,7 @@
                 this.brushShape = 'round';    // 'round', 'square', 'oval-h', 'oval-v'
                 this.eraserShape = 'round';
                 this.brushSmoothing = 80;      // 0-100
+                this.smoothingMode = 'standard'; // 'standard' (EMA) or 'smooth' (post-stroke Chaikin)
                 this.eraserSmoothing = 0;
                 this.smoothPoints = [];       // Buffer for smoothing
                 this.isDrawing = false;
@@ -5475,6 +5507,19 @@
                     this.selectTool('brush');
                     _closeAllDropdowns('brushDropdown');
                     brushDropdown.classList.toggle('show');
+                    // Sync smoothing mode toggle to current state
+                    if (brushDropdown.classList.contains('show')) {
+                        const toggle = document.getElementById('smoothingModeToggle');
+                        toggle.querySelectorAll('.smt-btn').forEach(b => {
+                            if (b.dataset.mode === this.smoothingMode) {
+                                b.classList.add('active');
+                                b.style.color = '#eee';
+                            } else {
+                                b.classList.remove('active');
+                                b.style.color = '#555';
+                            }
+                        });
+                    }
                 });
                 
                 eraserBtn.addEventListener('click', (e) => {
@@ -5508,6 +5553,24 @@
                 document.getElementById('brushSmoothing').addEventListener('input', (e) => {
                     this.brushSmoothing = parseInt(e.target.value);
                     document.getElementById('brushSmoothingValue').textContent = e.target.value + '%';
+                });
+                
+                // Smoothing mode toggle
+                document.getElementById('smoothingModeToggle').querySelectorAll('.smt-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.smoothingMode = btn.dataset.mode;
+                        const toggle = document.getElementById('smoothingModeToggle');
+                        toggle.querySelectorAll('.smt-btn').forEach(b => {
+                            if (b === btn) {
+                                b.classList.add('active');
+                                b.style.color = '#eee';
+                            } else {
+                                b.classList.remove('active');
+                                b.style.color = '#555';
+                            }
+                        });
+                    });
                 });
                 
                 // Pressure toggle — keep brush and eraser toggles + toolbar toggle synced
@@ -7435,10 +7498,9 @@
                     this._strokeSmoothing = this.getSmoothing();
                     this._strokeCompositeOp = this.tool === 'eraser' ? 'destination-out' : 'source-over';
                     this._strokeColor = this.color;
-                    // Initialize velocity-adaptive + Catmull-Rom smoothing state
-                    this._strokeBuffer = []; // ring buffer for Catmull-Rom (last 4 smoothed points)
-                    this._strokeLastTime = performance.now();
-                    this._strokeVelocity = 0;
+                    this._strokeMode = this.smoothingMode; // 'standard' or 'smooth'
+                    // Initialize post-stroke smoothing: collect raw points during drawing
+                    this._strokePoints = (this._strokeMode === 'smooth') ? [] : null;
                     if (frame) {
                         const growth = this.ensureFrameCovers(frame, worldX, worldY);
                         if ((growth.dx !== 0 || growth.dy !== 0) && this._lastStrokeEnd) {
@@ -7463,20 +7525,30 @@
                     if (!this.strokeStateSaved) {
                         this.strokeStateSaved = true;
                         this._pendingSnapshot = this.snapshotFrame();
+                        // Store pre-stroke frame data for post-stroke smoothing restore (smooth mode only)
+                        if (this._strokeMode === 'smooth' && this._pendingSnapshot && this._pendingSnapshot.frameData) {
+                            this._preStrokeData = this._pendingSnapshot.frameData;
+                        }
                     }
                     
                     // Shift+click = straight line from last stroke end (Photoshop-style)
                     if (e.shiftKey && this._lastStrokeEnd) {
                         this.drawLine(this._lastStrokeEnd.x, this._lastStrokeEnd.y, this.lastX, this.lastY);
+                        // Add the line start to point buffer so post-stroke smoothing preserves it
+                        if (this._strokePoints) {
+                            this._strokePoints.push({ x: this._lastStrokeEnd.x, y: this._lastStrokeEnd.y, pressure: this.currentPressure });
+                        }
                         this._lastStrokeEnd = { x: this.lastX, y: this.lastY };
+                        // Skip post-stroke smoothing for shift+click straight lines
+                        this._skipPostSmooth = true;
                     } else {
                         this._lastStrokeEnd = { x: this.lastX, y: this.lastY };
+                        this._skipPostSmooth = false;
                     }
                     this.drawPoint(this.lastX, this.lastY);
-                    // Seed the Catmull-Rom buffer with the starting point (duplicated for boundary)
-                    if (this._strokeBuffer) {
-                        const p = { x: this.lastX, y: this.lastY };
-                        this._strokeBuffer.push(p, p);
+                    // Seed point buffer for post-stroke smoothing
+                    if (this._strokePoints) {
+                        this._strokePoints.push({ x: this.lastX, y: this.lastY, pressure: this.currentPressure });
                     }
                     
                     // Push the pre-stroke snapshot to undo stack asynchronously
@@ -7709,11 +7781,9 @@
                             this.lastY = local.y;
                             this.smoothX = local.x;
                             this.smoothY = local.y;
-                            // Reset Catmull-Rom buffer for new frame
-                            if (this._strokeBuffer) {
-                                this._strokeBuffer.length = 0;
-                                const p = { x: local.x, y: local.y };
-                                this._strokeBuffer.push(p, p);
+                            // Reset point buffer for new frame
+                            if (this._strokePoints) {
+                                this._strokePoints = [{ x: local.x, y: local.y, pressure: this.currentPressure }];
                             }
                             this.drawPoint(local.x, local.y);
                         }
@@ -7750,10 +7820,10 @@
                     }
                     
                     const smoothing = this._strokeSmoothing !== undefined ? this._strokeSmoothing : this.getSmoothing();
+                    const mode = this._strokeMode || 'standard';
                     
                     // Safety: if pointer teleported (edge glitch during playback, etc.),
                     // start a new stroke segment instead of connecting with a long line.
-                    // Threshold is very high — only catches actual glitches, not fast drawing.
                     const jumpDx = tx - this.lastX;
                     const jumpDy = ty - this.lastY;
                     const jumpDist = Math.sqrt(jumpDx * jumpDx + jumpDy * jumpDy);
@@ -7763,62 +7833,38 @@
                         this.lastY = ty;
                         this.smoothX = tx;
                         this.smoothY = ty;
-                        if (this._strokeBuffer) {
-                            this._strokeBuffer.length = 0;
-                            const p = { x: tx, y: ty };
-                            this._strokeBuffer.push(p, p);
-                        }
                         this.drawPoint(tx, ty);
+                        if (this._strokePoints) {
+                            this._strokePoints.push({ x: tx, y: ty, pressure: this.currentPressure });
+                        }
                         return;
                     }
                     
-                    if (smoothing > 0 && this._strokeBuffer) {
-                        // --- Velocity-adaptive + Catmull-Rom smoothing ---
-                        const now = performance.now();
-                        const dt = Math.max(1, now - this._strokeLastTime);
-                        this._strokeLastTime = now;
-                        
-                        // Velocity in pixels per millisecond
-                        const rawDist = Math.sqrt((tx - this.smoothX) ** 2 + (ty - this.smoothY) ** 2);
-                        const velocity = rawDist / dt;
-                        // Smooth velocity to avoid sudden changes
-                        this._strokeVelocity = this._strokeVelocity * 0.6 + velocity * 0.4;
-                        
-                        // Adaptive factor: fast motion (>1.5 px/ms) = low smoothing, slow (<0.3) = high
-                        // Base factor from slider (0-100), velocity scales it
-                        const baseFactor = (smoothing / 100) * 0.95;
-                        const speedRatio = Math.min(1, Math.max(0, (this._strokeVelocity - 0.15) / 1.5));
-                        const adaptiveFactor = 1 - baseFactor * (1 - speedRatio * 0.7);
-                        
-                        // EMA with adaptive factor
-                        this.smoothX += (tx - this.smoothX) * adaptiveFactor;
-                        this.smoothY += (ty - this.smoothY) * adaptiveFactor;
-                        
-                        // Push smoothed point to Catmull-Rom buffer
-                        this._strokeBuffer.push({ x: this.smoothX, y: this.smoothY });
-                        
-                        // Draw Catmull-Rom curve when we have enough points
-                        // Buffer: [p0, p1, p2, p3, ...] — draw curve between p1-p2 using p0 and p3 as guides
-                        const buf = this._strokeBuffer;
-                        while (buf.length >= 4) {
-                            const p0 = buf[0], p1 = buf[1], p2 = buf[2], p3 = buf[3];
-                            this._drawCatmullRom(p0, p1, p2, p3);
-                            this.lastX = p2.x;
-                            this.lastY = p2.y;
-                            buf.shift();
+                    if (mode === 'standard') {
+                        // Standard mode: real-time EMA smoothing
+                        if (smoothing > 0) {
+                            const factor = 1 - (smoothing / 100) * 0.95;
+                            this.smoothX += (tx - this.smoothX) * factor;
+                            this.smoothY += (ty - this.smoothY) * factor;
+                            this.drawLine(this.lastX, this.lastY, this.smoothX, this.smoothY);
+                            this.lastX = this.smoothX;
+                            this.lastY = this.smoothY;
+                        } else {
+                            this.drawLine(this.lastX, this.lastY, tx, ty);
+                            this.lastX = tx;
+                            this.lastY = ty;
                         }
-                    } else if (smoothing > 0) {
-                        // Fallback: simple EMA (no buffer)
-                        const factor = 1 - (smoothing / 100) * 0.95;
-                        this.smoothX += (tx - this.smoothX) * factor;
-                        this.smoothY += (ty - this.smoothY) * factor;
-                        this.drawLine(this.lastX, this.lastY, this.smoothX, this.smoothY);
-                        this.lastX = this.smoothX;
-                        this.lastY = this.smoothY;
                     } else {
+                        // Smooth mode: draw raw for instant feedback, collect for post-stroke
                         this.drawLine(this.lastX, this.lastY, tx, ty);
                         this.lastX = tx;
                         this.lastY = ty;
+                        this.smoothX = tx;
+                        this.smoothY = ty;
+                        
+                        if (this._strokePoints) {
+                            this._strokePoints.push({ x: tx, y: ty, pressure: this.currentPressure });
+                        }
                     }
                 } else if (this.shapeStart) {
                     // Preview shape (line, rect, circle, triangle)
@@ -8136,24 +8182,11 @@
                 
                 // Save last position for shift+click straight line
                 if (this.tool === 'brush' || this.tool === 'eraser') {
-                    // Flush remaining Catmull-Rom buffer points
-                    if (this._strokeBuffer && this._strokeBuffer.length >= 3) {
-                        const buf = this._strokeBuffer;
-                        // Duplicate the last point as p3 guide for final segment
-                        buf.push({ x: buf[buf.length - 1].x, y: buf[buf.length - 1].y });
-                        while (buf.length >= 4) {
-                            const p0 = buf[0], p1 = buf[1], p2 = buf[2], p3 = buf[3];
-                            this._drawCatmullRom(p0, p1, p2, p3);
-                            this.lastX = p2.x;
-                            this.lastY = p2.y;
-                            buf.shift();
-                        }
-                    } else if (this._strokeBuffer && this._strokeBuffer.length >= 2) {
-                        // Very short stroke — draw remaining as line
-                        const last = this._strokeBuffer[this._strokeBuffer.length - 1];
-                        this.drawLine(this.lastX, this.lastY, last.x, last.y);
-                        this.lastX = last.x;
-                        this.lastY = last.y;
+                    // Post-stroke smoothing: apply Chaikin's corner-cutting to collected points
+                    // Skip for shift+click straight lines — those should stay perfectly straight
+                    const smoothing = this._strokeSmoothing !== undefined ? this._strokeSmoothing : this.getSmoothing();
+                    if (smoothing > 0 && !this._skipPostSmooth && this._strokePoints && this._strokePoints.length >= 3 && this._preStrokeData) {
+                        this._applyPostStrokeSmoothing(smoothing);
                     }
                     this._lastStrokeEnd = { x: this.lastX, y: this.lastY };
                 }
@@ -8168,9 +8201,10 @@
                 this._strokeSmoothing = undefined;
                 this._strokeCompositeOp = undefined;
                 this._strokeColor = undefined;
-                this._strokeBuffer = null;
-                this._strokeLastTime = 0;
-                this._strokeVelocity = 0;
+                this._strokeMode = undefined;
+                this._strokePoints = null;
+                this._preStrokeData = null;
+                this._skipPostSmooth = false;
                 // Invalidate thumbnail cache so timeline indicators update
                 const _layer = this.getCurrentLayer();
                 if (_layer) this._dirtyThumb(_layer.frames[this.currentFrameIndex]);
@@ -8309,37 +8343,117 @@
                 }
             }
             
-            // Draw a Catmull-Rom spline segment between p1 and p2,
-            // using p0 and p3 as tangent guides. Subdivides into small
-            // line segments to maintain brush shape/pressure rendering.
-            _drawCatmullRom(p0, p1, p2, p3) {
-                // Centripetal Catmull-Rom (alpha=0.5) for better cusp handling
-                const subdivisions = 4;
-                let prevX = p1.x, prevY = p1.y;
+            // Post-stroke smoothing: restore frame, decimate + smooth points, redraw
+            _applyPostStrokeSmoothing(smoothing) {
+                const layer = this.getCurrentLayer();
+                const frame = layer.frames[this.currentFrameIndex];
+                if (!frame || !this._preStrokeData) return;
                 
-                for (let i = 1; i <= subdivisions; i++) {
-                    const t = i / subdivisions;
-                    const t2 = t * t;
-                    const t3 = t2 * t;
-                    
-                    // Catmull-Rom basis matrix (tension = 0.5)
-                    const x = 0.5 * (
-                        (2 * p1.x) +
-                        (-p0.x + p2.x) * t +
-                        (2 * p0.x - 5 * p1.x + 4 * p2.x - p3.x) * t2 +
-                        (-p0.x + 3 * p1.x - 3 * p2.x + p3.x) * t3
-                    );
-                    const y = 0.5 * (
-                        (2 * p1.y) +
-                        (-p0.y + p2.y) * t +
-                        (2 * p0.y - 5 * p1.y + 4 * p2.y - p3.y) * t2 +
-                        (-p0.y + 3 * p1.y - 3 * p2.y + p3.y) * t3
-                    );
-                    
-                    this.drawLine(prevX, prevY, x, y);
-                    prevX = x;
-                    prevY = y;
+                const preData = this._preStrokeData;
+                
+                // Determine decimation and Chaikin passes from smoothing slider
+                // Higher smoothing = more aggressive decimation (fewer points = longer segments = more rounding)
+                // Plus more Chaikin passes for additional curve refinement
+                const t = smoothing / 100; // 0 to 1
+                
+                // Decimation: keep every Nth point. At 100%, keep every ~12th point.
+                // This creates real corners for Chaikin to work with.
+                const keepEvery = Math.max(1, Math.round(1 + t * 11));
+                
+                // Chaikin passes: 2-4 based on smoothing level
+                const passes = Math.max(2, Math.min(4, Math.ceil(t * 4)));
+                
+                // Decimate: sample every Nth point, always keeping first and last
+                let points = this._strokePoints;
+                if (points.length < 3) return;
+                
+                let decimated = [points[0]];
+                for (let i = keepEvery; i < points.length - 1; i += keepEvery) {
+                    decimated.push(points[i]);
                 }
+                decimated.push(points[points.length - 1]);
+                
+                // Need at least 3 points for meaningful smoothing
+                if (decimated.length < 3) {
+                    // Too few points after decimation — use less aggressive decimation
+                    decimated = [points[0]];
+                    const fallbackN = Math.max(1, Math.floor(keepEvery / 2));
+                    for (let i = fallbackN; i < points.length - 1; i += fallbackN) {
+                        decimated.push(points[i]);
+                    }
+                    decimated.push(points[points.length - 1]);
+                }
+                
+                if (decimated.length < 3) return; // Still too short
+                
+                // Apply Chaikin smoothing to decimated points
+                let smoothed = this._chaikinSmooth(decimated, passes);
+                
+                // Restore frame to pre-stroke state
+                if (frame.width !== preData.width || frame.height !== preData.height) {
+                    frame.width = preData.width;
+                    frame.height = preData.height;
+                }
+                frame._originX = preData.originX || 0;
+                frame._originY = preData.originY || 0;
+                const ctx = frame.getContext('2d');
+                ctx.clearRect(0, 0, frame.width, frame.height);
+                ctx.putImageData(preData.imageData, 0, 0);
+                
+                // Ensure frame covers all smoothed points (may need to re-expand)
+                for (const pt of smoothed) {
+                    const worldX = pt.x + (frame._originX || 0);
+                    const worldY = pt.y + (frame._originY || 0);
+                    const growth = this.ensureFrameCovers(frame, worldX, worldY);
+                    if (growth.dx !== 0 || growth.dy !== 0) {
+                        for (const p of smoothed) {
+                            p.x += growth.dx;
+                            p.y += growth.dy;
+                        }
+                    }
+                }
+                
+                // Redraw the smoothed path
+                const savedPressure = this.currentPressure;
+                this.currentPressure = smoothed[0].pressure;
+                this.drawPoint(smoothed[0].x, smoothed[0].y);
+                
+                for (let i = 1; i < smoothed.length; i++) {
+                    this.currentPressure = smoothed[i].pressure;
+                    this.drawLine(smoothed[i - 1].x, smoothed[i - 1].y, smoothed[i].x, smoothed[i].y);
+                }
+                
+                const last = smoothed[smoothed.length - 1];
+                this.lastX = last.x;
+                this.lastY = last.y;
+                this.currentPressure = savedPressure;
+            }
+            
+            // Chaikin's corner-cutting algorithm
+            // Each pass replaces each segment with two new points at 25% and 75%,
+            // preserving endpoints. Pressure is interpolated along with position.
+            _chaikinSmooth(points, passes) {
+                let pts = points;
+                for (let pass = 0; pass < passes; pass++) {
+                    const next = [];
+                    next.push(pts[0]); // keep first
+                    for (let i = 0; i < pts.length - 1; i++) {
+                        const p0 = pts[i], p1 = pts[i + 1];
+                        next.push({
+                            x: p0.x * 0.75 + p1.x * 0.25,
+                            y: p0.y * 0.75 + p1.y * 0.25,
+                            pressure: p0.pressure * 0.75 + p1.pressure * 0.25
+                        });
+                        next.push({
+                            x: p0.x * 0.25 + p1.x * 0.75,
+                            y: p0.y * 0.25 + p1.y * 0.75,
+                            pressure: p0.pressure * 0.25 + p1.pressure * 0.75
+                        });
+                    }
+                    next.push(pts[pts.length - 1]); // keep last
+                    pts = next;
+                }
+                return pts;
             }
             
             drawShape(x1, y1, x2, y2, preview = false, shiftKey = false, altKey = false) {
