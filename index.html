@@ -5611,10 +5611,18 @@
                     document.getElementById('eraserSmoothingValue').textContent = e.target.value + '%';
                 });
 
+                this._activeFillTool = 'fill';
                 document.getElementById('fillTool').addEventListener('click', (e) => {
                     e.stopPropagation();
-                    _closeAllDropdowns('fillToolDropdown');
-                    document.getElementById('fillToolDropdown').classList.toggle('show');
+                    if (this.tool === 'fill' || this.tool === 'gradient' || this.tool === 'eyedropper') {
+                        // Already on a fill sub-tool — toggle dropdown to switch
+                        _closeAllDropdowns('fillToolDropdown');
+                        document.getElementById('fillToolDropdown').classList.toggle('show');
+                    } else {
+                        // Activate paint bucket directly
+                        _closeAllDropdowns();
+                        this.selectTool('fill');
+                    }
                 });
                 
                 // Fill/Eyedropper tool selection
@@ -5630,6 +5638,7 @@
                     item.addEventListener('click', (e) => {
                         e.stopPropagation();
                         const ft = item.getAttribute('data-filltool');
+                        this._activeFillTool = ft;
                         this.selectTool(ft);
                         fillDropdown.classList.remove('show');
                     });
@@ -7768,6 +7777,9 @@
                     
                     // Detect frame change during playback — reset stroke to avoid cross-frame lines
                     if (this._drawingFrameIndex !== undefined && this._drawingFrameIndex !== this.currentFrameIndex) {
+                        // Invalidate thumbnail cache for the frame we just drew on so its keyframe indicator updates
+                        const prevFrame = layer.frames[this._drawingFrameIndex];
+                        if (prevFrame) this._dirtyThumb(prevFrame);
                         this._drawingFrameIndex = this.currentFrameIndex;
                         // Save undo state for this new frame
                         this.strokeStateSaved = true;
@@ -8192,6 +8204,8 @@
                 }
                 
                 this.isDrawing = false;
+                // Capture which frame we were actually drawing on before clearing
+                const _drawingFrame = this._drawingFrameIndex;
                 this._drawingFrameIndex = undefined;
                 this.shapeStart = null;
                 this._shiftAnchor = null;
@@ -8208,6 +8222,10 @@
                 // Invalidate thumbnail cache so timeline indicators update
                 const _layer = this.getCurrentLayer();
                 if (_layer) this._dirtyThumb(_layer.frames[this.currentFrameIndex]);
+                // Also dirty the frame we were actually drawing on (may differ during playback)
+                if (_layer && _drawingFrame !== undefined && _drawingFrame !== this.currentFrameIndex) {
+                    this._dirtyThumb(_layer.frames[_drawingFrame]);
+                }
                 this.render();
             }
             
@@ -8976,6 +8994,28 @@
             
             clearCurrentFrame() {
                 const layer = this.getCurrentLayer();
+                
+                // If multiple frames are selected, clear all of them
+                if (this.selectedFrames.size > 1) {
+                    this.saveFullState(); // full state since multiple frames change
+                    for (const fi of this.selectedFrames) {
+                        if (fi >= 0 && fi < layer.frames.length) {
+                            layer.frames[fi] = this.createEmptyFrame();
+                            this._dirtyThumb(layer.frames[fi]);
+                        }
+                    }
+                    this.selectedFrames.clear();
+                    if (this.frameSelectMode) {
+                        this.frameSelectMode = false;
+                        document.getElementById('frameSelectBanner').classList.remove('show');
+                    }
+                    this._timelineDirty = true;
+                    this.initializeFrame();
+                    this.render();
+                    return;
+                }
+                
+                // Single frame clear
                 // If this is a hold frame, clearing breaks the link — need full state save
                 if (this.isHoldFrame(layer, this.currentFrameIndex)) {
                     this.saveFullState(); // marks dirty
@@ -10967,6 +11007,11 @@
                     
                     frameCtx.restore();
                 }
+                
+                // Update timeline indicator — frame now has content
+                this._dirtyThumb(frame);
+                this._timelineDirty = true;
+                this.renderTimeline();
             }
             
             // Draw an image mapped onto an arbitrary quadrilateral using triangle subdivision
