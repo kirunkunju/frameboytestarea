@@ -846,10 +846,18 @@
             z-index: 1;
         }
         
+        #gridCanvas {
+            position: absolute;
+            pointer-events: none;
+            z-index: 4;
+            opacity: 0.18;
+            display: none;
+        }
+        
         #selectionCanvas {
             position: absolute;
             pointer-events: auto;
-            z-index: 3;
+            z-index: 5;
         }
         
         .transform-handle {
@@ -860,7 +868,7 @@
             border: 2px solid #5b8def;
             border-radius: 50%;
             cursor: pointer;
-            z-index: 4;
+            z-index: 6;
             transform: translate(-50%, -50%);
             touch-action: none;
             box-shadow: 2px 2px 4px rgba(0,0,0,0.4);
@@ -3562,6 +3570,7 @@
                     <button id="fileMenuBtn" title="File (Save/Load/Export)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 1.5h8l3 3V13a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 012 13V3a1.5 1.5 0 011-1.5z"/><path d="M5 1.5v4h6v-4"/><path d="M5 14.5v-4h6v4"/></svg> <span class="btn-label">File ▼</span></button>
                     <div class="dropdown-menu" id="fileMenuDropdown">
                         <button class="dropdown-item" id="canvasSizeBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="1.5" y="1.5" width="13" height="13" rx="1" stroke-dasharray="2 2"/><path d="M10 6l3-3M13 6V3h-3"/><path d="M6 10l-3 3M3 10v3h3"/></svg> Canvas Size…</button>
+                        <button class="dropdown-item" id="gridToggleBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="5.5" x2="15" y2="5.5"/><line x1="1" y1="10.5" x2="15" y2="10.5"/><line x1="5.5" y1="1" x2="5.5" y2="15"/><line x1="10.5" y1="1" x2="10.5" y2="15"/><line x1="3" y1="2" x2="8" y2="8"/><line x1="8" y1="8" x2="13" y2="2"/><line x1="3" y1="14" x2="8" y2="8"/><line x1="8" y1="8" x2="13" y2="14"/></svg> <span id="gridToggleLabel">Show Grid</span> <span class="shortcut">⇧G</span></button>
                         <div class="dropdown-divider"></div>
                         <button class="dropdown-item" id="saveProjectBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M3 1.5h8l3 3V13a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 012 13V3a1.5 1.5 0 011-1.5z"/><path d="M5 1.5v4h6v-4"/><path d="M5 14.5v-4h6v4"/></svg> Save Project (.fby) <span class="shortcut">⌘S</span></button>
                         <button class="dropdown-item" id="loadProjectBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M2 4v9a1 1 0 001 1h10a1 1 0 001-1V6a1 1 0 00-1-1H8L6.5 3H3a1 1 0 00-1 1z"/></svg> Load Project (.fby) <span class="shortcut">⌘O</span></button>
@@ -3746,6 +3755,7 @@
                 <div class="canvas-wrapper" id="canvasWrapper">
                     <canvas id="onionCanvas" width="1920" height="1080"></canvas>
                     <canvas id="mainCanvas" width="1920" height="1080"></canvas>
+                    <canvas id="gridCanvas" width="1920" height="1080"></canvas>
                     <canvas id="selectionCanvas" width="1920" height="1080"></canvas>
                     <div class="brush-cursor" id="brushCursor"></div>
                 </div>
@@ -4002,6 +4012,9 @@
                 this.onionCtx = this.onionCanvas.getContext('2d');
                 this.selectionCanvas = document.getElementById('selectionCanvas');
                 this.selectionCtx = this.selectionCanvas.getContext('2d');
+                this.gridCanvas = document.getElementById('gridCanvas');
+                this.gridCtx = this.gridCanvas.getContext('2d');
+                this.gridVisible = false;
                 this.brushCursor = document.getElementById('brushCursor');
                 
                 this.layers = [{ id: 1, name: 'Layer 1', visible: true, opacity: 1.0, frames: [], transformKeyframes: [], startFrame: 0, parentId: null }];
@@ -4386,7 +4399,7 @@
                 this.canvasWrapper.style.margin = my + 'px ' + mx + 'px';
                 
                 // Size all canvases to wrapper
-                const canvases = [this.canvas, this.onionCanvas, this.selectionCanvas];
+                const canvases = [this.canvas, this.onionCanvas, this.selectionCanvas, this.gridCanvas];
                 for (const c of canvases) {
                     c.style.width = w + 'px';
                     c.style.height = h + 'px';
@@ -4397,6 +4410,8 @@
                 this.onionCanvas.style.top = '0px';
                 this.selectionCanvas.style.left = '0px';
                 this.selectionCanvas.style.top = '0px';
+                this.gridCanvas.style.left = '0px';
+                this.gridCanvas.style.top = '0px';
                 
                 // Update zoom label — show zoom relative to project, not pasteboard
                 const pct = Math.round(zoom * 100);
@@ -4885,6 +4900,8 @@
                     this.selectionCanvas.height = newH;
                     this.onionCanvas.width = newW;
                     this.onionCanvas.height = newH;
+                    this.gridCanvas.width = newW;
+                    this.gridCanvas.height = newH;
                     
                     // Set viewport so project area is centered in the canvas
                     this.viewportX = -pad;
@@ -4897,6 +4914,8 @@
                     this.selectionCanvas.height = this.projectHeight;
                     this.onionCanvas.width = this.projectWidth;
                     this.onionCanvas.height = this.projectHeight;
+                    this.gridCanvas.width = this.projectWidth;
+                    this.gridCanvas.height = this.projectHeight;
                     
                     this.viewportX = 0;
                     this.viewportY = 0;
@@ -4915,6 +4934,7 @@
                 }
                 
                 this.render();
+                this.drawGrid();
             }
             
             _centerScrollOnProject() {
@@ -5030,10 +5050,13 @@
                     this.onionCanvas.height = newH;
                     this.selectionCanvas.width = newW;
                     this.selectionCanvas.height = newH;
+                    this.gridCanvas.width = newW;
+                    this.gridCanvas.height = newH;
                     
                     this.zoomLevel = null;
                     this.applyZoom();
                     this.render();
+                    this.drawGrid();
                     this.canvasContainer.scrollLeft = 0;
                     this.canvasContainer.scrollTop = 0;
                 }
@@ -5931,6 +5954,10 @@
                 
                 // Pasteboard toggle button
                 document.getElementById('pasteboardToggle').addEventListener('click', () => this.togglePasteboard());
+                document.getElementById('gridToggleBtn').addEventListener('click', () => {
+                    this.toggleGrid();
+                    document.getElementById('fileMenuDropdown').classList.remove('show');
+                });
                 
                 // Pill pan button
                 document.getElementById('pillPanBtn').addEventListener('click', () => {
@@ -6097,6 +6124,10 @@
                             case 'g':
                                 e.preventDefault();
                                 this.selectTool('gradient');
+                                break;
+                            case 'G':
+                                e.preventDefault();
+                                this.toggleGrid();
                                 break;
                             case 'x':
                                 e.preventDefault();
@@ -12660,6 +12691,8 @@
                     this.selectionCanvas.height = this.projectHeight;
                     this.onionCanvas.width = this.projectWidth;
                     this.onionCanvas.height = this.projectHeight;
+                    this.gridCanvas.width = this.projectWidth;
+                    this.gridCanvas.height = this.projectHeight;
                     this.zoomLevel = null;
                     this.applyZoom();
                     // Reset viewport to camera origin (pasteboard offset was for editing)
@@ -13444,6 +13477,103 @@
                 } else {
                     this._updateTimelineActive();
                 }
+            }
+            
+            toggleGrid() {
+                this.gridVisible = !this.gridVisible;
+                this.gridCanvas.style.display = this.gridVisible ? 'block' : 'none';
+                const label = document.getElementById('gridToggleLabel');
+                if (label) label.textContent = this.gridVisible ? 'Hide Grid' : 'Show Grid';
+                if (this.gridVisible) this.drawGrid();
+            }
+            
+            drawGrid() {
+                if (!this.gridVisible) return;
+                const gc = this.gridCanvas;
+                const ctx = this.gridCtx;
+                
+                // Grid covers only the project area
+                const W = this.projectWidth;
+                const H = this.projectHeight;
+                // Offset for pasteboard mode
+                const ox = this.pasteboardVisible ? -this.viewportX : 0;
+                const oy = this.pasteboardVisible ? -this.viewportY : 0;
+                
+                ctx.clearRect(0, 0, gc.width, gc.height);
+                ctx.save();
+                ctx.translate(ox, oy);
+                // Clip to project bounds
+                ctx.beginPath();
+                ctx.rect(0, 0, W, H);
+                ctx.clip();
+                
+                ctx.strokeStyle = '#000000';
+                ctx.lineWidth = 1;
+                
+                // Offset diamond tessellation: 8 rows, ~5 columns
+                const rows = 8;
+                const cols = Math.round((W / H) * rows / 1.6) || 5;
+                const rowH = H / rows;
+                const colW = W / cols;
+                
+                // Horizontal lines
+                for (let r = 0; r <= rows; r++) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, r * rowH);
+                    ctx.lineTo(W, r * rowH);
+                    ctx.stroke();
+                }
+                
+                // Vertical lines
+                for (let c = 0; c <= cols; c++) {
+                    ctx.beginPath();
+                    ctx.moveTo(c * colW, 0);
+                    ctx.lineTo(c * colW, H);
+                    ctx.stroke();
+                }
+                
+                // Offset diagonals — alternating even/odd rows
+                // Even rows: peaks at vertical intersections (c * colW)
+                // Odd rows: peaks at midpoints ((c + 0.5) * colW)
+                for (let r = 0; r < rows; r++) {
+                    const y0 = r * rowH;
+                    const y1 = (r + 1) * rowH;
+                    
+                    if (r % 2 === 0) {
+                        // From vertical intersections down to midpoints
+                        for (let c = 0; c <= cols; c++) {
+                            const x0 = c * colW;
+                            // Down-right
+                            const xr = x0 + colW / 2;
+                            if (xr <= W + 1) {
+                                ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(xr, y1); ctx.stroke();
+                            }
+                            // Down-left
+                            const xl = x0 - colW / 2;
+                            if (xl >= -1) {
+                                ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(xl, y1); ctx.stroke();
+                            }
+                        }
+                    } else {
+                        // From midpoints down to vertical intersections
+                        for (let c = -1; c <= cols; c++) {
+                            const x0 = c * colW + colW / 2;
+                            if (x0 < -colW || x0 > W + colW) continue;
+                            // Down-right
+                            const xr = x0 + colW / 2;
+                            if (xr >= -1 && xr <= W + 1) {
+                                ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(xr, y1); ctx.stroke();
+                            }
+                            // Down-left
+                            const xl = x0 - colW / 2;
+                            if (xl >= -1 && xl <= W + 1) {
+                                ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(xl, y1); ctx.stroke();
+                            }
+                        }
+                    }
+                }
+                
+                ctx.restore();
             }
             
             renderCanvasOnly() {
@@ -15646,6 +15776,8 @@
                             this.onionCanvas.height = project.canvasHeight;
                             this.selectionCanvas.width = project.canvasWidth;
                             this.selectionCanvas.height = project.canvasHeight;
+                            this.gridCanvas.width = project.canvasWidth;
+                            this.gridCanvas.height = project.canvasHeight;
                         }
                     }
                     
@@ -15778,6 +15910,7 @@
                     this._invalidateCompositeCache();
                     this.positionOnionCanvas();
                     this.render();
+                    this.drawGrid();
                     
                     fileMenuBtn.textContent = '✓ Loaded!';
                     setTimeout(() => {
