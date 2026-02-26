@@ -2300,6 +2300,25 @@
             overflow: hidden;
         }
         
+        .frame-drag-ghost .drag-count-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            min-width: 20px;
+            height: 20px;
+            background: #5b8def;
+            color: #fff;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0 5px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+            z-index: 1;
+        }
+        
         .frame-drop-indicator {
             position: absolute;
             width: 3px;
@@ -2327,6 +2346,16 @@
         
         .frame.active.selected .frame-thumb {
             box-shadow: inset 2px 2px 4px rgba(0,0,0,0.3), inset -1px -1px 3px rgba(255,255,255,0.03), 0 0 0 2px rgba(91,141,239,0.5);
+        }
+        
+        .hold-block.selected {
+            outline: 2px solid rgba(91,141,239,0.4);
+            outline-offset: -1px;
+            border-radius: 8px;
+            background: rgba(91,141,239,0.06);
+        }
+        .hold-block.selected.has-active {
+            outline-color: rgba(91,141,239,0.55);
         }
         
         .frame-select-banner {
@@ -9367,8 +9396,15 @@
                 ];
                 const segments = [];
                 // Map canvas -> color for consistent coloring
+                // Colors are stored on the canvas itself so they persist across reorders
                 const canvasColorMap = new Map();
                 let colorIdx = 0;
+                // First pass: count existing assigned colors to avoid reusing them
+                for (const f of layer.frames) {
+                    if (f && f._holdColor) canvasColorMap.set(f, f._holdColor);
+                }
+                // Find next colorIdx that won't collide
+                const usedColors = new Set(canvasColorMap.values());
                 let i = 0;
                 while (i < layer.frames.length) {
                     const canvas = layer.frames[i];
@@ -9380,7 +9416,16 @@
                     }
                     if (len > 1) {
                         if (!canvasColorMap.has(canvas)) {
-                            canvasColorMap.set(canvas, holdPalette[colorIdx % holdPalette.length]);
+                            // Assign a new color, skipping already-used ones when possible
+                            let attempts = 0;
+                            while (attempts < holdPalette.length && usedColors.has(holdPalette[colorIdx % holdPalette.length])) {
+                                colorIdx++;
+                                attempts++;
+                            }
+                            const color = holdPalette[colorIdx % holdPalette.length];
+                            canvasColorMap.set(canvas, color);
+                            usedColors.add(color);
+                            canvas._holdColor = color;
                             colorIdx++;
                         }
                         segments.push({
@@ -9604,6 +9649,44 @@
                 
                 // Move playhead to the start of the moved block
                 this.currentFrameIndex = adjustedIdx;
+                
+                this._invalidateCompositeCache();
+                this._timelineDirty = true;
+                this.render();
+                this._scrollTimelineToFrame(this.currentFrameIndex);
+            }
+            
+            _moveMultiFrames(indices, insertIdx) {
+                const layer = this.getCurrentLayer();
+                if (!layer) return;
+                
+                this.saveFullState();
+                
+                const sorted = [...indices].sort((a, b) => a - b);
+                // Collect frames to move
+                const frames = sorted.map(i => layer.frames[i]);
+                
+                // Remove from back to front to keep indices valid
+                for (let i = sorted.length - 1; i >= 0; i--) {
+                    layer.frames.splice(sorted[i], 1);
+                }
+                
+                // Adjust insert index for removed frames that were before it
+                let adj = insertIdx;
+                for (const idx of sorted) {
+                    if (idx < insertIdx) adj--;
+                }
+                adj = Math.max(0, Math.min(adj, layer.frames.length));
+                
+                // Insert all frames at target
+                layer.frames.splice(adj, 0, ...frames);
+                
+                // Update playhead and selection to new positions
+                this.currentFrameIndex = adj;
+                this.selectedFrames.clear();
+                for (let i = 0; i < frames.length; i++) {
+                    this.selectedFrames.add(adj + i);
+                }
                 
                 this._invalidateCompositeCache();
                 this._timelineDirty = true;
@@ -13870,6 +13953,11 @@
                 
                 const container = document.getElementById('framesContainer');
                 const layersList = document.getElementById('layersList');
+                
+                // Preserve scroll position across DOM rebuild
+                const framesSection = document.getElementById('timelineFramesSection');
+                const savedScrollLeft = framesSection ? framesSection.scrollLeft : 0;
+                
                 container.innerHTML = '';
                 layersList.innerHTML = '';
                 
@@ -13883,7 +13971,7 @@
                 }
                 
                 // Find max timeline length across all layers + audio (for ruler width)
-                const maxFrameCount = this.getTimelineLength();
+                this._maxFrameCount = this.getTimelineLength();
                 
                 // Build each layer row (reversed: top layer = top of list)
                 const reversedLayers = [...this.layers].reverse();
@@ -14500,7 +14588,8 @@
                     ];
                     let groupIdx = 0;
                     for (const [canvas, indices] of holdGroups) {
-                        const color = holdPalette[groupIdx % holdPalette.length];
+                        // Use persistent color if available, else assign by encounter order
+                        const color = canvas._holdColor || holdPalette[groupIdx % holdPalette.length];
                         groupIdx++;
                         // Find the source (earliest index)
                         const sorted = [...indices].sort((a, b) => a - b);
@@ -14628,6 +14717,15 @@
                 layersList.appendChild(labelsFrag);
                 container.appendChild(containerFrag);
                 
+                // Restore scroll position preserved before rebuild
+                if (framesSection && savedScrollLeft > 0) {
+                    framesSection.scrollLeft = savedScrollLeft;
+                }
+                
+                // Re-populate all virtualized blocks with correct scroll position
+                // (initial _populateBlockFrames ran before scrollLeft was restored)
+                this._updateVisibleFrames();
+                
                 // Set up document-level drag handlers (only once)
                 if (!this._frameDragBound) {
                     this._frameDragBound = true;
@@ -14721,14 +14819,28 @@
                             const ghost = this._dragGhost;
                             ghost.innerHTML = '';
                             const gm = this.getTimelineMetrics();
-                            ghost.style.width = gm.frameW + 'px';
-                            ghost.style.height = gm.frameW + 'px';
-                            ghost.style.background = '#2b2d31';
-                            ghost.style.position = 'relative';
-                            const indicator = state.element.querySelector('.frame-indicator');
-                            if (indicator) {
-                                const clone = indicator.cloneNode(true);
-                                ghost.appendChild(clone);
+                            
+                            if (state.multi) {
+                                // Multi-drag ghost: show stacked frames with count badge
+                                const count = state.indices.length;
+                                const ghostW = Math.min(count, 3) * gm.cellW + 4;
+                                ghost.style.width = Math.max(ghostW, gm.frameW) + 'px';
+                                ghost.style.height = gm.frameW + 'px';
+                                ghost.style.background = '#2b2d31';
+                                ghost.style.position = 'relative';
+                                const badge = document.createElement('div');
+                                badge.className = 'drag-count-badge';
+                                badge.textContent = count;
+                                ghost.appendChild(badge);
+                            } else {
+                                ghost.style.width = gm.frameW + 'px';
+                                ghost.style.height = gm.frameW + 'px';
+                                ghost.style.background = '#2b2d31';
+                                ghost.style.position = 'relative';
+                                const indicator = state.element.querySelector('.frame-indicator');
+                                if (indicator) {
+                                    ghost.appendChild(indicator.cloneNode(true));
+                                }
                             }
                             ghost.style.display = 'block';
                         }
@@ -14758,13 +14870,30 @@
                             const rightDist = Math.abs(e.clientX - rect.right);
                             if (rightDist < bestDist) {
                                 bestDist = rightDist;
-                                bestInsert = { idx, side: 'right', x: rect.right - containerRect.left };
+                                const endIdx = frame.classList.contains('hold-block')
+                                    ? idx + parseInt(frame.dataset.holdLength) - 1 : idx;
+                                bestInsert = { idx: endIdx, side: 'right', x: rect.right - containerRect.left };
                             }
                         }
                         
                         if (bestInsert) {
                             const insertIdx = bestInsert.side === 'right' ? bestInsert.idx + 1 : bestInsert.idx;
-                            if (insertIdx === state.index || insertIdx === state.index + 1) {
+                            
+                            // Check if drop is a no-op (within the dragged range)
+                            let isNoOp = false;
+                            if (state.multi) {
+                                const sorted = state.indices;
+                                const min = sorted[0];
+                                const max = sorted[sorted.length - 1];
+                                // If indices are contiguous, suppress indicator within range
+                                if (max - min + 1 === sorted.length) {
+                                    isNoOp = insertIdx >= min && insertIdx <= max + 1;
+                                }
+                            } else {
+                                isNoOp = insertIdx === state.index || insertIdx === state.index + 1;
+                            }
+                            
+                            if (isNoOp) {
                                 this._dropIndicator.style.display = 'none';
                                 state.insertIdx = undefined;
                             } else {
@@ -14798,16 +14927,23 @@
                         this._dropIndicator.style.display = 'none';
                         
                         if (state.started && state.insertIdx !== undefined) {
-                            const target = state.insertIdx > state.index ? state.insertIdx - 1 : state.insertIdx;
-                            if (target !== state.index) {
-                                this.reorderFrames(state.index, target);
+                            if (state.multi) {
+                                this._moveMultiFrames(state.indices, state.insertIdx);
+                            } else {
+                                const target = state.insertIdx > state.index ? state.insertIdx - 1 : state.insertIdx;
+                                if (target !== state.index) {
+                                    this.reorderFrames(state.index, target);
+                                }
                             }
                         } else if (!state.started) {
-                            this.commitSelection();
-                            this.currentFrameIndex = state.index;
-                            this.initializeFrame();
-                            this.render();
-                            this.scrubAudio(this.getPlayheadPosition());
+                            if (!state.multi) {
+                                this.commitSelection();
+                                this.currentFrameIndex = state.index;
+                                this.initializeFrame();
+                                this.render();
+                                this.scrubAudio(this.getPlayheadPosition());
+                            }
+                            // Multi no-drag click: keep selection, do nothing extra
                         }
                         
                         this._frameDragState = null;
@@ -14905,6 +15041,8 @@
                             this.initializeFrame();
                             this.render();
                             this.scrubAudio(timelinePos);
+                            // Force synchronous timeline rebuild (RAF may miss it)
+                            this.renderTimeline();
                             return;
                         }
                         
@@ -14932,7 +15070,55 @@
                             return;
                         }
                         
-                        // Regular click: clear multi-select
+                        // If clicking a frame that's already in a multi-selection, start multi-drag
+                        if (this.selectedFrames.size > 1 && this.selectedFrames.has(frameIdx)) {
+                            this._frameDragState = {
+                                index: frameIdx,
+                                startX: e.clientX,
+                                startY: e.clientY,
+                                started: false,
+                                element: frameDiv,
+                                layerId: layerId,
+                                multi: true,
+                                indices: [...this.selectedFrames].sort((a, b) => a - b)
+                            };
+                            return;
+                        }
+                        
+                        // Clicking a hold block: auto-select entire hold group
+                        if (holdBlock) {
+                            const holdStart = parseInt(holdBlock.dataset.holdStart, 10);
+                            const holdLength = parseInt(holdBlock.dataset.holdLength, 10);
+                            this.selectedFrames.clear();
+                            for (let i = holdStart; i < holdStart + holdLength; i++) {
+                                this.selectedFrames.add(i);
+                            }
+                            if (this.selection) { this._dismissTransform(); }
+                            this.currentFrameIndex = frameIdx;
+                            this.initializeFrame();
+                            this.render();
+                            this.scrubAudio(this.getPlayheadPosition());
+                            this._timelineDirty = true;
+                            this.renderTimeline();
+                            // Re-query element after rebuild (old reference is destroyed)
+                            const freshEl = container.querySelector(
+                                `.hold-block[data-hold-start="${holdStart}"][data-layer-id="${layerId}"]`
+                            ) || holdBlock;
+                            // Set up multi-drag for the hold group
+                            this._frameDragState = {
+                                index: holdStart,
+                                startX: e.clientX,
+                                startY: e.clientY,
+                                started: false,
+                                element: freshEl,
+                                layerId: layerId,
+                                multi: true,
+                                indices: [...this.selectedFrames].sort((a, b) => a - b)
+                            };
+                            return;
+                        }
+                        
+                        // Regular click on non-selected frame: clear multi-select
                         if (this.selectedFrames.size > 0) {
                             this.selectedFrames.clear();
                             this._timelineDirty = true;
@@ -14984,33 +15170,22 @@
                             this.initializeFrame();
                             this.render();
                             this.scrubAudio(this.getPlayheadPosition());
+                            // If timeline was dirtied (e.g. selection cleared), rebuild now
+                            if (this._timelineDirty) {
+                                this.renderTimeline();
+                            }
                             return;
                         }
                         
-                        // Same frame: support drag reorder (not for hold blocks — use resize handle instead)
-                        if (!holdBlock) {
-                            this._frameDragState = {
-                                index: frameIdx,
-                                startX: e.clientX,
-                                startY: e.clientY,
-                                started: false,
-                                element: frameDiv,
-                                layerId: layerId
-                            };
-                        } else {
-                            // Hold block drag — move the entire hold group
-                            const holdStart = parseInt(holdBlock.dataset.holdStart, 10);
-                            const holdLength = parseInt(holdBlock.dataset.holdLength, 10);
-                            this._holdBlockDragState = {
-                                holdStart,
-                                holdLength,
-                                startX: e.clientX,
-                                startY: e.clientY,
-                                started: false,
-                                element: holdBlock,
-                                layerId: layerId
-                            };
-                        }
+                        // Same frame: support drag reorder
+                        this._frameDragState = {
+                            index: frameIdx,
+                            startX: e.clientX,
+                            startY: e.clientY,
+                            started: false,
+                            element: frameDiv,
+                            layerId: layerId
+                        };
                     });
                     
                     // Delegated context menu handler
@@ -15076,7 +15251,6 @@
                 }
                 
                 // Render scrub ruler (use max frame count across all layers)
-                this._maxFrameCount = maxFrameCount;
                 this.renderScrubRuler();
                 this.updatePlayheadPosition();
                 
@@ -15198,6 +15372,14 @@
                 const hasActive = v.isActive && playheadLocal >= startIndex && playheadLocal < startIndex + length;
                 if (hasActive) block.classList.add('has-active');
                 
+                // Check if hold block is selected (any frame in range is selected)
+                if (v.isActive) {
+                    let anySelected = false;
+                    for (let si = startIndex; si < startIndex + length; si++) {
+                        if (this.selectedFrames.has(si)) { anySelected = true; break; }
+                    }
+                    if (anySelected) block.classList.add('selected');
+                }                
                 // Bar container
                 const bar = document.createElement('div');
                 bar.className = 'hold-block-bar';
@@ -15857,9 +16039,9 @@
                         }
                         layers.push({
                             id: layerData.id,
-                            name: layerData.name,
-                            visible: layerData.visible,
-                            opacity: layerData.opacity,
+                            name: layerData.name || ('Layer ' + (layers.length + 1)),
+                            visible: layerData.visible !== false,
+                            opacity: layerData.opacity != null ? layerData.opacity : 1.0,
                             frames: frames,
                             transformKeyframes: layerData.transformKeyframes || [],
                             startFrame: layerData.startFrame || 0,
@@ -15930,6 +16112,11 @@
                     this.positionOnionCanvas();
                     this.render();
                     this.drawGrid();
+                    
+                    // Scroll to current frame and repopulate virtualized frames
+                    // (must happen after render so timeline DOM exists)
+                    this._scrollTimelineToFrame(this.currentFrameIndex);
+                    requestAnimationFrame(() => this._updateVisibleFrames());
                     
                     fileMenuBtn.textContent = '✓ Loaded!';
                     setTimeout(() => {
