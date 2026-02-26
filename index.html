@@ -141,7 +141,7 @@
             -ms-user-select: none;
             user-select: none;
             position: relative;
-            z-index: 5;
+            z-index: 100;
         }
 
         .tool-group {
@@ -2766,21 +2766,18 @@
         }
         .smoothing-mode-toggle .smt-btn {
             flex: 1;
-            border: none;
-            background: none !important;
-            color: #555 !important;
+            color: #555;
             font-size: 10px;
             font-weight: 600;
             padding: 4px 10px;
             cursor: pointer;
             letter-spacing: 0.4px;
             text-transform: uppercase;
-            transition: none !important;
-            box-shadow: none !important;
-            min-width: 0;
-            min-height: 0;
+            text-align: center;
+            user-select: none;
+            -webkit-user-select: none;
         }
-        .smoothing-mode-toggle .smt-btn.active { color: #eee !important; }
+        .smoothing-mode-toggle .smt-btn.active { color: #eee; }
 
         /* Onion skin dropdown panel */
         .onion-skin-dropdown {
@@ -3635,8 +3632,8 @@
                         <div class="brush-setting-row">
                             <label>Mode:</label>
                             <div class="smoothing-mode-toggle" id="smoothingModeToggle">
-                                <button class="smt-btn active" data-mode="standard" style="color:#eee">Standard</button>
-                                <button class="smt-btn" data-mode="smooth" style="color:#555">Smooth</button>
+                                <div class="smt-btn active" data-mode="standard">Standard</div>
+                                <div class="smt-btn" data-mode="smooth">Smooth</div>
                             </div>
                         </div>
                     </div>
@@ -5532,15 +5529,8 @@
                     brushDropdown.classList.toggle('show');
                     // Sync smoothing mode toggle to current state
                     if (brushDropdown.classList.contains('show')) {
-                        const toggle = document.getElementById('smoothingModeToggle');
-                        toggle.querySelectorAll('.smt-btn').forEach(b => {
-                            if (b.dataset.mode === this.smoothingMode) {
-                                b.classList.add('active');
-                                b.style.color = '#eee';
-                            } else {
-                                b.classList.remove('active');
-                                b.style.color = '#555';
-                            }
+                        document.getElementById('smoothingModeToggle').querySelectorAll('.smt-btn').forEach(b => {
+                            b.classList.toggle('active', b.dataset.mode === this.smoothingMode);
                         });
                     }
                 });
@@ -5583,15 +5573,8 @@
                     btn.addEventListener('click', (e) => {
                         e.stopPropagation();
                         this.smoothingMode = btn.dataset.mode;
-                        const toggle = document.getElementById('smoothingModeToggle');
-                        toggle.querySelectorAll('.smt-btn').forEach(b => {
-                            if (b === btn) {
-                                b.classList.add('active');
-                                b.style.color = '#eee';
-                            } else {
-                                b.classList.remove('active');
-                                b.style.color = '#555';
-                            }
+                        document.getElementById('smoothingModeToggle').querySelectorAll('.smt-btn').forEach(b => {
+                            b.classList.toggle('active', b === btn);
                         });
                     });
                 });
@@ -7815,6 +7798,7 @@
                         // Save undo state for this new frame
                         this.strokeStateSaved = true;
                         this._pendingSnapshot = null;
+                        this._preStrokeData = null; // Discard — belongs to previous frame
                         setTimeout(() => this.saveState(), 0);
                         // Reset stroke position to current point (new drawPoint, not drawLine)
                         if (frame) {
@@ -10568,8 +10552,8 @@
                 
                 // Convert display canvas coords to frame-local
                 const off = this.getSelectionDisplayOffset();
-                const lx = x - off.x;
-                const ly = y - off.y;
+                let lx = x - off.x;
+                let ly = y - off.y;
                 
                 // Distort mode: point-in-quad test
                 if (this.tool === 'distort' && this.selection.corners) {
@@ -10577,6 +10561,41 @@
                 }
                 
                 const b = this.selection.bounds;
+                const rotation = this.selection.rotation || 0;
+                const skewX = this.selection.skewX || 0;
+                const skewY = this.selection.skewY || 0;
+                
+                // If rotated or skewed, un-transform the test point around the anchor
+                if (rotation !== 0 || skewX !== 0 || skewY !== 0) {
+                    const ax = this.selection.anchorX || (b.x + b.width / 2);
+                    const ay = this.selection.anchorY || (b.y + b.height / 2);
+                    // Translate to anchor-relative
+                    let px = lx - ax;
+                    let py = ly - ay;
+                    // Un-skew
+                    if (skewX !== 0 || skewY !== 0) {
+                        const det = 1 - skewX * skewY;
+                        if (Math.abs(det) > 1e-6) {
+                            const ux = (px - skewX * py) / det;
+                            const uy = (py - skewY * px) / det;
+                            px = ux;
+                            py = uy;
+                        }
+                    }
+                    // Un-rotate
+                    if (rotation !== 0) {
+                        const cos = Math.cos(-rotation);
+                        const sin = Math.sin(-rotation);
+                        const rx = px * cos - py * sin;
+                        const ry = px * sin + py * cos;
+                        px = rx;
+                        py = ry;
+                    }
+                    // Translate back
+                    lx = px + ax;
+                    ly = py + ay;
+                }
+                
                 return lx >= b.x && lx <= b.x + b.width && ly >= b.y && ly <= b.y + b.height;
             }
             
