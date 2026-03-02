@@ -6006,6 +6006,12 @@
                 return frameCanvas;
             }
             
+            _createSpacerFrame() {
+                const f = this.createEmptyFrame();
+                f._isSpacer = true;
+                return f;
+            }
+            
             // === Infinite Canvas Helpers ===
             
             // Convert screen mouse event to world coordinates
@@ -6784,6 +6790,8 @@
                 this._activeInstance = null; // Instance selected on canvas for transform
                 this._activeInstanceLayer = null;
                 this._instDrag = null; // { type: 'move'|'scale'|'rotate', startX, startY, ... }
+                this._instRotationMode = false;
+                this._instHoverTimer = null;
                 this._lastInstanceClick = null; // { instanceId, time } for double-click detection
                 this._lastSpanClick = null; // { instanceId, time } for timeline span double-click
                 this._manualTimelinePos = undefined; // visual playhead pos when scrubbing past actual frames
@@ -10231,20 +10239,24 @@
                         if (e.shiftKey) deg = Math.round(deg / 15) * 15;
                         inst.rotation = deg;
                     } else {
-                        // Scale (corner/edge handles)
+                        // Scale (corner/edge handles) — rotation-aware
                         const dx = mx - d.startX;
                         const dy = my - d.startY;
+                        // Project mouse delta into instance's local coordinate space
+                        const rot = (d.origRotation || 0) * Math.PI / 180;
+                        const ldx = dx * Math.cos(-rot) - dy * Math.sin(-rot);
+                        const ldy = dx * Math.sin(-rot) + dy * Math.cos(-rot);
+                        
                         const isCorner = d.type === 'nw' || d.type === 'ne' || d.type === 'se' || d.type === 'sw';
                         const isH = d.type === 'e' || d.type === 'w' || isCorner;
                         const isV = d.type === 'n' || d.type === 's' || isCorner;
-                        const sign = d.type.includes('w') || d.type.includes('n') ? -1 : 1;
                         
                         if (isH) {
-                            const newW = d.symW * d.origScaleX + dx * (d.type.includes('w') ? -1 : 1);
+                            const newW = d.symW * d.origScaleX + ldx * (d.type.includes('w') ? -1 : 1);
                             inst.scaleX = Math.max(0.01, newW / d.symW);
                         }
                         if (isV) {
-                            const newH = d.symH * d.origScaleY + dy * (d.type.includes('n') ? -1 : 1);
+                            const newH = d.symH * d.origScaleY + ldy * (d.type.includes('n') ? -1 : 1);
                             inst.scaleY = Math.max(0.01, newH / d.symH);
                         }
                         if (e.shiftKey && isCorner) {
@@ -10259,6 +10271,65 @@
                     this.updateInstPropsBar();
                     this.renderCanvasOnly();
                     return;
+                }
+                
+                // Instance rotation hover detection (same behavior as free transform)
+                if (this._activeInstance && !this._instDrag && (this.tool === 'transform' || this.tool === 'scale' || this.tool === 'rotate' || this.tool === 'skew' || this.tool === 'distort')) {
+                    const canvas = e.target === this.selectionCanvas ? this.selectionCanvas : this.canvas;
+                    const rect = canvas.getBoundingClientRect();
+                    const sx = canvas.width / rect.width;
+                    const sy = canvas.height / rect.height;
+                    const mx = (e.clientX - rect.left) * sx;
+                    const my = (e.clientY - rect.top) * sy;
+                    
+                    const inst = this._activeInstance;
+                    const sym = this.getSymbol(inst.symbolId);
+                    if (sym) {
+                        const bb = this._getInstanceBBox(inst, sym);
+                        const cxI = bb.x + bb.w / 2, cyI = bb.y + bb.h / 2;
+                        const rot = (inst.rotation || 0) * Math.PI / 180;
+                        const hw = bb.w / 2, hh = bb.h / 2;
+                        
+                        const corners = [
+                            { lx: -hw, ly: -hh },
+                            { lx:  hw, ly: -hh },
+                            { lx:  hw, ly:  hh },
+                            { lx: -hw, ly:  hh },
+                        ];
+                        
+                        let nearCorner = false;
+                        for (const c of corners) {
+                            const rx = cxI + c.lx * Math.cos(rot) - c.ly * Math.sin(rot);
+                            const ry = cyI + c.lx * Math.sin(rot) + c.ly * Math.cos(rot);
+                            if (Math.hypot(mx - rx, my - ry) < 20) {
+                                nearCorner = true;
+                                break;
+                            }
+                        }
+                        
+                        if (nearCorner) {
+                            if (!this._instHoverTimer) {
+                                this._instHoverTimer = setTimeout(() => {
+                                    this._instRotationMode = true;
+                                    this.selectionCanvas.style.cursor = 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'24\' height=\'24\' viewBox=\'0 0 24 24\' fill=\'none\'%3E%3Cpath d=\'M17 2 A8 8 0 1 0 20 9\' stroke=\'white\' stroke-width=\'2\' stroke-linecap=\'round\'/%3E%3Cpath d=\'M17 2 A8 8 0 1 0 20 9\' stroke=\'black\' stroke-width=\'4\' stroke-opacity=\'0.25\' stroke-linecap=\'round\'/%3E%3Cpath d=\'M17 2 A8 8 0 1 0 20 9\' stroke=\'white\' stroke-width=\'2\' stroke-linecap=\'round\'/%3E%3Cpath d=\'M20 9l2-3\' stroke=\'black\' stroke-width=\'4\' stroke-opacity=\'0.25\' stroke-linecap=\'round\'/%3E%3Cpath d=\'M20 9l-3-1\' stroke=\'black\' stroke-width=\'4\' stroke-opacity=\'0.25\' stroke-linecap=\'round\'/%3E%3Cpath d=\'M20 9l2-3\' stroke=\'white\' stroke-width=\'2\' stroke-linecap=\'round\'/%3E%3Cpath d=\'M20 9l-3-1\' stroke=\'white\' stroke-width=\'2\' stroke-linecap=\'round\'/%3E%3C/svg%3E") 12 12, pointer';
+                                    this.canvas.style.cursor = this.selectionCanvas.style.cursor;
+                                    this.renderCanvasOnly();
+                                    this._instHoverTimer = null;
+                                }, 500);
+                            }
+                        } else {
+                            if (this._instHoverTimer) {
+                                clearTimeout(this._instHoverTimer);
+                                this._instHoverTimer = null;
+                            }
+                            if (this._instRotationMode) {
+                                this._instRotationMode = false;
+                                this.selectionCanvas.style.cursor = 'default';
+                                this.canvas.style.cursor = 'default';
+                                this.renderCanvasOnly();
+                            }
+                        }
+                    }
                 }
                 
                 // Handle hover detection for rotation mode (free transform only, not scale-only)
@@ -12001,11 +12072,29 @@
                         if (playheadLocal >= inst.startFrame && playheadLocal < inst.startFrame + inst.duration) {
                             this.saveFullState();
                             const count = this.selectedFrames.size > 1 ? this.selectedFrames.size : 1;
+                            const oldEnd = inst.startFrame + inst.duration;
                             inst.duration += count;
-                            // Auto-expand loop range if needed
-                            const instEnd = (layer.startFrame || 0) + inst.startFrame + inst.duration - 1;
-                            if (instEnd > this.loopRange.outPoint) {
-                                this.loopRange.outPoint = instEnd;
+                            
+                            // Push frames after the clip forward
+                            if (oldEnd <= layer.frames.length) {
+                                const empties = Array.from({ length: count }, () => this._createSpacerFrame());
+                                layer.frames.splice(oldEnd, 0, ...empties);
+                            }
+                            
+                            // Push other instances that start at or after old end
+                            if (layer.symbolInstances) {
+                                for (const other of layer.symbolInstances) {
+                                    if (other === inst) continue;
+                                    if (other.startFrame >= oldEnd) {
+                                        other.startFrame += count;
+                                    }
+                                }
+                            }
+                            
+                            // Auto-expand loop range to account for pushed content
+                            const newTimelineLen = this.getDrawingTimelineLength();
+                            if (newTimelineLen - 1 > this.loopRange.outPoint) {
+                                this.loopRange.outPoint = newTimelineLen - 1;
                                 this._updateLoopRangeBadge();
                             }
                             this.selectedFrames.clear();
@@ -12795,6 +12884,11 @@
                 this._activeInstance = null;
                 this._activeInstanceLayer = null;
                 this._instDrag = null;
+                this._instRotationMode = false;
+                if (this._instHoverTimer) {
+                    clearTimeout(this._instHoverTimer);
+                    this._instHoverTimer = null;
+                }
                 document.getElementById('instPropsBar').classList.remove('visible');
             }
             
@@ -12816,7 +12910,6 @@
                     { type: 's',  lx: 0,   ly: hh },
                     { type: 'sw', lx: -hw, ly: hh },
                     { type: 'w',  lx: -hw, ly: 0 },
-                    { type: 'rotate', lx: 0, ly: -hh - 24 },
                 ];
                 
                 const hitRadius = 14;
@@ -12825,13 +12918,18 @@
                     const rx = cx + h.lx * Math.cos(rot) - h.ly * Math.sin(rot);
                     const ry = cy + h.lx * Math.sin(rot) + h.ly * Math.cos(rot);
                     if (Math.hypot(canvasX - rx, canvasY - ry) < hitRadius) {
+                        const isCorner = h.type === 'nw' || h.type === 'ne' || h.type === 'se' || h.type === 'sw';
+                        // In rotation mode, corners become rotate handles
+                        if (isCorner && this._instRotationMode) {
+                            return 'rotate';
+                        }
                         return h.type;
                     }
                 }
                 return null;
             }
             
-            // Draw bounding box & handles for selected instance
+            // Draw bounding box & handles for selected instance (matches free transform style)
             drawInstanceOverlay(ctx) {
                 const inst = this._activeInstance;
                 if (!inst) return;
@@ -12847,20 +12945,14 @@
                 ctx.translate(cx, cy);
                 ctx.rotate(rot);
                 
-                // Bounding box
+                // Dashed bounding box (matches free transform style)
                 ctx.strokeStyle = 'rgba(72, 160, 80, 0.8)';
-                ctx.lineWidth = 1.5;
-                ctx.setLineDash([]);
+                ctx.lineWidth = 1;
+                ctx.setLineDash([4, 4]);
                 ctx.strokeRect(-bb.w / 2, -bb.h / 2, bb.w, bb.h);
+                ctx.setLineDash([]);
                 
-                // Rotation handle line
-                ctx.beginPath();
-                ctx.moveTo(0, -bb.h / 2);
-                ctx.lineTo(0, -bb.h / 2 - 20);
-                ctx.strokeStyle = 'rgba(72, 160, 80, 0.5)';
-                ctx.stroke();
-                
-                // Handles
+                // 8 handles: corners + edge midpoints
                 const hw = bb.w / 2, hh = bb.h / 2;
                 const handlePositions = [
                     [-hw, -hh], [0, -hh], [hw, -hh],
@@ -12868,23 +12960,49 @@
                     [-hw, hh],  [0, hh],  [hw, hh],
                 ];
                 
+                const inRotMode = this._instRotationMode;
+                
                 for (const [hx, hy] of handlePositions) {
-                    ctx.fillStyle = '#fff';
+                    const isCorner = (Math.abs(hx) === hw && Math.abs(hy) === hh);
+                    ctx.fillStyle = inRotMode && isCorner ? 'rgba(72, 160, 80, 0.15)' : '#fff';
                     ctx.strokeStyle = 'rgba(72, 160, 80, 0.9)';
                     ctx.lineWidth = 1.5;
                     ctx.beginPath();
                     ctx.rect(hx - 4, hy - 4, 8, 8);
                     ctx.fill();
                     ctx.stroke();
+                    
+                    // Draw rotation arrow indicator on corners in rotation mode
+                    if (inRotMode && isCorner) {
+                        ctx.save();
+                        ctx.translate(hx, hy);
+                        ctx.strokeStyle = 'rgba(72, 160, 80, 0.7)';
+                        ctx.lineWidth = 1.2;
+                        const r = 7;
+                        ctx.beginPath();
+                        ctx.arc(0, 0, r, -Math.PI * 0.7, Math.PI * 0.2);
+                        ctx.stroke();
+                        // Arrowhead
+                        const ax = r * Math.cos(Math.PI * 0.2);
+                        const ay = r * Math.sin(Math.PI * 0.2);
+                        ctx.beginPath();
+                        ctx.moveTo(ax + 2, ay - 3);
+                        ctx.lineTo(ax, ay);
+                        ctx.lineTo(ax - 3, ay - 2);
+                        ctx.stroke();
+                        ctx.restore();
+                    }
                 }
                 
-                // Rotation handle (circle)
-                ctx.fillStyle = '#fff';
-                ctx.strokeStyle = 'rgba(72, 160, 80, 0.9)';
-                ctx.lineWidth = 1.5;
+                // Anchor point indicator (center crosshair)
+                ctx.strokeStyle = 'rgba(72, 160, 80, 0.5)';
+                ctx.lineWidth = 1;
                 ctx.beginPath();
-                ctx.arc(0, -hh - 24, 5, 0, Math.PI * 2);
-                ctx.fill();
+                ctx.moveTo(-5, 0); ctx.lineTo(5, 0);
+                ctx.moveTo(0, -5); ctx.lineTo(0, 5);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(0, 0, 3, 0, Math.PI * 2);
                 ctx.stroke();
                 
                 ctx.restore();
@@ -12895,7 +13013,7 @@
                 ctx.font = '600 9px -apple-system, BlinkMacSystemFont, sans-serif';
                 ctx.fillStyle = 'rgba(72, 160, 80, 0.7)';
                 ctx.textAlign = 'center';
-                ctx.fillText('⬡ ' + (sym.name || '?'), cx, labelY);
+                ctx.fillText('∞ ' + (sym.name || '?'), cx, labelY);
                 ctx.restore();
             }
             
@@ -12950,6 +13068,12 @@
                 const sym = this.getSymbol(inst.symbolId);
                 if (!sym) return;
                 this.saveFullState();
+                
+                // Clear hover timer during drag
+                if (this._instHoverTimer) {
+                    clearTimeout(this._instHoverTimer);
+                    this._instHoverTimer = null;
+                }
                 
                 const bb = this._getInstanceBBox(inst, sym);
                 this._instDrag = {
@@ -13741,6 +13865,56 @@
             deleteCurrentFrame() {
                 this.commitSelection();
                 const layer = this.getCurrentLayer();
+                
+                // If playhead is on a loop instance span, shrink the clip by 1 from the end
+                if (layer.symbolInstances) {
+                    const playheadLocal = this.currentFrameIndex;
+                    for (const inst of layer.symbolInstances) {
+                        if (playheadLocal >= inst.startFrame && playheadLocal < inst.startFrame + inst.duration) {
+                            if (inst.duration <= 1) return; // can't shrink below 1
+                            this.saveFullState();
+                            const count = this.selectedFrames.size > 1 ? this.selectedFrames.size : 1;
+                            const shrinkBy = Math.min(count, inst.duration - 1);
+                            const oldEnd = inst.startFrame + inst.duration;
+                            inst.duration -= shrinkBy;
+                            const newEnd = inst.startFrame + inst.duration;
+                            
+                            // Remove spacer frames at the new end
+                            if (newEnd < layer.frames.length) {
+                                let canRemove = 0;
+                                for (let i = 0; i < shrinkBy && (newEnd + i) < layer.frames.length; i++) {
+                                    const f = layer.frames[newEnd + i];
+                                    if (f && f._isSpacer) canRemove++;
+                                    else break;
+                                }
+                                if (canRemove > 0) {
+                                    layer.frames.splice(newEnd, canRemove);
+                                }
+                            }
+                            
+                            // Pull other instances back
+                            if (layer.symbolInstances) {
+                                for (const other of layer.symbolInstances) {
+                                    if (other === inst) continue;
+                                    if (other.startFrame >= oldEnd) {
+                                        other.startFrame = Math.max(newEnd, other.startFrame - shrinkBy);
+                                    }
+                                }
+                            }
+                            
+                            // Clamp playhead if it's now past the clip
+                            if (this.currentFrameIndex >= newEnd) {
+                                this.currentFrameIndex = Math.max(0, Math.min(layer.frames.length - 1, newEnd - 1));
+                            }
+                            
+                            this.selectedFrames.clear();
+                            this._timelineDirty = true;
+                            this._invalidateCompositeCache();
+                            this.render();
+                            return;
+                        }
+                    }
+                }
                 
                 // Multi-frame delete
                 if (this.selectedFrames.size > 1) {
@@ -19226,16 +19400,67 @@
                     e.stopPropagation();
                     const startX = e.clientX;
                     const startDuration = instance.duration;
+                    this.saveFullState();
+                    let lastDuration = startDuration;
                     
                     const onMove = (me) => {
                         const dx = me.clientX - startX;
                         const frameDelta = Math.round(dx / v.cellW);
                         const newDuration = Math.max(1, startDuration + frameDelta);
+                        if (newDuration === lastDuration) return;
+                        
+                        const delta = newDuration - lastDuration;
+                        const oldEnd = instance.startFrame + lastDuration;
                         instance.duration = newDuration;
-                        // Auto-expand loop range if instance extends past it
-                        const instEnd = instance.startFrame + newDuration - 1;
-                        if (instEnd > this.loopRange.outPoint) {
-                            this.loopRange.outPoint = instEnd;
+                        
+                        // Push/pull frames after the clip
+                        if (delta > 0) {
+                            // Growing — insert spacer frames at old end to push content forward
+                            if (oldEnd <= v.layer.frames.length) {
+                                const empties = Array.from({ length: delta }, () => this._createSpacerFrame());
+                                v.layer.frames.splice(oldEnd, 0, ...empties);
+                            }
+                            // Push other instances forward
+                            if (v.layer.symbolInstances) {
+                                for (const other of v.layer.symbolInstances) {
+                                    if (other === instance) continue;
+                                    if (other.startFrame >= oldEnd) {
+                                        other.startFrame += delta;
+                                    }
+                                }
+                            }
+                        } else if (delta < 0) {
+                            // Shrinking — remove spacer frames at new end
+                            const newEnd = instance.startFrame + newDuration;
+                            const removeCount = Math.abs(delta);
+                            if (newEnd < v.layer.frames.length) {
+                                let canRemove = 0;
+                                for (let i = 0; i < removeCount && (newEnd + i) < v.layer.frames.length; i++) {
+                                    const f = v.layer.frames[newEnd + i];
+                                    if (f && f._isSpacer) canRemove++;
+                                    else break;
+                                }
+                                if (canRemove > 0) {
+                                    v.layer.frames.splice(newEnd, canRemove);
+                                }
+                            }
+                            // Pull other instances back
+                            if (v.layer.symbolInstances) {
+                                for (const other of v.layer.symbolInstances) {
+                                    if (other === instance) continue;
+                                    if (other.startFrame >= oldEnd) {
+                                        other.startFrame = Math.max(newEnd, other.startFrame + delta);
+                                    }
+                                }
+                            }
+                        }
+                        
+                        lastDuration = newDuration;
+                        
+                        // Auto-expand loop range to account for pushed content
+                        const newTimelineLen = this.getDrawingTimelineLength();
+                        if (newTimelineLen - 1 > this.loopRange.outPoint) {
+                            this.loopRange.outPoint = newTimelineLen - 1;
                             this._updateLoopRangeBadge();
                         }
                         this._timelineDirty = true;
