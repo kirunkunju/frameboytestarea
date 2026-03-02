@@ -4776,11 +4776,17 @@
                         <button class="dropdown-item" data-filltool="eyedropper"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M13.5 2.5a1.4 1.4 0 00-2 0L10 4l-1-.5-5 5-.5 3.5 3.5-.5 5-5L11.5 6l1.5-1.5a1.4 1.4 0 000-2z"/><path d="M3.5 12l.5.5"/></svg> Eyedropper<span class="shortcut">I</span></button>
                     </div>
                 </div>
-                <button id="lassoTool" title="Lasso Selection (L)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="8" cy="7" rx="6" ry="4.5"/><path d="M12.5 10c0 1.5-1 3-2 3.5s-1.5.5-1.5 1.5"/></svg> <span class="btn-label">Lasso</span></button>
                 <div class="dropdown-container">
-                    <button id="transformTool" title="Free Transform (V/T)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="2.5" width="11" height="11" rx="0.5" stroke-dasharray="2 2"/><circle cx="2.5" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="2.5" cy="13.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="13.5" r="1" fill="currentColor" stroke="none"/></svg> <span class="btn-label">Transform ▼</span></button>
+                    <button id="lassoTool" title="Lasso Selection (L)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="8" cy="7" rx="6" ry="4.5"/><path d="M12.5 10c0 1.5-1 3-2 3.5s-1.5.5-1.5 1.5"/></svg> <span class="btn-label">Lasso ▼</span></button>
+                    <div class="dropdown-menu" id="lassoToolDropdown">
+                        <button class="dropdown-item" data-selecttool="lasso"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><ellipse cx="8" cy="7" rx="6" ry="4.5"/><path d="M12.5 10c0 1.5-1 3-2 3.5s-1.5.5-1.5 1.5"/></svg> Lasso<span class="shortcut">L</span></button>
+                        <button class="dropdown-item" data-selecttool="marquee"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="2" y="2" width="12" height="12" rx="0.5" stroke-dasharray="2 2"/></svg> Marquee<span class="shortcut">M</span></button>
+                    </div>
+                </div>
+                <div class="dropdown-container">
+                    <button id="transformTool" title="Free Transform (V/T)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="2.5" x2="8" y2="13.5"/><line x1="2.5" y1="8" x2="13.5" y2="8"/><path d="M8 2.5L6.5 4"/><path d="M8 2.5L9.5 4"/><path d="M8 13.5L6.5 12"/><path d="M8 13.5L9.5 12"/><path d="M2.5 8L4 6.5"/><path d="M2.5 8L4 9.5"/><path d="M13.5 8L12 6.5"/><path d="M13.5 8L12 9.5"/><circle cx="3.5" cy="3.5" r="1" fill="currentColor" stroke="none"/><circle cx="12.5" cy="3.5" r="1" fill="currentColor" stroke="none"/><circle cx="3.5" cy="12.5" r="1" fill="currentColor" stroke="none"/><circle cx="12.5" cy="12.5" r="1" fill="currentColor" stroke="none"/></svg> <span class="btn-label">Transform ▼</span></button>
                     <div class="dropdown-menu" id="transformToolDropdown">
-                        <button class="dropdown-item" data-xformtool="transform"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="2.5" y="2.5" width="11" height="11" rx="0.5" stroke-dasharray="2 2"/><circle cx="2.5" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="2.5" cy="13.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="13.5" r="1" fill="currentColor" stroke="none"/></svg> Free Transform <span class="shortcut">V</span></button>
+                        <button class="dropdown-item" data-xformtool="transform"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="8" y1="2.5" x2="8" y2="13.5"/><line x1="2.5" y1="8" x2="13.5" y2="8"/><path d="M8 2.5L6.5 4"/><path d="M8 2.5L9.5 4"/><path d="M8 13.5L6.5 12"/><path d="M8 13.5L9.5 12"/><path d="M2.5 8L4 6.5"/><path d="M2.5 8L4 9.5"/><path d="M13.5 8L12 6.5"/><path d="M13.5 8L12 9.5"/><circle cx="3.5" cy="3.5" r="1" fill="currentColor" stroke="none"/><circle cx="12.5" cy="3.5" r="1" fill="currentColor" stroke="none"/><circle cx="3.5" cy="12.5" r="1" fill="currentColor" stroke="none"/><circle cx="12.5" cy="12.5" r="1" fill="currentColor" stroke="none"/></svg> Free Transform <span class="shortcut">V</span></button>
                         <button class="dropdown-item" data-xformtool="scale"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M10 2h4v4"/><path d="M14 2l-4.5 4.5"/><path d="M6 14H2v-4"/><path d="M2 14l4.5-4.5"/></svg> Scale <span class="shortcut">S</span></button>
                         <button class="dropdown-item" data-xformtool="rotate"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M13.5 8A5.5 5.5 0 112.5 5.5"/><path d="M2.5 1.5v4h4"/></svg> Rotate <span class="shortcut">R</span></button>
                         <button class="dropdown-item" data-xformtool="skew"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M4 2.5h9.5v11H2.5V6"/><circle cx="4" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="2.5" cy="13.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="13.5" r="1" fill="currentColor" stroke="none"/></svg> Skew</button>
@@ -4796,6 +4802,7 @@
                         <button class="dropdown-item" data-navtool="pan"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M5.5 8V3.5a1 1 0 012 0V7"/><path d="M7.5 7V2.5a1 1 0 012 0V7"/><path d="M9.5 7V3.5a1 1 0 012 0V7"/><path d="M11.5 5.5a1 1 0 012 0V10c0 2.5-2 4.5-4.5 4.5h-1C6 14.5 4 12.5 4 10V8.5"/><path d="M5.5 8c0 0-2-1-2.5-2s0-2 1-1.5l1.5 1"/></svg> Pan / Hand <span class="shortcut">H</span></button>
                     </div>
                 </div>
+                <button id="loopBtn" title="Convert to Loop (F8)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6C3.2 6 2 6.9 2 8s1.2 2 2.5 2c1.8 0 3-1.2 3.5-2s1.7-2 3.5-2c1.3 0 2.5.9 2.5 2s-1.2 2-2.5 2c-1.8 0-3-1.2-3.5-2S6.3 6 4.5 6z"/></svg> <span class="btn-label">Loop</span></button>
             </div>
             <div class="tool-group">
                 <div class="color-pickers-wrap" id="colorPickersWrap">
@@ -6780,6 +6787,7 @@
                 this._lastInstanceClick = null; // { instanceId, time } for double-click detection
                 this._lastSpanClick = null; // { instanceId, time } for timeline span double-click
                 this._manualTimelinePos = undefined; // visual playhead pos when scrubbing past actual frames
+                this._activeSelectTool = 'lasso'; // lasso or marquee
                 this._showParentGhost = true; // Show dimmed parent behind loop
             }
             
@@ -7715,7 +7723,7 @@
                 
                 // Central helper to close every dropdown/panel
                 const _closeAllDropdowns = (except) => {
-                    const ids = ['shapeDropdown', 'onionSkinDropdown', 'brushDropdown', 'eraserDropdown', 'fileMenuDropdown', 'navToolDropdown', 'transformToolDropdown', 'fillToolDropdown', 'playModeMenu', 'fpsPopover'];
+                    const ids = ['shapeDropdown', 'onionSkinDropdown', 'brushDropdown', 'eraserDropdown', 'fileMenuDropdown', 'navToolDropdown', 'transformToolDropdown', 'fillToolDropdown', 'lassoToolDropdown', 'playModeMenu', 'fpsPopover'];
                     for (const id of ids) {
                         if (id === except) continue;
                         const el = document.getElementById(id);
@@ -7852,7 +7860,19 @@
                         fillDropdown.classList.remove('show');
                     });
                 });
-                document.getElementById('lassoTool').addEventListener('click', () => { _closeAllDropdowns(); this.selectTool('lasso'); });
+                document.getElementById('lassoTool').addEventListener('click', () => {
+                    _closeAllDropdowns('lassoToolDropdown');
+                    document.getElementById('lassoToolDropdown').classList.toggle('show');
+                });
+                const lassoDropdown = document.getElementById('lassoToolDropdown');
+                lassoDropdown.querySelectorAll('.dropdown-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const st = item.getAttribute('data-selecttool');
+                        this._activeSelectTool = st;
+                        this.selectTool(st);
+                        lassoDropdown.classList.remove('show');
+                    });
+                });
                 // Transform tool dropdown
                 const xformButton = document.getElementById('transformTool');
                 const xformDropdown = document.getElementById('transformToolDropdown');
@@ -7904,6 +7924,12 @@
                         navDropdown.classList.remove('show');
                         this._updateNavButton(navtool);
                     });
+                });
+                
+                // Loop button (F8 equivalent)
+                document.getElementById('loopBtn').addEventListener('click', () => {
+                    _closeAllDropdowns();
+                    this.showConvertToLoopGroupDialog();
                 });
                 
                 // Brush cursor tracking
@@ -8397,7 +8423,13 @@
                                 break;
                             case 'l':
                                 e.preventDefault();
+                                this._activeSelectTool = 'lasso';
                                 this.selectTool('lasso');
+                                break;
+                            case 'm':
+                                e.preventDefault();
+                                this._activeSelectTool = 'marquee';
+                                this.selectTool('marquee');
                                 break;
                             case 'p':
                                 e.preventDefault();
@@ -9180,6 +9212,20 @@
                     document.getElementById('shapeTool').classList.add('active');
                 }
                 
+                // For selection sub-tools, highlight the lassoTool dropdown button and update icon
+                if (tool === 'lasso' || tool === 'marquee') {
+                    document.getElementById('lassoTool').classList.add('active');
+                    const _selIcons = {
+                        'lasso': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="8" cy="7" rx="6" ry="4.5"/><path d="M12.5 10c0 1.5-1 3-2 3.5s-1.5.5-1.5 1.5"/></svg>',
+                        'marquee': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="12" height="12" rx="0.5" stroke-dasharray="2 2"/></svg>'
+                    };
+                    const _selNames = { 'lasso': 'Lasso', 'marquee': 'Marquee' };
+                    const _selShortcuts = { 'lasso': 'L', 'marquee': 'M' };
+                    const _sb = document.getElementById('lassoTool');
+                    _sb.innerHTML = `${_selIcons[tool]} <span class="btn-label">${_selNames[tool]} ▼</span>`;
+                    _sb.title = `${_selNames[tool]} Selection (${_selShortcuts[tool]})`;
+                }
+                
                 // For fill sub-tools, highlight the fillTool dropdown button
                 if (tool === 'fill' || tool === 'gradient' || tool === 'eyedropper') {
                     document.getElementById('fillTool').classList.add('active');
@@ -9233,7 +9279,7 @@
                     this.selectionCanvas.style.cursor = 'none';
                     this.canvasContainer.style.cursor = 'none';
                     this.canvasWrapper.style.cursor = 'none';
-                } else if (tool === 'fill' || tool === 'gradient' || tool === 'lasso') {
+                } else if (tool === 'fill' || tool === 'gradient' || tool === 'lasso' || tool === 'marquee') {
                     this.canvas.style.cursor = 'crosshair';
                     this.selectionCanvas.style.cursor = 'crosshair';
                     this.canvasContainer.style.cursor = '';
@@ -9300,7 +9346,7 @@
             _updateTransformButton(xformtool) {
                 const btn = document.getElementById('transformTool');
                 const icons = {
-                    'transform': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="2.5" width="11" height="11" rx="0.5" stroke-dasharray="2 2"/><circle cx="2.5" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="2.5" cy="13.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="13.5" r="1" fill="currentColor" stroke="none"/></svg>',
+                    'transform': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="2.5" x2="8" y2="13.5"/><line x1="2.5" y1="8" x2="13.5" y2="8"/><path d="M8 2.5L6.5 4"/><path d="M8 2.5L9.5 4"/><path d="M8 13.5L6.5 12"/><path d="M8 13.5L9.5 12"/><path d="M2.5 8L4 6.5"/><path d="M2.5 8L4 9.5"/><path d="M13.5 8L12 6.5"/><path d="M13.5 8L12 9.5"/><circle cx="3.5" cy="3.5" r="1" fill="currentColor" stroke="none"/><circle cx="12.5" cy="3.5" r="1" fill="currentColor" stroke="none"/><circle cx="3.5" cy="12.5" r="1" fill="currentColor" stroke="none"/><circle cx="12.5" cy="12.5" r="1" fill="currentColor" stroke="none"/></svg>',
                     'scale': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2h4v4"/><path d="M14 2l-4.5 4.5"/><path d="M6 14H2v-4"/><path d="M2 14l4.5-4.5"/></svg>',
                     'rotate': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 8A5.5 5.5 0 112.5 5.5"/><path d="M2.5 1.5v4h4"/></svg>',
                     'skew': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2.5h9.5v11H2.5V6"/><circle cx="4" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="2.5" cy="13.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="13.5" r="1" fill="currentColor" stroke="none"/></svg>',
@@ -9826,6 +9872,21 @@
                     const x = (e.clientX - rect.left) * scaleX;
                     const y = (e.clientY - rect.top) * scaleY;
                     this.lassoPath.push({x, y});
+                    this.isDrawing = true;
+                    return;
+                }
+                
+                // Handle marquee tool
+                if (this.tool === 'marquee') {
+                    this.saveState();
+                    const canvas = e.target === this.selectionCanvas ? this.selectionCanvas : this.canvas;
+                    const rect = canvas.getBoundingClientRect();
+                    const scaleX = canvas.width / rect.width;
+                    const scaleY = canvas.height / rect.height;
+                    const x = (e.clientX - rect.left) * scaleX;
+                    const y = (e.clientY - rect.top) * scaleY;
+                    this._marqueeStart = { x, y };
+                    this._marqueeCurrent = { x, y };
                     this.isDrawing = true;
                     return;
                 }
@@ -10365,6 +10426,13 @@
                     return;
                 }
                 
+                // Handle marquee
+                if (this.tool === 'marquee' && this.isDrawing && this._marqueeStart) {
+                    this._marqueeCurrent = { x, y };
+                    this.drawMarqueeRect();
+                    return;
+                }
+                
                 // Handle transform / scale / rotate
                 if (this.tool === 'transform' || this.tool === 'scale' || this.tool === 'rotate' || this.tool === 'skew' || this.tool === 'distort') {
                     if (this.isTransforming) this.performTransform(x, y, e);
@@ -10720,6 +10788,13 @@
                 if (this.tool === 'lasso' && this.isDrawing) {
                     this.isDrawing = false;
                     this.completeLassoSelection();
+                    return;
+                }
+                
+                // Handle marquee completion
+                if (this.tool === 'marquee' && this.isDrawing) {
+                    this.isDrawing = false;
+                    this.completeMarqueeSelection();
                     return;
                 }
                 
@@ -13879,6 +13954,121 @@
                 this.render();
             }
             
+            // Marquee Selection Methods
+            drawMarqueeRect() {
+                this.selectionCtx.clearRect(0, 0, this.selectionCanvas.width, this.selectionCanvas.height);
+                if (!this._marqueeStart || !this._marqueeCurrent) return;
+                
+                const x = Math.min(this._marqueeStart.x, this._marqueeCurrent.x);
+                const y = Math.min(this._marqueeStart.y, this._marqueeCurrent.y);
+                const w = Math.abs(this._marqueeCurrent.x - this._marqueeStart.x);
+                const h = Math.abs(this._marqueeCurrent.y - this._marqueeStart.y);
+                
+                if (w < 1 && h < 1) return;
+                
+                this.selectionCtx.strokeStyle = '#5b8def';
+                this.selectionCtx.lineWidth = 2;
+                this.selectionCtx.setLineDash([5, 5]);
+                this.selectionCtx.strokeRect(x, y, w, h);
+                this.selectionCtx.setLineDash([]);
+            }
+            
+            completeMarqueeSelection() {
+                if (!this._marqueeStart || !this._marqueeCurrent) {
+                    this._marqueeStart = null;
+                    this._marqueeCurrent = null;
+                    this.selectionCtx.clearRect(0, 0, this.selectionCanvas.width, this.selectionCanvas.height);
+                    return;
+                }
+                
+                // Calculate rect in display canvas coords
+                const dispX = Math.min(this._marqueeStart.x, this._marqueeCurrent.x);
+                const dispY = Math.min(this._marqueeStart.y, this._marqueeCurrent.y);
+                const dispW = Math.abs(this._marqueeCurrent.x - this._marqueeStart.x);
+                const dispH = Math.abs(this._marqueeCurrent.y - this._marqueeStart.y);
+                
+                this._marqueeStart = null;
+                this._marqueeCurrent = null;
+                
+                if (dispW < 2 || dispH < 2) {
+                    this.selectionCtx.clearRect(0, 0, this.selectionCanvas.width, this.selectionCanvas.height);
+                    return;
+                }
+                
+                // Convert to frame-local coords
+                const off = this.getSelectionDisplayOffset();
+                const localX = dispX - off.x;
+                const localY = dispY - off.y;
+                
+                const layer = this.getCurrentLayer();
+                const frame = layer.frames[this.currentFrameIndex];
+                if (!frame) return;
+                const frameCtx = frame.getContext('2d');
+                
+                // Clamp to frame bounds
+                const clampX = Math.max(0, Math.floor(localX));
+                const clampY = Math.max(0, Math.floor(localY));
+                const clampR = Math.min(frame.width, Math.ceil(localX + dispW));
+                const clampB = Math.min(frame.height, Math.ceil(localY + dispH));
+                const selW = clampR - clampX;
+                const selH = clampB - clampY;
+                
+                if (selW <= 0 || selH <= 0) {
+                    this.selectionCtx.clearRect(0, 0, this.selectionCanvas.width, this.selectionCanvas.height);
+                    return;
+                }
+                
+                // Extract selection content
+                const selectedCanvas = document.createElement('canvas');
+                selectedCanvas.width = selW;
+                selectedCanvas.height = selH;
+                const selectedCtx = selectedCanvas.getContext('2d');
+                selectedCtx.drawImage(frame, clampX, clampY, selW, selH, 0, 0, selW, selH);
+                
+                // Scan for tight bounding box of actual content
+                const pixelData = selectedCtx.getImageData(0, 0, selW, selH);
+                const pixels = pixelData.data;
+                let tightMinX = selW, tightMinY = selH, tightMaxX = -1, tightMaxY = -1;
+                for (let py = 0; py < selH; py++) {
+                    for (let px = 0; px < selW; px++) {
+                        if (pixels[(py * selW + px) * 4 + 3] > 0) {
+                            if (px < tightMinX) tightMinX = px;
+                            if (px > tightMaxX) tightMaxX = px;
+                            if (py < tightMinY) tightMinY = py;
+                            if (py > tightMaxY) tightMaxY = py;
+                        }
+                    }
+                }
+                
+                if (tightMaxX < 0 || tightMaxY < 0) {
+                    this.selectionCtx.clearRect(0, 0, this.selectionCanvas.width, this.selectionCanvas.height);
+                    return;
+                }
+                
+                const tightW = tightMaxX - tightMinX + 1;
+                const tightH = tightMaxY - tightMinY + 1;
+                const finalX = clampX + tightMinX;
+                const finalY = clampY + tightMinY;
+                
+                const trimmedCanvas = document.createElement('canvas');
+                trimmedCanvas.width = tightW;
+                trimmedCanvas.height = tightH;
+                trimmedCanvas.getContext('2d').drawImage(selectedCanvas, tightMinX, tightMinY, tightW, tightH, 0, 0, tightW, tightH);
+                
+                // Store selection
+                this.selection = {
+                    imageData: trimmedCanvas,
+                    bounds: { x: finalX, y: finalY, width: tightW, height: tightH },
+                    originalBounds: { x: finalX, y: finalY, width: tightW, height: tightH }
+                };
+                
+                // Erase selected area from frame
+                frameCtx.clearRect(clampX, clampY, selW, selH);
+                
+                this.selectTool('transform');
+                this.render();
+            }
+            
             // Transform Methods
             isPointInSelection(x, y) {
                 if (!this.selection) return false;
@@ -16018,10 +16208,10 @@
                 this.isTransforming = false;
                 this.isRotating = false;
                 this.activeHandle = null;
-                // Switch to lasso
+                // Switch to active selection tool
                 const transformTools = ['transform', 'scale', 'rotate', 'skew', 'distort'];
                 if (transformTools.includes(this.tool)) {
-                    this.selectTool('lasso');
+                    this.selectTool(this._activeSelectTool || 'lasso');
                 }
                 
                 if (this.frameSelectMode) this.exitFrameSelectMode();
