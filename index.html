@@ -378,6 +378,175 @@
             border-radius: 50%;
         }
         
+        /* ── Custom Color Picker Popup ── */
+        .custom-cp {
+            display: none;
+            position: fixed;
+            z-index: 5000;
+            width: 232px;
+            background: #1a1b1e;
+            border-radius: 10px;
+            padding: 10px;
+            font-family: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06);
+            touch-action: none;
+            user-select: none;
+        }
+        .custom-cp.show { display: block; }
+        
+        .custom-cp-body { display: flex; gap: 7px; }
+        
+        .custom-cp-sv {
+            width: 186px;
+            height: 148px;
+            border-radius: 6px;
+            position: relative;
+            cursor: crosshair;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+            overflow: hidden;
+        }
+        .custom-cp-sv-cursor {
+            position: absolute;
+            width: 14px; height: 14px;
+            border-radius: 50%;
+            border: 2px solid #fff;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.3), 0 2px 6px rgba(0,0,0,0.5);
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+        
+        .custom-cp-hue {
+            width: 18px;
+            height: 148px;
+            border-radius: 6px;
+            cursor: ns-resize;
+            position: relative;
+            background: linear-gradient(to bottom, #f00 0%, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00 100%);
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.08);
+            flex-shrink: 0;
+        }
+        .custom-cp-hue-cursor {
+            position: absolute;
+            left: -2px; right: -2px;
+            height: 6px;
+            border-radius: 3px;
+            background: #fff;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.5);
+            transform: translateY(-50%);
+            pointer-events: none;
+        }
+        
+        .custom-cp-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-top: 8px;
+        }
+        .custom-cp-info-row {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+        .custom-cp-preview {
+            width: 26px;
+            height: 26px;
+            border-radius: 6px;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.1);
+            flex-shrink: 0;
+        }
+        .custom-cp-hex {
+            flex: 1;
+            background: #26282c;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 5px;
+            color: #ccc;
+            padding: 5px 8px;
+            font-size: 11px;
+            font-family: inherit;
+            outline: none;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .custom-cp-hex:focus {
+            border-color: rgba(91,141,239,0.4);
+        }
+        .custom-cp-vals {
+            font-size: 9px;
+            color: #555;
+            padding-left: 33px;
+        }
+        
+        .custom-cp-divider {
+            height: 1px;
+            background: rgba(255,255,255,0.06);
+            margin: 8px 0 6px;
+        }
+        .custom-cp-swatches-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        .custom-cp-swatches-label {
+            font-size: 9px;
+            color: #555;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .custom-cp-add-btn {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 4px;
+            color: #888;
+            font-size: 14px;
+            line-height: 1;
+            width: 20px; height: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            transition: background 0.15s, color 0.15s;
+        }
+        .custom-cp-add-btn:hover {
+            background: rgba(91,141,239,0.2);
+            color: #5b8def;
+        }
+        .custom-cp-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 3px;
+        }
+        .custom-cp-swatch {
+            aspect-ratio: 1;
+            border-radius: 4px;
+            cursor: pointer;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+            transition: box-shadow 0.12s, transform 0.1s;
+        }
+        .custom-cp-swatch:hover {
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2), 0 0 6px rgba(255,255,255,0.06);
+            transform: scale(1.08);
+        }
+        .custom-cp-swatch.active {
+            box-shadow: 0 0 0 2px #5b8def, inset 0 0 0 1px rgba(255,255,255,0.2);
+        }
+        .custom-cp-hint {
+            font-size: 8px;
+            color: #333;
+            margin-top: 4px;
+            text-align: center;
+        }
+        /* Backdrop for closing */
+        .custom-cp-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            z-index: 4999;
+        }
+        .custom-cp-backdrop.show { display: block; }
+        
         /* Color pickers wrap */
         .color-pickers-wrap {
             display: flex;
@@ -1092,6 +1261,71 @@
             letter-spacing: 0.5px;
         }
         
+        /* Loop range badge */
+        .loop-range-badge {
+            display: none; /* hidden until range is set */
+            align-items: center;
+            gap: 4px;
+            padding: 3px 8px 3px 6px;
+            border-radius: 6px;
+            background: rgba(91, 141, 239, 0.12);
+            border: 1px solid rgba(91, 141, 239, 0.25);
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+            margin-left: 4px;
+            flex-shrink: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        
+        .loop-range-badge:hover {
+            background: rgba(91, 141, 239, 0.2);
+            border-color: rgba(91, 141, 239, 0.4);
+        }
+        
+        .loop-range-badge svg {
+            color: #6aadff;
+            flex-shrink: 0;
+        }
+        
+        .loop-range-text {
+            font-size: 11px;
+            font-weight: 600;
+            color: #8ab4f0;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: -0.3px;
+            white-space: nowrap;
+        }
+        
+        .loop-range-clear {
+            font-size: 13px;
+            color: #667;
+            margin-left: 2px;
+            line-height: 1;
+            transition: color 0.1s;
+        }
+        
+        .loop-range-clear:hover {
+            color: #e04040;
+        }
+        
+        /* Play button loop indicator — small blue dot */
+        #playBtn.has-loop-range {
+            position: relative;
+        }
+        #playBtn.has-loop-range::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            right: 3px;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #5b8def;
+            box-shadow: 0 0 4px rgba(91, 141, 239, 0.5);
+            pointer-events: none;
+        }
+        
         .fps-popover {
             display: none;
             position: absolute;
@@ -1685,6 +1919,63 @@
             position: relative;
             height: 100%;
             min-width: 100%;
+        }
+        
+        /* Loop range track — always-visible strip between ruler and frames */
+        .loop-range-track {
+            height: 14px;
+            background: #1e2024;
+            border-bottom: 1px solid rgba(0,0,0,0.25);
+            flex-shrink: 0;
+            overflow-x: auto;
+            overflow-y: hidden;
+            position: relative;
+            scrollbar-width: none;
+            cursor: crosshair;
+            touch-action: none;
+        }
+        .loop-range-track::-webkit-scrollbar {
+            display: none;
+        }
+        .loop-range-track-inner {
+            position: relative;
+            height: 100%;
+            min-width: 100%;
+        }
+        .loop-range-bar {
+            display: none; /* hidden until range is set */
+            position: absolute;
+            top: 2px;
+            height: 10px;
+            background: rgba(91, 141, 239, 0.25);
+            border: 1px solid rgba(91, 141, 239, 0.5);
+            border-radius: 3px;
+            cursor: grab;
+            z-index: 1;
+        }
+        .loop-range-bar:hover {
+            background: rgba(91, 141, 239, 0.35);
+        }
+        .loop-range-handle {
+            position: absolute;
+            top: -1px;
+            width: 8px;
+            height: 12px;
+            background: #5b8def;
+            border-radius: 2px;
+            cursor: col-resize;
+            z-index: 2;
+            transition: background 0.1s;
+        }
+        .loop-range-handle:hover,
+        .loop-range-handle.dragging {
+            background: #7db4ff;
+        }
+        .loop-range-handle-in {
+            left: -4px;
+        }
+        .loop-range-handle-out {
+            right: -4px;
         }
         
         .scrub-tick {
@@ -3241,6 +3532,21 @@
                 transform: translateX(-50%);
             }
             
+            .loop-range-badge {
+                padding: 2px 6px 2px 4px;
+                gap: 3px;
+            }
+            .loop-range-badge svg {
+                width: 9px;
+                height: 9px;
+            }
+            .loop-range-text {
+                font-size: 10px;
+            }
+            .loop-range-clear {
+                font-size: 11px;
+            }
+            
             .add-frame {
                 width: var(--frame-w, 80px);
                 height: var(--frame-w, 80px);
@@ -3369,6 +3675,15 @@
             
             input[type="range"] {
                 width: 44px;
+            }
+            
+            /* Hide the loop range text on very small screens, keep just the icon */
+            .loop-range-badge .loop-range-text {
+                display: none;
+            }
+            .loop-range-badge {
+                padding: 2px 4px;
+                min-width: 0;
             }
         }
 
@@ -3811,6 +4126,7 @@
                             <div class="play-mode-menu" id="playModeMenu">
                                 <button class="play-mode-item active" data-mode="layer"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="5" width="12" height="4" rx="1"/></svg> Active Layer<span class="shortcut">Space</span></button>
                                 <button class="play-mode-item" data-mode="timeline"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="12" height="3" rx="1"/><rect x="3" y="6" width="10" height="3" rx="1"/><rect x="1" y="10" width="8" height="3" rx="1"/></svg> Full Timeline<span class="shortcut">⇧Space</span></button>
+                                <button class="play-mode-item" data-mode="loop"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3.5L12 5l-2 1.5"/><path d="M2 5h10"/><path d="M4 10.5L2 9l2-1.5"/><path d="M12 9H2"/></svg> Loop Range<span class="shortcut">⌘⇧Space</span></button>
                             </div>
                         </div>
                         <button id="stopBtn" title="Stop (Space)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="10" height="10" rx="1" fill="currentColor" stroke="none"/></svg> <span class="btn-label">Stop</span></button>
@@ -3823,6 +4139,11 @@
                         <button id="duplicateFrame" title="Duplicate Frame (⌘D / F6)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="4" width="8" height="8" rx="1"/><rect x="5.5" y="1" width="8" height="8" rx="1"/></svg> <span class="btn-label">Duplicate</span></button>
                         <button id="clearFrame" title="Clear Frame (Backspace)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M5.5 5.5l5 5M10.5 5.5l-5 5"/></svg> <span class="btn-label">Clear</span></button>
                         <button id="deleteFrame" title="Delete Frame (⇧F5)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h12M6 4V2.5h4V4M5 4v9h6V4"/><path d="M7 7v3M9 7v3"/></svg> <span class="btn-label">Delete</span></button>
+                    </div>
+                    <div class="loop-range-badge" id="loopRangeBadge" title="Loop Range — click to reset (3)">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 2.5L12 4l-1.5 1.5"/><path d="M2 4h10"/><path d="M3.5 11.5L2 10l1.5-1.5"/><path d="M12 10H2"/></svg>
+                        <span class="loop-range-text"></span>
+                        <span class="loop-range-clear" title="Clear loop range">×</span>
                     </div>
                     <div class="dropdown-container" style="position:relative; margin-left:auto;">
                         <button id="onionSkinToggle" title="Onion Skin (O)" style="background:none; border:none; color:#aab; cursor:pointer; padding:4px 6px; border-radius:4px; display:flex; align-items:center;" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='none'"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 16" width="22" height="15" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1" y="3" width="10" height="10" rx="1.5" opacity="0.35"/><rect x="7" y="1" width="10" height="10" rx="1.5" fill="currentColor" fill-opacity="0.15"/><rect x="13" y="3" width="10" height="10" rx="1.5" opacity="0.35"/></svg></button>
@@ -3911,6 +4232,14 @@
                 <div class="timeline-right-column">
                     <div class="scrub-ruler" id="scrubRuler">
                         <div class="scrub-ruler-inner" id="scrubRulerInner"></div>
+                    </div>
+                    <div class="loop-range-track" id="loopRangeTrack">
+                        <div class="loop-range-track-inner" id="loopRangeTrackInner">
+                            <div class="loop-range-bar" id="loopRangeBar">
+                                <div class="loop-range-handle loop-range-handle-in" id="loopRangeHandleIn"></div>
+                                <div class="loop-range-handle loop-range-handle-out" id="loopRangeHandleOut"></div>
+                            </div>
+                        </div>
                     </div>
                     <div class="timeline-frames-section" id="timelineFramesSection">
                         <div class="frame-select-banner" id="frameSelectBanner">
@@ -4079,6 +4408,9 @@
                 this.playbackMode = 'layer'; // 'layer' or 'timeline'
                 this.fps = 24;
                 this.playbackInterval = null;
+                
+                // Loop range (work area) — timeline positions, always active
+                this.loopRange = { inPoint: 0, outPoint: 0 };
                 
                 // Zoom state
                 this.zoomLevel = null; // null = fit-to-screen mode
@@ -5112,6 +5444,144 @@
                 return this.currentFrameIndex + (layer ? (layer.startFrame || 0) : 0);
             }
             
+            // Loop range helpers — range is always active, defaults to full span
+            hasLoopRange() {
+                return this.loopRange.inPoint !== null && this.loopRange.outPoint !== null;
+            }
+            
+            // Check if range is narrower than the full timeline
+            isLoopRangeNarrowed() {
+                if (!this.hasLoopRange()) return false;
+                const max = this.getDrawingTimelineLength();
+                return this.loopRange.inPoint > 0 || this.loopRange.outPoint < max - 1;
+            }
+            
+            // Reset range to encompass all frames
+            resetLoopRange() {
+                const max = this.getDrawingTimelineLength();
+                this.loopRange = { inPoint: 0, outPoint: Math.max(0, max - 1) };
+                this._updateLoopRangeBadge();
+                this._updateLoopRangeDimming();
+                this.renderLoopRangeTrack();
+            }
+            
+            setLoopIn(pos) {
+                if (pos > this.loopRange.outPoint) {
+                    this.loopRange.outPoint = pos;
+                    this.loopRange.inPoint = this.loopRange.inPoint; // keep
+                    [this.loopRange.inPoint, this.loopRange.outPoint] = [this.loopRange.outPoint, pos].sort((a,b)=>a-b);
+                } else {
+                    this.loopRange.inPoint = pos;
+                }
+                this._updateLoopRangeBadge();
+                this._updateLoopRangeDimming();
+                this.renderLoopRangeTrack();
+            }
+            
+            setLoopOut(pos) {
+                if (pos < this.loopRange.inPoint) {
+                    [this.loopRange.inPoint, this.loopRange.outPoint] = [pos, this.loopRange.inPoint];
+                } else {
+                    this.loopRange.outPoint = pos;
+                }
+                this._updateLoopRangeBadge();
+                this._updateLoopRangeDimming();
+                this.renderLoopRangeTrack();
+            }
+            
+            _updateLoopRangeBadge() {
+                const badge = document.getElementById('loopRangeBadge');
+                if (!badge) return;
+                const narrowed = this.isLoopRangeNarrowed();
+                if (narrowed) {
+                    badge.style.display = 'flex';
+                    badge.querySelector('.loop-range-text').textContent = 
+                        (this.loopRange.inPoint + 1) + ' → ' + (this.loopRange.outPoint + 1);
+                } else {
+                    badge.style.display = 'none';
+                }
+                
+                // Update play button loop indicator — only when narrowed
+                const playBtn = document.getElementById('playBtn');
+                if (playBtn) {
+                    if (narrowed) {
+                        playBtn.classList.add('has-loop-range');
+                        playBtn.title = `Play Loop [${this.loopRange.inPoint + 1}–${this.loopRange.outPoint + 1}] (Space)`;
+                    } else {
+                        playBtn.classList.remove('has-loop-range');
+                        const titles = { layer: 'Play Active Layer (Space)', timeline: 'Play Full Timeline (Space)', loop: 'Play Loop Range (Space)' };
+                        playBtn.title = titles[this.playbackMode] || titles.layer;
+                    }
+                }
+            }
+            
+            // Lightweight update: re-dim/undim existing timeline frame elements
+            _updateLoopRangeDimming() {
+                const narrowed = this.isLoopRangeNarrowed();
+                const inP = this.loopRange.inPoint;
+                const outP = this.loopRange.outPoint;
+                
+                document.querySelectorAll('.frame[data-timeline-pos]').forEach(el => {
+                    const tp = parseInt(el.dataset.timelinePos);
+                    el.style.opacity = (narrowed && (tp < inP || tp > outP)) ? '0.3' : '';
+                });
+                
+                document.querySelectorAll('.hold-block[data-timeline-pos]').forEach(el => {
+                    const tp = parseInt(el.dataset.timelinePos);
+                    const len = parseInt(el.dataset.holdLength) || 1;
+                    const blockEnd = tp + len - 1;
+                    el.style.opacity = (narrowed && (blockEnd < inP || tp > outP)) ? '0.3' : '';
+                });
+            }
+            
+            // Returns {start, end, count} for export.
+            getExportFrameRange() {
+                const maxFrames = this.getDrawingTimelineLength();
+                if (this.hasLoopRange()) {
+                    const start = Math.max(0, this.loopRange.inPoint);
+                    const end = Math.min(maxFrames, this.loopRange.outPoint + 1);
+                    return { start, end, count: end - start };
+                }
+                return { start: 0, end: maxFrames, count: maxFrames };
+            }
+            
+            // Render/update the DOM-based loop range track bar position and size
+            renderLoopRangeTrack() {
+                const trackInner = document.getElementById('loopRangeTrackInner');
+                const bar = document.getElementById('loopRangeBar');
+                if (!trackInner || !bar) return;
+                
+                // Match track inner width to scrub ruler inner width
+                const rulerInner = document.getElementById('scrubRulerInner');
+                if (rulerInner) {
+                    trackInner.style.width = rulerInner.style.width;
+                }
+                
+                // Auto-initialize if not set yet
+                if (!this.hasLoopRange()) {
+                    const max = this.getDrawingTimelineLength();
+                    this.loopRange = { inPoint: 0, outPoint: Math.max(0, max - 1) };
+                }
+                
+                // Auto-extend outPoint if timeline grew beyond it
+                const max = this.getDrawingTimelineLength();
+                if (this.loopRange.outPoint >= max) {
+                    this.loopRange.outPoint = Math.max(0, max - 1);
+                }
+                // If inPoint is beyond the end, clamp it
+                if (this.loopRange.inPoint >= max) {
+                    this.loopRange.inPoint = Math.max(0, max - 1);
+                }
+                
+                const { cellW, padding } = this.getTimelineMetrics();
+                const inX = padding + this.loopRange.inPoint * cellW;
+                const outX = padding + (this.loopRange.outPoint + 1) * cellW;
+                
+                bar.style.display = 'block';
+                bar.style.left = inX + 'px';
+                bar.style.width = Math.max(8, outX - inX) + 'px';
+            }
+            
             getTimelineLength() {
                 let maxEnd = 1;
                 for (const layer of this.layers) {
@@ -6002,7 +6472,14 @@
                             this._shiftLockedAngle = null;
                         }
                     }
-                    if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === ' ') {
+                        e.preventDefault();
+                        if (this.isPlaying) {
+                            this.stop();
+                        } else {
+                            this.play('loop');
+                        }
+                    } else if ((e.ctrlKey || e.metaKey) && e.key === 's') {
                         e.preventDefault();
                         this.saveProject();
                     } else if ((e.ctrlKey || e.metaKey) && e.key === 'o') {
@@ -6120,6 +6597,18 @@
                     const modalOpen = document.querySelector('.modal-overlay.show');
                     if (!e.ctrlKey && !e.metaKey && !e.altKey && !inputFocused && !modalOpen) {
                         switch (e.key) {
+                            case '1':
+                                e.preventDefault();
+                                this.setLoopIn(this.getPlayheadPosition());
+                                break;
+                            case '2':
+                                e.preventDefault();
+                                this.setLoopOut(this.getPlayheadPosition());
+                                break;
+                            case '3':
+                                e.preventDefault();
+                                this.resetLoopRange();
+                                break;
                             case 'b':
                                 e.preventDefault();
                                 this.selectTool('brush');
@@ -6247,6 +6736,7 @@
                                     this._spaceHeld = true;
                                     this._spaceDidPan = false;
                                     this._spaceShift = e.shiftKey;
+                                    this._spaceMeta = e.metaKey || e.ctrlKey;
                                     this._toolBeforeSpace = this.tool;
                                     this.canvas.style.cursor = 'grab';
                                     this.selectionCanvas.style.cursor = 'grab';
@@ -6307,6 +6797,8 @@
                         if (!this._spaceDidPan) {
                             if (this.isPlaying) {
                                 this.stop();
+                            } else if (this._spaceMeta && this._spaceShift) {
+                                this.play('loop');
                             } else if (this._spaceShift) {
                                 this.play('timeline');
                             } else {
@@ -6315,6 +6807,7 @@
                         }
                         this._spaceDidPan = false;
                         this._spaceShift = false;
+                        this._spaceMeta = false;
                         // Restore cursor to previous tool
                         if (this._toolBeforeSpace && this.tool !== 'pan') {
                             this.selectTool(this._toolBeforeSpace);
@@ -6364,8 +6857,12 @@
                         item.classList.add('active');
                         playModeMenu.classList.remove('show');
                         // Update play button tooltip
-                        document.getElementById('playBtn').title = this.playbackMode === 'timeline' 
-                            ? 'Play Full Timeline (Space)' : 'Play Active Layer (Space)';
+                        const titles = {
+                            layer: 'Play Active Layer (Space)',
+                            timeline: 'Play Full Timeline (Space)',
+                            loop: 'Play Loop Range (Space)'
+                        };
+                        document.getElementById('playBtn').title = titles[this.playbackMode] || titles.layer;
                     });
                 });
                 document.addEventListener('pointerdown', (e) => {
@@ -6400,6 +6897,15 @@
                 document.getElementById('duplicateFrame').addEventListener('click', () => this.duplicateFrame());
                 document.getElementById('deleteFrame').addEventListener('click', () => this.deleteCurrentFrame());
                 document.getElementById('frameSelectDone').addEventListener('click', () => this.exitFrameSelectMode());
+                
+                // Loop range badge: click clear button or badge itself
+                const loopBadge = document.getElementById('loopRangeBadge');
+                loopBadge.querySelector('.loop-range-clear').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.resetLoopRange();
+                });
+                loopBadge.addEventListener('click', () => this.resetLoopRange());
+                
                 // FPS badge, stepper, and popover
                 const fpsBadgeValue = document.getElementById('fpsBadgeValue');
                 const fpsPopover = document.getElementById('fpsPopover');
@@ -6549,6 +7055,7 @@
                 // Sync scroll: frames ↔ audio waveforms ↔ scrub ruler
                 const framesSection = document.getElementById('timelineFramesSection');
                 const scrubRuler = document.getElementById('scrubRuler');
+                const loopRangeTrack = document.getElementById('loopRangeTrack');
                 let _syncingScroll = false;
                 
                 this._syncScroll = (source) => {
@@ -6557,6 +7064,7 @@
                     const sl = source.scrollLeft;
                     if (source !== framesSection) framesSection.scrollLeft = sl;
                     if (source !== scrubRuler) scrubRuler.scrollLeft = sl;
+                    if (source !== loopRangeTrack) loopRangeTrack.scrollLeft = sl;
                     // Sync all audio waveform containers
                     document.querySelectorAll('.audio-timeline-waveform').forEach(wc => {
                         if (wc !== source) wc.scrollLeft = sl;
@@ -6567,6 +7075,7 @@
                 
                 framesSection.addEventListener('scroll', () => this._syncScroll(framesSection));
                 scrubRuler.addEventListener('scroll', () => this._syncScroll(scrubRuler));
+                loopRangeTrack.addEventListener('scroll', () => this._syncScroll(loopRangeTrack));
                 // Audio waveform scroll sync is attached via MutationObserver
                 const audioContainer = document.getElementById('audioTracksContainer');
                 const audioScrollObserver = new MutationObserver(() => {
@@ -6618,9 +7127,126 @@
                         scrubRuler.releasePointerCapture(e.pointerId);
                     }
                 });
-                scrubRuler.addEventListener('pointercancel', (e) => {
+                scrubRuler.addEventListener('pointercancel', () => {
                     this._isScrubbing = false;
                     this.stopScrubAudio();
+                });
+                
+                // === Loop Range Track interaction ===
+                // Helper: convert clientX to timeline position using the track element
+                const trackToTimelinePos = (clientX) => {
+                    const rect = loopRangeTrack.getBoundingClientRect();
+                    const x = clientX - rect.left + loopRangeTrack.scrollLeft;
+                    const { cellW, padding } = this.getTimelineMetrics();
+                    return Math.max(0, Math.floor((x - padding + cellW / 2) / cellW));
+                };
+                
+                // Click on empty area of the track: paint a range by drag
+                loopRangeTrack.addEventListener('pointerdown', (e) => {
+                    // Don't handle if the target is a handle (those have their own listeners)
+                    if (e.target.classList.contains('loop-range-handle')) return;
+                    // Don't handle if clicking inside the bar (for bar drag)
+                    if (e.target.id === 'loopRangeBar') {
+                        // Start bar drag (move entire range)
+                        e.preventDefault();
+                        loopRangeTrack.setPointerCapture(e.pointerId);
+                        this._loopBarDrag = {
+                            startX: e.clientX,
+                            origIn: this.loopRange.inPoint,
+                            origOut: this.loopRange.outPoint
+                        };
+                        return;
+                    }
+                    
+                    e.preventDefault();
+                    loopRangeTrack.setPointerCapture(e.pointerId);
+                    const pos = trackToTimelinePos(e.clientX);
+                    this._loopTrackDrag = { origin: pos };
+                    this.loopRange.inPoint = pos;
+                    this.loopRange.outPoint = pos;
+                    this.renderLoopRangeTrack();
+                    this._updateLoopRangeBadge();
+                    this._updateLoopRangeDimming();
+                });
+                
+                loopRangeTrack.addEventListener('pointermove', (e) => {
+                    // Handle drag
+                    if (this._loopHandleDrag) {
+                        const pos = trackToTimelinePos(e.clientX);
+                        if (this._loopHandleDrag === 'in') {
+                            this.loopRange.inPoint = Math.min(pos, this.loopRange.outPoint);
+                        } else {
+                            this.loopRange.outPoint = Math.max(pos, this.loopRange.inPoint);
+                        }
+                        this.renderLoopRangeTrack();
+                        this._updateLoopRangeBadge();
+                        this._updateLoopRangeDimming();
+                        return;
+                    }
+                    // Bar drag
+                    if (this._loopBarDrag) {
+                        const dx = e.clientX - this._loopBarDrag.startX;
+                        const { cellW } = this.getTimelineMetrics();
+                        const frameDelta = Math.round(dx / cellW);
+                        const maxPos = this.getTimelineLength() - 1;
+                        let newIn = this._loopBarDrag.origIn + frameDelta;
+                        let newOut = this._loopBarDrag.origOut + frameDelta;
+                        // Clamp
+                        if (newIn < 0) { newOut -= newIn; newIn = 0; }
+                        if (newOut > maxPos) { newIn -= (newOut - maxPos); newOut = maxPos; }
+                        this.loopRange.inPoint = Math.max(0, newIn);
+                        this.loopRange.outPoint = Math.min(maxPos, newOut);
+                        this.renderLoopRangeTrack();
+                        this._updateLoopRangeBadge();
+                        this._updateLoopRangeDimming();
+                        return;
+                    }
+                    // Track paint drag
+                    if (this._loopTrackDrag) {
+                        const pos = trackToTimelinePos(e.clientX);
+                        const origin = this._loopTrackDrag.origin;
+                        this.loopRange.inPoint = Math.min(origin, pos);
+                        this.loopRange.outPoint = Math.max(origin, pos);
+                        this.renderLoopRangeTrack();
+                        this._updateLoopRangeBadge();
+                        this._updateLoopRangeDimming();
+                        return;
+                    }
+                });
+                
+                const endLoopTrackDrag = (e) => {
+                    this._loopTrackDrag = null;
+                    this._loopHandleDrag = null;
+                    this._loopBarDrag = null;
+                    if (loopRangeTrack.hasPointerCapture(e.pointerId)) {
+                        loopRangeTrack.releasePointerCapture(e.pointerId);
+                    }
+                };
+                loopRangeTrack.addEventListener('pointerup', endLoopTrackDrag);
+                loopRangeTrack.addEventListener('pointercancel', endLoopTrackDrag);
+                
+                // Handle drag: in-point
+                document.getElementById('loopRangeHandleIn').addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    loopRangeTrack.setPointerCapture(e.pointerId);
+                    this._loopHandleDrag = 'in';
+                });
+                
+                // Handle drag: out-point
+                document.getElementById('loopRangeHandleOut').addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    loopRangeTrack.setPointerCapture(e.pointerId);
+                    this._loopHandleDrag = 'out';
+                });
+                
+                // Double-click track to clear loop range
+                loopRangeTrack.addEventListener('dblclick', (e) => {
+                    if (this.hasLoopRange()) {
+                        e.preventDefault();
+                        this.resetLoopRange();
+                    }
                 });
                 document.getElementById('exportPngZip').addEventListener('click', () => {
                     fileMenuDropdown.classList.remove('show');
@@ -12817,13 +13443,15 @@
                 this.onionCanvas.style.display = 'none';
                 
                 const mode = modeOverride || this.playbackMode;
-                this._activePlayMode = mode;
+                // 'loop' mode uses timeline compositing but focused on the loop range
+                const effectiveMode = mode === 'loop' ? 'timeline' : mode;
+                this._activePlayMode = effectiveMode;
                 
                 const layer = this.getCurrentLayer();
                 const layerOffset = layer.startFrame || 0;
                 let frameIndex, maxFrames;
                 
-                if (mode === 'timeline') {
+                if (effectiveMode === 'timeline') {
                     // Full timeline: iterate over drawing layer positions only
                     maxFrames = this.getDrawingTimelineLength();
                     frameIndex = 0;
@@ -12843,9 +13471,31 @@
                     this._playbackEndPos = layerOffset + maxFrames;
                 }
                 
+                // === Loop range override (only in 'loop' mode) ===
+                let loopStart = 0;
+                let loopEnd = maxFrames;
+                
+                if (mode === 'loop' && this.hasLoopRange()) {
+                    // 'loop' mode always uses timeline compositing
+                    loopStart = Math.max(0, Math.min(this.loopRange.inPoint, maxFrames - 1));
+                    loopEnd = Math.max(loopStart + 1, Math.min(this.loopRange.outPoint + 1, maxFrames));
+                    
+                    // Snap playhead to range start
+                    frameIndex = loopStart;
+                    this._playbackTimelinePos = loopStart;
+                    const localIdx = loopStart - layerOffset;
+                    this.currentFrameIndex = Math.max(0, Math.min(layer.frames.length - 1, localIdx >= 0 ? localIdx : 0));
+                    
+                    // Update audio window to loop range
+                    this._playbackStartPos = loopStart;
+                    this._playbackEndPos = loopEnd;
+                }
+                
+                const loopLength = loopEnd - loopStart;
+                
                 // Store playback duration so audio knows when to stop
-                this._playbackMaxFrames = maxFrames;
-                this._playbackDuration = maxFrames / this.fps;
+                this._playbackMaxFrames = loopLength;
+                this._playbackDuration = loopLength / this.fps;
                 
                 let lastFrameTime = performance.now(); // legacy — kept for compatibility
                 const frameDelay = 1000 / this.fps;
@@ -12865,13 +13515,13 @@
                     // Derive frame index from elapsed time — stays synced with audio
                     const elapsed = currentTime - this._playStartTime;
                     const totalElapsedFrames = Math.floor(elapsed / frameDelay);
-                    frameIndex = totalElapsedFrames % maxFrames;
+                    frameIndex = loopStart + (totalElapsedFrames % loopLength);
                     
                     // Only render if frame actually changed
                     if (frameIndex !== lastRenderedFrame) {
                         lastRenderedFrame = frameIndex;
                         
-                        if (mode === 'timeline') {
+                        if (effectiveMode === 'timeline') {
                             this._playbackTimelinePos = frameIndex;
                             const localIdx = frameIndex - layerOffset;
                             if (localIdx >= 0 && localIdx < layer.frames.length) {
@@ -12883,11 +13533,11 @@
                         }
                         
                         // Detect loop — restart audio aligned to loop boundary
-                        const currentLoop = Math.floor(totalElapsedFrames / maxFrames);
+                        const currentLoop = Math.floor(totalElapsedFrames / loopLength);
                         if (currentLoop > this._lastPlayLoop && this.audioTracks.length > 0) {
                             this.stopAudioPlayback();
                             // Reset timing so elapsed counts from this loop's start
-                            this._playStartTime = currentTime - (elapsed % (maxFrames * frameDelay));
+                            this._playStartTime = currentTime - (elapsed % (loopLength * frameDelay));
                             this._lastPlayLoop = 0; // reset so next loop is detected from new start time
                             this.startAudioPlayback();
                         }
@@ -15252,6 +15902,7 @@
                 
                 // Render scrub ruler (use max frame count across all layers)
                 this.renderScrubRuler();
+                this.renderLoopRangeTrack();
                 this.updatePlayheadPosition();
                 
                 // Sync vertical scroll between labels and frames
@@ -15301,6 +15952,13 @@
                 frameDiv.dataset.frameIndex = i;
                 frameDiv.dataset.timelinePos = timelinePos;
                 frameDiv.dataset.layerId = v.layer.id;
+                
+                // Loop range dimming
+                if (this.isLoopRangeNarrowed()) {
+                    if (timelinePos < this.loopRange.inPoint || timelinePos > this.loopRange.outPoint) {
+                        frameDiv.style.opacity = '0.3';
+                    }
+                }
                 
                 // Absolute positioning within blockWrap
                 frameDiv.style.position = 'absolute';
@@ -15362,6 +16020,14 @@
                 block.dataset.holdLength = length;
                 block.dataset.timelinePos = timelinePos;
                 block.dataset.layerId = v.layer.id;
+                
+                // Loop range dimming: dim if entirely outside the range
+                if (this.isLoopRangeNarrowed()) {
+                    const blockEnd = timelinePos + length - 1;
+                    if (blockEnd < this.loopRange.inPoint || timelinePos > this.loopRange.outPoint) {
+                        block.style.opacity = '0.3';
+                    }
+                }
                 
                 block.style.left = (startIndex * v.cellW + 2) + 'px';
                 block.style.top = '0';
@@ -15864,7 +16530,8 @@
                         currentLayerId: this.currentLayerId,
                         currentFrameIndex: this.currentFrameIndex,
                         nextLayerId: this.nextLayerId,
-                        layers: layerData
+                        layers: layerData,
+                        loopRange: this.hasLoopRange() ? { inPoint: this.loopRange.inPoint, outPoint: this.loopRange.outPoint } : null
                     };
                     
                     // Include audio tracks if present
@@ -16110,6 +16777,16 @@
                     this._timelineDirty = true;
                     this._invalidateCompositeCache();
                     this.positionOnionCanvas();
+                    
+                    // Restore loop range (or default to full span)
+                    if (project.loopRange && project.loopRange.inPoint != null && project.loopRange.outPoint != null) {
+                        this.loopRange = { inPoint: project.loopRange.inPoint, outPoint: project.loopRange.outPoint };
+                    } else {
+                        const max = this.getDrawingTimelineLength();
+                        this.loopRange = { inPoint: 0, outPoint: Math.max(0, max - 1) };
+                    }
+                    this._updateLoopRangeBadge();
+                    
                     this.render();
                     this.drawGrid();
                     
@@ -16259,9 +16936,9 @@
                 exportBtn.disabled = true;
                 
                 try {
-                    const maxFrames = this.getDrawingTimelineLength();
+                    const { start: exportStart, end: exportEnd, count: exportCount } = this.getExportFrameRange();
                     
-                    if (maxFrames === 0) {
+                    if (exportCount === 0) {
                         alert('No frames to export!');
                         exportBtn.innerHTML = originalText;
                         exportBtn.disabled = false;
@@ -16291,7 +16968,7 @@
                     
                     const zipFolder = useZip ? zip.folder('frames') : null;
                     
-                    for (let i = 0; i < maxFrames; i++) {
+                    for (let i = exportStart; i < exportEnd; i++) {
                         // Clear to transparent for PNG
                         compositeCtx.clearRect(0, 0, compositeCanvas.width, compositeCanvas.height);
                         
@@ -16299,7 +16976,8 @@
                             this.drawLayerWithTransform(compositeCtx, layer, i);
                         }
                         
-                        const filename = `frame_${String(i + 1).padStart(3, '0')}.png`;
+                        const frameNum = i - exportStart + 1;
+                        const filename = `frame_${String(frameNum).padStart(3, '0')}.png`;
                         
                         if (useZip) {
                             const blob = await new Promise(resolve => compositeCanvas.toBlob(resolve, 'image/png'));
@@ -16312,10 +16990,10 @@
                             a.download = filename;
                             a.click();
                             // Small delay between downloads to not overwhelm browser
-                            if (i < maxFrames - 1) await new Promise(r => setTimeout(r, 100));
+                            if (i < exportEnd - 1) await new Promise(r => setTimeout(r, 100));
                         }
                         
-                        const progress = Math.round((i / maxFrames) * 100);
+                        const progress = Math.round(((i - exportStart) / exportCount) * 100);
                         exportBtn.textContent = `Exporting PNGs... ${progress}%`;
                         
                         // Yield to UI
@@ -16364,9 +17042,9 @@
                     exportBtn.textContent = 'Preparing GIF...';
                     exportBtn.disabled = true;
                     
-                    const maxFrames = this.getDrawingTimelineLength();
+                    const { start: exportStart, end: exportEnd, count: exportCount } = this.getExportFrameRange();
                     
-                    if (maxFrames === 0) {
+                    if (exportCount === 0) {
                         alert('No frames to export!');
                         exportBtn.innerHTML = originalText;
                         exportBtn.disabled = false;
@@ -16386,7 +17064,7 @@
                     const _svpX2 = this.viewportX, _svpY2 = this.viewportY;
                     this.viewportX = 0; this.viewportY = 0;
                     
-                    for (let i = 0; i < maxFrames; i++) {
+                    for (let i = exportStart; i < exportEnd; i++) {
                         // White background for GIF (no transparency support in GIF89a easily)
                         tempCtx.fillStyle = this.bgColor || '#ffffff';
                         tempCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
@@ -16398,7 +17076,7 @@
                         const imageData = tempCtx.getImageData(0, 0, this.projectWidth, this.projectHeight);
                         encoder.addFrame(imageData.data, frameDelay);
                         
-                        const progress = Math.round((i / maxFrames) * 80);
+                        const progress = Math.round(((i - exportStart) / exportCount) * 80);
                         exportBtn.textContent = `Creating GIF... ${progress}%`;
                         
                         // Yield to UI
@@ -16434,9 +17112,9 @@
                     exportBtn.textContent = 'Creating MP4...';
                     exportBtn.disabled = true;
                     
-                    const maxFrames = this.getDrawingTimelineLength();
+                    const { start: exportStart, end: exportEnd, count: exportCount } = this.getExportFrameRange();
                     
-                    if (maxFrames === 0) {
+                    if (exportCount === 0) {
                         alert('No frames to export!');
                         exportBtn.innerHTML = originalText;
                         exportBtn.disabled = false;
@@ -16475,7 +17153,8 @@
                     let combinedStream;
                     let exportAudioCtx = null;
                     let exportAudioSources = [];
-                    const animDuration = maxFrames / this.fps;
+                    const animDuration = exportCount / this.fps;
+                    const exportStartTime = exportStart / this.fps;
                     
                     if (this.audioTracks.length > 0 && this.audioTracks.some(t => !t.muted)) {
                         // Create a dedicated AudioContext for export
@@ -16488,8 +17167,11 @@
                             
                             const trackStartTime = (track.startFrame || 0) / this.fps;
                             
-                            // Skip if track starts after animation ends
-                            if (trackStartTime >= animDuration) continue;
+                            // Skip if track starts after export range ends
+                            if (trackStartTime >= exportStartTime + animDuration) continue;
+                            // Skip if track ends before export range starts
+                            const trackEndTime = trackStartTime + track.audioBuffer.duration;
+                            if (trackEndTime <= exportStartTime) continue;
                             
                             const source = exportAudioCtx.createBufferSource();
                             source.buffer = track.audioBuffer;
@@ -16498,16 +17180,16 @@
                             source.connect(gain);
                             gain.connect(dest);
                             
-                            // Calculate how much audio to play
-                            const audioAvailable = track.audioBuffer.duration;
-                            const playDuration = Math.min(audioAvailable, animDuration - trackStartTime);
+                            // Calculate audio offset and duration within the export range
+                            const audioOffset = Math.max(0, exportStartTime - trackStartTime);
+                            const delayInExport = Math.max(0, trackStartTime - exportStartTime);
+                            const audioRemaining = track.audioBuffer.duration - audioOffset;
+                            const playDuration = Math.min(audioRemaining, animDuration - delayInExport);
                             
-                            if (trackStartTime > 0) {
-                                // Delayed start
-                                source.start(exportAudioCtx.currentTime + trackStartTime, 0, playDuration);
+                            if (delayInExport > 0) {
+                                source.start(exportAudioCtx.currentTime + delayInExport, audioOffset, playDuration);
                             } else {
-                                // Immediate start
-                                source.start(exportAudioCtx.currentTime, 0, playDuration);
+                                source.start(exportAudioCtx.currentTime, audioOffset, playDuration);
                             }
                             
                             exportAudioSources.push(source);
@@ -16573,10 +17255,10 @@
                     
                     // Play through all frames in real-time so audio stays synced
                     const frameDelay = 1000 / this.fps;
-                    let currentFrame = 0;
+                    let currentFrame = exportStart;
                     
                     const drawNextFrame = () => {
-                        if (currentFrame < maxFrames) {
+                        if (currentFrame < exportEnd) {
                             const _rvpx = this.viewportX, _rvpy = this.viewportY;
                             this.viewportX = 0; this.viewportY = 0;
                             
@@ -16589,7 +17271,7 @@
                             
                             this.viewportX = _rvpx; this.viewportY = _rvpy;
                             
-                            const progress = Math.round((currentFrame / maxFrames) * 100);
+                            const progress = Math.round(((currentFrame - exportStart) / exportCount) * 100);
                             exportBtn.textContent = `Recording MP4... ${progress}%`;
                             
                             currentFrame++;
@@ -16925,6 +17607,281 @@
                 }
             }
         });
+    </script>
+    
+    <!-- Custom Color Picker Popup -->
+    <div class="custom-cp-backdrop" id="cpBackdrop"></div>
+    <div class="custom-cp" id="customColorPicker">
+        <div class="custom-cp-body">
+            <div class="custom-cp-sv" id="cpSV">
+                <div class="custom-cp-sv-cursor" id="cpSVCursor"></div>
+            </div>
+            <div class="custom-cp-hue" id="cpHue">
+                <div class="custom-cp-hue-cursor" id="cpHueCursor"></div>
+            </div>
+        </div>
+        <div class="custom-cp-info">
+            <div class="custom-cp-info-row">
+                <div class="custom-cp-preview" id="cpPreview"></div>
+                <input class="custom-cp-hex" id="cpHexInput" value="#000000" spellcheck="false">
+            </div>
+            <div class="custom-cp-vals" id="cpVals">R 0 &nbsp;G 0 &nbsp;B 0 &nbsp;&middot;&nbsp; H 0° S 0% V 0%</div>
+        </div>
+        <div class="custom-cp-divider"></div>
+        <div class="custom-cp-swatches-header">
+            <span class="custom-cp-swatches-label">Swatches</span>
+            <button class="custom-cp-add-btn" id="cpAddSwatch" title="Save current color">+</button>
+        </div>
+        <div class="custom-cp-grid" id="cpSwatchGrid"></div>
+        <div class="custom-cp-hint">click to select · right-click to remove</div>
+    </div>
+    
+    <script>
+    // ── Custom Color Picker Logic ──
+    (function() {
+        // HSV <-> RGB
+        function hsvToRgb(h,s,v){let r,g,b;const i=Math.floor(h/60)%6,f=h/60-Math.floor(h/60),p=v*(1-s),q=v*(1-f*s),t=v*(1-(1-f)*s);switch(i){case 0:r=v;g=t;b=p;break;case 1:r=q;g=v;b=p;break;case 2:r=p;g=v;b=t;break;case 3:r=p;g=q;b=v;break;case 4:r=t;g=p;b=v;break;case 5:r=v;g=p;b=q;break;}return[Math.round(r*255),Math.round(g*255),Math.round(b*255)];}
+        function rgbToHsv(r,g,b){r/=255;g/=255;b/=255;const max=Math.max(r,g,b),min=Math.min(r,g,b),d=max-min;let h=0,s=max===0?0:d/max,v=max;if(d){switch(max){case r:h=((g-b)/d+(g<b?6:0))*60;break;case g:h=((b-r)/d+2)*60;break;case b:h=((r-g)/d+4)*60;break;}}return[h,s,v];}
+        function hexToRgb(hex){const m=hex.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);return m?[parseInt(m[1],16),parseInt(m[2],16),parseInt(m[3],16)]:[0,0,0];}
+        function rgbToHex(r,g,b){return'#'+[r,g,b].map(c=>c.toString(16).padStart(2,'0')).join('');}
+        
+        const popup = document.getElementById('customColorPicker');
+        const backdrop = document.getElementById('cpBackdrop');
+        const svArea = document.getElementById('cpSV');
+        const svCursor = document.getElementById('cpSVCursor');
+        const hueBar = document.getElementById('cpHue');
+        const hueCursor = document.getElementById('cpHueCursor');
+        const preview = document.getElementById('cpPreview');
+        const hexInput = document.getElementById('cpHexInput');
+        const valsDiv = document.getElementById('cpVals');
+        const swatchGrid = document.getElementById('cpSwatchGrid');
+        const addSwatchBtn = document.getElementById('cpAddSwatch');
+        
+        let hsv = [0, 0, 0];
+        let activeTarget = null; // 'A' or 'B'
+        let onChange = null;
+        
+        // Swatch persistence
+        const DEFAULT_SWATCHES = [
+            '#000000','#ffffff','#ff4444','#ff8844','#ffcc44','#88dd44',
+            '#44cc88','#44aaff','#5b8def','#8844ff','#cc44cc','#ff4488',
+            '#993322','#cc8844','#556633','#224455','#443366','#884444'
+        ];
+        let swatches = [];
+        try {
+            const saved = localStorage.getItem('frameboy_swatches');
+            swatches = saved ? JSON.parse(saved) : [...DEFAULT_SWATCHES];
+        } catch(e) { swatches = [...DEFAULT_SWATCHES]; }
+        
+        function saveSwatches() {
+            try { localStorage.setItem('frameboy_swatches', JSON.stringify(swatches)); } catch(e) {}
+        }
+        
+        function updateUI() {
+            const [r,g,b] = hsvToRgb(hsv[0], hsv[1], hsv[2]);
+            const hex = rgbToHex(r,g,b);
+            const pureHue = `hsl(${hsv[0]}, 100%, 50%)`;
+            
+            // SV area background
+            svArea.style.background = `linear-gradient(to top, #000, transparent), linear-gradient(to right, #fff, ${pureHue})`;
+            svCursor.style.left = (hsv[1] * 100) + '%';
+            svCursor.style.top = ((1 - hsv[2]) * 100) + '%';
+            
+            // Hue cursor
+            hueCursor.style.top = (hsv[0] / 360 * 100) + '%';
+            
+            // Preview & values
+            preview.style.background = hex;
+            hexInput.value = hex;
+            valsDiv.textContent = `R ${r}  G ${g}  B ${b}  ·  H ${Math.round(hsv[0])}° S ${Math.round(hsv[1]*100)}% V ${Math.round(hsv[2]*100)}%`;
+            
+            // Render swatches
+            renderSwatches(hex);
+            
+            // Fire callback
+            if (onChange) onChange(hex);
+        }
+        
+        function renderSwatches(currentHex) {
+            swatchGrid.innerHTML = '';
+            swatches.forEach((c, i) => {
+                const d = document.createElement('div');
+                d.className = 'custom-cp-swatch' + (c.toLowerCase() === currentHex.toLowerCase() ? ' active' : '');
+                d.style.background = c;
+                d.title = c;
+                d.addEventListener('click', () => {
+                    const [r,g,b] = hexToRgb(c);
+                    hsv = rgbToHsv(r,g,b);
+                    updateUI();
+                });
+                d.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    swatches.splice(i, 1);
+                    saveSwatches();
+                    updateUI();
+                });
+                swatchGrid.appendChild(d);
+            });
+        }
+        
+        addSwatchBtn.addEventListener('click', () => {
+            const [r,g,b] = hsvToRgb(hsv[0], hsv[1], hsv[2]);
+            const hex = rgbToHex(r,g,b);
+            if (!swatches.includes(hex)) {
+                swatches.push(hex);
+                saveSwatches();
+                updateUI();
+            }
+        });
+        
+        hexInput.addEventListener('input', () => {
+            const val = hexInput.value.trim();
+            if (/^#[0-9a-f]{6}$/i.test(val)) {
+                const [r,g,b] = hexToRgb(val);
+                hsv = rgbToHsv(r,g,b);
+                updateUI();
+            }
+        });
+        
+        // Drag helpers
+        function makeDrag(el, onMove) {
+            el.addEventListener('pointerdown', (e) => {
+                e.preventDefault();
+                el.setPointerCapture(e.pointerId);
+                onMove(e);
+                const move = (ev) => onMove(ev);
+                const up = (ev) => { el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up); };
+                el.addEventListener('pointermove', move);
+                el.addEventListener('pointerup', up);
+                el.addEventListener('pointercancel', up);
+            });
+        }
+        
+        makeDrag(svArea, (e) => {
+            const rect = svArea.getBoundingClientRect();
+            const s = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+            const v = Math.max(0, Math.min(1, 1 - (e.clientY - rect.top) / rect.height));
+            hsv = [hsv[0], s, v];
+            updateUI();
+        });
+        
+        makeDrag(hueBar, (e) => {
+            const rect = hueBar.getBoundingClientRect();
+            const h = Math.max(0, Math.min(360, (e.clientY - rect.top) / rect.height * 360));
+            hsv = [h, hsv[1], hsv[2]];
+            updateUI();
+        });
+        
+        // Open / close
+        function openPicker(targetEl, currentHex, cb) {
+            const [r,g,b] = hexToRgb(currentHex);
+            hsv = rgbToHsv(r,g,b);
+            onChange = cb;
+            
+            // Position near the target
+            const rect = targetEl.getBoundingClientRect();
+            let top = rect.bottom + 6;
+            let left = rect.left;
+            
+            // Ensure it fits on screen
+            const pw = 252, ph = 380;
+            if (left + pw > window.innerWidth) left = window.innerWidth - pw - 8;
+            if (left < 4) left = 4;
+            if (top + ph > window.innerHeight) top = rect.top - ph - 6;
+            if (top < 4) top = 4;
+            
+            popup.style.top = top + 'px';
+            popup.style.left = left + 'px';
+            popup.classList.add('show');
+            backdrop.classList.add('show');
+            updateUI();
+        }
+        
+        function closePicker() {
+            popup.classList.remove('show');
+            backdrop.classList.remove('show');
+            onChange = null;
+        }
+        
+        backdrop.addEventListener('pointerdown', closePicker);
+        
+        // Close on Escape
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && popup.classList.contains('show')) {
+                closePicker();
+            }
+        });
+        
+        // Intercept color input clicks — prevent native picker
+        const colorA = document.getElementById('colorPicker');
+        const colorB = document.getElementById('colorPickerB');
+        
+        function interceptColorInput(input) {
+            // Make the input non-interactive but keep it for value storage
+            input.style.pointerEvents = 'none';
+            
+            // Create an overlay div that catches clicks
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: absolute; inset: 0; border-radius: 50%; cursor: pointer; z-index: 1;
+            `;
+            input.parentElement.style.position = 'relative';
+            // Wrap just this input
+            const wrapper = document.createElement('div');
+            wrapper.style.cssText = 'position: relative; display: inline-block;';
+            input.parentNode.insertBefore(wrapper, input);
+            wrapper.appendChild(input);
+            wrapper.appendChild(overlay);
+            
+            return overlay;
+        }
+        
+        const overlayA = interceptColorInput(colorA);
+        const overlayB = interceptColorInput(colorB);
+        
+        overlayA.addEventListener('click', () => {
+            openPicker(colorA, colorA.value, (hex) => {
+                colorA.value = hex;
+                colorA.dispatchEvent(new Event('change'));
+            });
+        });
+        overlayB.addEventListener('click', () => {
+            openPicker(colorB, colorB.value, (hex) => {
+                colorB.value = hex;
+                colorB.dispatchEvent(new Event('change'));
+            });
+        });
+        
+        // Also intercept the bg color picker in settings
+        const bgColor = document.getElementById('canvasBgColor');
+        if (bgColor) {
+            const bgOverlay = interceptColorInput(bgColor);
+            bgOverlay.addEventListener('click', () => {
+                openPicker(bgColor, bgColor.value, (hex) => {
+                    bgColor.value = hex;
+                    bgColor.dispatchEvent(new Event('input'));
+                });
+            });
+        }
+        
+        // Intercept onion skin color pickers
+        ['onionPrevColor', 'onionNextColor'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                const ov = interceptColorInput(el);
+                ov.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Don't close parent dropdown
+                    openPicker(el, el.value, (hex) => {
+                        el.value = hex;
+                        el.dispatchEvent(new Event('input'));
+                    });
+                });
+            }
+        });
+        
+        // Expose for programmatic use
+        window._customColorPicker = { open: openPicker, close: closePicker };
+    })();
     </script>
 </body>
 </html>
