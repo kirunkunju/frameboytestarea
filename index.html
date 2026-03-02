@@ -904,6 +904,495 @@
             box-shadow: inset 0 4px 12px rgba(0,0,0,0.3);
         }
         
+        /* ── Library Panel ── */
+        .library-panel {
+            width: 28px;
+            min-width: 28px;
+            overflow: visible;
+            background: transparent;
+            display: flex;
+            flex-direction: column;
+            transition: width 0.2s ease, min-width 0.2s ease, background 0.2s ease;
+            position: relative;
+            z-index: 10;
+            flex-shrink: 0;
+        }
+        .library-panel.expanded {
+            width: 190px;
+            min-width: 190px;
+            background: #1a1b1e;
+            border-left: 1px solid rgba(255,255,255,0.06);
+        }
+        .library-panel-inner {
+            width: 190px;
+            min-width: 190px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            overflow: hidden;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s ease;
+        }
+        .library-panel.expanded .library-panel-inner {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        
+        /* Collapsed tab */
+        .library-tab {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 28px;
+            z-index: 11;
+            writing-mode: vertical-lr;
+            text-orientation: mixed;
+            background: #1a1b1e;
+            border-left: 1px solid rgba(255,255,255,0.06);
+            padding: 0 5px;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: #555;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: color 0.15s, background 0.15s;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        .library-tab:hover {
+            color: #999;
+            background: #1e1f23;
+        }
+        .library-tab svg {
+            transform: rotate(-90deg);
+            flex-shrink: 0;
+        }
+        .library-panel.expanded .library-tab {
+            display: none;
+        }
+        
+        /* Header */
+        .library-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            flex-shrink: 0;
+        }
+        .library-title {
+            font-size: 10px;
+            font-weight: 700;
+            color: #888;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .library-close-btn {
+            background: none;
+            border: none;
+            color: #555;
+            cursor: pointer;
+            font-size: 14px;
+            padding: 2px 4px;
+            line-height: 1;
+            border-radius: 3px;
+            transition: color 0.15s, background 0.15s;
+        }
+        .library-close-btn:hover {
+            color: #ccc;
+            background: rgba(255,255,255,0.06);
+        }
+        
+        /* Search */
+        .library-search {
+            padding: 6px 10px;
+            flex-shrink: 0;
+        }
+        .library-search input {
+            width: 100%;
+            background: #26282c;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 5px;
+            color: #ccc;
+            padding: 5px 8px;
+            font-size: 10px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            outline: none;
+            box-sizing: border-box;
+        }
+        .library-search input:focus {
+            border-color: rgba(91,141,239,0.4);
+        }
+        .library-search input::placeholder {
+            color: #444;
+        }
+        
+        /* Add button */
+        .library-add-btn {
+            margin: 0 10px 6px;
+            padding: 6px 0;
+            background: rgba(91,141,239,0.1);
+            border: 1px dashed rgba(91,141,239,0.3);
+            border-radius: 5px;
+            color: #5b8def;
+            font-size: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s, border-color 0.15s;
+            flex-shrink: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        .library-add-btn:hover {
+            background: rgba(91,141,239,0.2);
+            border-color: rgba(91,141,239,0.5);
+        }
+        
+        /* Thumbnail grid */
+        .library-grid {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .library-grid::-webkit-scrollbar {
+            width: 4px;
+        }
+        .library-grid::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+        }
+        
+        .library-empty {
+            text-align: center;
+            color: #444;
+            font-size: 10px;
+            padding: 30px 10px;
+            line-height: 1.6;
+        }
+        .library-empty-icon {
+            font-size: 24px;
+            margin-bottom: 6px;
+            opacity: 0.4;
+        }
+        
+        /* Loop card */
+        .library-card {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.12s;
+            position: relative;
+        }
+        .library-card:hover {
+            background: rgba(255,255,255,0.04);
+        }
+        .library-card.selected {
+            background: rgba(91,141,239,0.12);
+            box-shadow: inset 0 0 0 1px rgba(91,141,239,0.3);
+        }
+        .library-card-thumb {
+            width: 36px;
+            height: 36px;
+            border-radius: 4px;
+            background: #26282c;
+            box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
+            flex-shrink: 0;
+            overflow: hidden;
+            position: relative;
+        }
+        .library-card-thumb canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            image-rendering: pixelated;
+        }
+        /* Checkerboard for transparency */
+        .library-card-thumb::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image:
+                linear-gradient(45deg, #333 25%, transparent 25%),
+                linear-gradient(-45deg, #333 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #333 75%),
+                linear-gradient(-45deg, transparent 75%, #333 75%);
+            background-size: 6px 6px;
+            background-position: 0 0, 0 3px, 3px -3px, -3px 0;
+            border-radius: 4px;
+            z-index: 0;
+        }
+        .library-card-thumb canvas {
+            position: relative;
+            z-index: 1;
+        }
+        .library-card-info {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .library-card-name {
+            font-size: 10px;
+            color: #ccc;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .library-card-meta {
+            font-size: 9px;
+            color: #555;
+        }
+        .library-card-name-input {
+            background: #26282c;
+            border: 1px solid rgba(91,141,239,0.4);
+            border-radius: 3px;
+            color: #ccc;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 1px 4px;
+            width: 100%;
+            outline: none;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        
+        /* Detail panel */
+        .library-detail {
+            flex-shrink: 0;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            padding: 8px 10px;
+            display: none;
+        }
+        .library-detail.visible {
+            display: block;
+        }
+        .library-detail-name {
+            font-size: 10px;
+            font-weight: 700;
+            color: #aaa;
+            margin-bottom: 4px;
+        }
+        .library-detail-info {
+            font-size: 9px;
+            color: #555;
+            line-height: 1.6;
+        }
+        .library-detail-actions {
+            display: flex;
+            gap: 4px;
+            margin-top: 6px;
+        }
+        .library-detail-btn {
+            flex: 1;
+            padding: 4px 0;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 4px;
+            color: #888;
+            font-size: 9px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.12s, color 0.12s;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        .library-detail-btn:hover {
+            background: rgba(255,255,255,0.08);
+            color: #ccc;
+        }
+        .library-detail-btn.danger:hover {
+            background: rgba(239,68,68,0.15);
+            color: #ef4444;
+            border-color: rgba(239,68,68,0.3);
+        }
+        
+        /* Context menu for library */
+        .library-ctx-menu {
+            position: fixed;
+            z-index: 6000;
+            background: #1e1f23;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            padding: 4px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            min-width: 130px;
+            display: none;
+        }
+        .library-ctx-menu.show { display: block; }
+        .library-ctx-item {
+            display: block;
+            width: 100%;
+            padding: 6px 10px;
+            border: none;
+            background: none;
+            color: #bbb;
+            font-size: 10px;
+            text-align: left;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: background 0.1s;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        .library-ctx-item:hover {
+            background: rgba(91,141,239,0.15);
+            color: #fff;
+        }
+        .library-ctx-item.danger:hover {
+            background: rgba(239,68,68,0.15);
+            color: #ef4444;
+        }
+        .library-ctx-divider {
+            height: 1px;
+            background: rgba(255,255,255,0.06);
+            margin: 3px 6px;
+        }
+        
+        /* ── Convert to Loop Dialog ── */
+        .lg-dialog-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 7000;
+            align-items: center;
+            justify-content: center;
+        }
+        .lg-dialog-overlay.show { display: flex; }
+        .lg-dialog {
+            background: #1a1b1e;
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.08);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+            width: 300px;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            color: #ccc;
+        }
+        .lg-dialog-title {
+            font-size: 12px;
+            font-weight: 700;
+            padding: 14px 16px 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .lg-dialog-body {
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .lg-dialog-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .lg-dialog-label {
+            font-size: 9px;
+            font-weight: 600;
+            color: #777;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .lg-dialog-input {
+            background: #26282c;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 5px;
+            color: #ccc;
+            padding: 7px 10px;
+            font-size: 12px;
+            outline: none;
+            font-family: inherit;
+        }
+        .lg-dialog-input:focus {
+            border-color: rgba(91,141,239,0.4);
+        }
+        .lg-dialog-row {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .lg-dialog-row .lg-dialog-input {
+            width: 70px;
+            text-align: center;
+        }
+        .lg-dialog-row-sep {
+            color: #555;
+            font-size: 11px;
+        }
+        .lg-dialog-radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .lg-dialog-radio {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            cursor: pointer;
+            color: #aaa;
+        }
+        .lg-dialog-radio input[type="radio"] {
+            accent-color: #5b8def;
+            margin: 0;
+        }
+        .lg-dialog-check {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 11px;
+            cursor: pointer;
+            color: #aaa;
+        }
+        .lg-dialog-check input[type="checkbox"] {
+            accent-color: #5b8def;
+            margin: 0;
+        }
+        .lg-dialog-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+            padding: 10px 16px 14px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+        .lg-dialog-btn {
+            padding: 6px 16px;
+            border-radius: 5px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid rgba(255,255,255,0.08);
+            font-family: inherit;
+            transition: background 0.12s;
+        }
+        .lg-dialog-btn.cancel {
+            background: rgba(255,255,255,0.04);
+            color: #888;
+        }
+        .lg-dialog-btn.cancel:hover {
+            background: rgba(255,255,255,0.08);
+        }
+        .lg-dialog-btn.primary {
+            background: #5b8def;
+            color: #fff;
+            border-color: #5b8def;
+        }
+        .lg-dialog-btn.primary:hover {
+            background: #4a7de0;
+        }
+        
         .canvas-wrapper {
             position: relative;
             margin: auto;
@@ -2649,6 +3138,239 @@
             outline-color: rgba(91,141,239,0.55);
         }
         
+        /* ── Loop Span (hexagon) on timeline ── */
+        .lg-span {
+            position: absolute;
+            cursor: pointer;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+            overflow: visible;
+            z-index: 3;
+        }
+        .lg-span-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        .lg-span-hex-fill { fill: rgba(72, 160, 80, 0.12); transition: fill 0.12s; }
+        .lg-span-hex-stroke { fill: none; stroke: rgba(72, 160, 80, 0.45); stroke-width: 1.5; transition: stroke 0.12s; }
+        .lg-span:hover .lg-span-hex-fill { fill: rgba(72, 160, 80, 0.18); }
+        .lg-span:hover .lg-span-hex-stroke { stroke: rgba(72, 160, 80, 0.6); }
+        .lg-span.selected .lg-span-hex-fill { fill: rgba(72, 160, 80, 0.2); }
+        .lg-span.selected .lg-span-hex-stroke { stroke: rgba(72, 160, 80, 0.75); }
+        .lg-span-band-even { fill: rgba(72, 160, 80, 0.12); }
+        .lg-span-band-odd { fill: rgba(72, 160, 80, 0.03); }
+        .lg-span:hover .lg-span-band-even { fill: rgba(72, 160, 80, 0.16); }
+        .lg-span:hover .lg-span-band-odd { fill: rgba(72, 160, 80, 0.06); }
+        .lg-span.selected .lg-span-band-even { fill: rgba(72, 160, 80, 0.2); }
+        .lg-span.selected .lg-span-band-odd { fill: rgba(72, 160, 80, 0.08); }
+        /* Label overlay */
+        .lg-span-label {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            pointer-events: none;
+            z-index: 2;
+        }
+        .lg-span-label-icon {
+            font-size: 12px;
+            color: rgba(72, 160, 80, 0.7);
+        }
+        .lg-span-label-text {
+            font-size: 9px;
+            font-weight: 700;
+            color: rgba(72, 160, 80, 0.75);
+            letter-spacing: 0.3px;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .lg-span.selected .lg-span-label-icon { color: rgba(72, 160, 80, 0.9); }
+        .lg-span.selected .lg-span-label-text { color: rgba(72, 160, 80, 0.9); }
+        /* Frame number under span */
+        .lg-span-number {
+            position: absolute;
+            bottom: -14px;
+            left: 0;
+            font-size: 8px;
+            color: #555;
+            pointer-events: none;
+        }
+        /* Resize handle on right edge */
+        .lg-span-resize {
+            position: absolute;
+            right: -3px;
+            top: 0;
+            width: 10px;
+            height: 100%;
+            cursor: ew-resize;
+            z-index: 5;
+            opacity: 0;
+            transition: opacity 0.15s;
+        }
+        .lg-span-resize::after {
+            content: '';
+            position: absolute;
+            right: 2px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 2px;
+            height: 20px;
+            background: rgba(72, 160, 80, 0.5);
+            border-radius: 1px;
+        }
+        .lg-span:hover .lg-span-resize,
+        .lg-span-resize:hover {
+            opacity: 1;
+        }
+        .lg-span-resize:hover::after {
+            background: rgba(72, 160, 80, 0.8);
+            height: 28px;
+        }
+        
+        /* ── Instance Properties Bar ── */
+        .inst-props-bar {
+            display: none;
+            position: absolute;
+            bottom: 6px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(20, 22, 26, 0.92);
+            border: 1px solid rgba(72, 160, 80, 0.3);
+            border-radius: 8px;
+            padding: 5px 10px;
+            z-index: 15;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 10px;
+            color: #aaa;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            white-space: nowrap;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+            pointer-events: auto;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+        .inst-props-bar.visible { display: flex; }
+        .inst-props-bar-name {
+            color: rgba(72, 160, 80, 0.9);
+            font-weight: 700;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .inst-props-bar-sep {
+            width: 1px;
+            height: 14px;
+            background: rgba(255,255,255,0.08);
+        }
+        .inst-props-bar-field {
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .inst-props-bar-label {
+            color: #555;
+            font-weight: 600;
+            font-size: 9px;
+        }
+        .inst-props-bar-value {
+            color: #999;
+            font-variant-numeric: tabular-nums;
+        }
+        .inst-props-bar-input {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 3px;
+            color: #ccc;
+            font-size: 10px;
+            width: 42px;
+            padding: 2px 4px;
+            text-align: center;
+            outline: none;
+            font-family: inherit;
+            font-variant-numeric: tabular-nums;
+        }
+        .inst-props-bar-input:focus {
+            border-color: rgba(72, 160, 80, 0.4);
+        }
+        
+        /* ── Breadcrumb Bar ── */
+        .breadcrumb-bar {
+            display: none;
+            height: 28px;
+            background: rgba(20, 22, 26, 0.85);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+            padding: 0 10px;
+            align-items: center;
+            gap: 4px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-size: 10px;
+            color: #888;
+            flex-shrink: 0;
+            backdrop-filter: blur(6px);
+            -webkit-backdrop-filter: blur(6px);
+            z-index: 5;
+            overflow: hidden;
+        }
+        .breadcrumb-bar.visible { display: flex; }
+        .breadcrumb-seg {
+            cursor: pointer;
+            padding: 3px 6px;
+            border-radius: 4px;
+            transition: background 0.12s, color 0.12s;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .breadcrumb-seg svg {
+            flex-shrink: 0;
+            opacity: 0.8;
+        }
+        .breadcrumb-seg.active svg {
+            opacity: 1;
+        }
+        .breadcrumb-seg:hover {
+            background: rgba(255,255,255,0.06);
+            color: #ccc;
+        }
+        .breadcrumb-seg.active {
+            color: rgba(72, 160, 80, 0.9);
+            font-weight: 700;
+        }
+        .breadcrumb-sep {
+            color: #444;
+            font-size: 9px;
+        }
+        .breadcrumb-ghost-toggle {
+            margin-left: auto;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 9px;
+            color: #555;
+            transition: color 0.12s, background 0.12s;
+            display: flex;
+            align-items: center;
+            gap: 3px;
+        }
+        .breadcrumb-ghost-toggle:hover {
+            color: #aaa;
+            background: rgba(255,255,255,0.04);
+        }
+        .breadcrumb-ghost-toggle.on { color: rgba(72, 160, 80, 0.7); }
+        
         .frame-select-banner {
             display: none;
             background: rgba(91,141,239,0.1);
@@ -3617,6 +4339,24 @@
             .canvas-container {
                 min-height: 140px;
             }
+            
+            /* Library panel: hide tab on small screens */
+            .library-panel {
+                width: 0;
+                min-width: 0;
+            }
+            .library-panel .library-tab {
+                display: none;
+            }
+            .library-panel.expanded {
+                width: 170px;
+                min-width: 170px;
+                position: absolute;
+                right: 0;
+                top: 0;
+                bottom: 0;
+                z-index: 20;
+            }
         }
 
         @media (max-width: 480px) {
@@ -4093,6 +4833,8 @@
         <div class="main-content">
             <!-- Canvas area -->
             <div class="canvas-container" id="canvasContainer">
+                <!-- Breadcrumb navigation for loop editing -->
+                <div class="breadcrumb-bar" id="breadcrumbBar"></div>
                 <div class="canvas-wrapper" id="canvasWrapper">
                     <canvas id="onionCanvas" width="1920" height="1080"></canvas>
                     <canvas id="mainCanvas" width="1920" height="1080"></canvas>
@@ -4101,6 +4843,19 @@
                     <div class="brush-cursor" id="brushCursor"></div>
                 </div>
                 <div class="magnifier-marquee" id="magnifierMarquee"></div>
+                <!-- Instance properties bar -->
+                <div class="inst-props-bar" id="instPropsBar">
+                    <div class="inst-props-bar-name"><span>⬡</span> <span id="instPropsName">—</span></div>
+                    <div class="inst-props-bar-sep"></div>
+                    <div class="inst-props-bar-field"><span class="inst-props-bar-label">X</span><input class="inst-props-bar-input" id="instPropsX" type="number"></div>
+                    <div class="inst-props-bar-field"><span class="inst-props-bar-label">Y</span><input class="inst-props-bar-input" id="instPropsY" type="number"></div>
+                    <div class="inst-props-bar-sep"></div>
+                    <div class="inst-props-bar-field"><span class="inst-props-bar-label">W</span><span class="inst-props-bar-value" id="instPropsW">—</span></div>
+                    <div class="inst-props-bar-field"><span class="inst-props-bar-label">H</span><span class="inst-props-bar-value" id="instPropsH">—</span></div>
+                    <div class="inst-props-bar-sep"></div>
+                    <div class="inst-props-bar-field"><span class="inst-props-bar-label">↻</span><input class="inst-props-bar-input" id="instPropsRot" type="number" style="width:36px"></div>
+                    <div class="inst-props-bar-field"><span class="inst-props-bar-label">α</span><input class="inst-props-bar-input" id="instPropsAlpha" type="number" min="0" max="100" style="width:36px"></div>
+                </div>
             </div>
             <div class="zoom-controls" id="zoomControls">
                 <button id="pillPanBtn" title="Pan / Hand (H)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5.5 8V3.5a1 1 0 012 0V7"/><path d="M7.5 7V2.5a1 1 0 012 0V7"/><path d="M9.5 7V3.5a1 1 0 012 0V7"/><path d="M11.5 5.5a1 1 0 012 0V10c0 2.5-2 4.5-4.5 4.5h-1C6 14.5 4 12.5 4 10V8.5"/><path d="M5.5 8c0 0-2-1-2.5-2s0-2 1-1.5l1.5 1"/></svg></button>
@@ -4112,9 +4867,90 @@
                 <div class="pill-divider"></div>
                 <button id="pasteboardToggle" title="Show Pasteboard (\)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="3.5" width="9" height="9" stroke-dasharray="2 1.5"/><rect x="1" y="1" width="14" height="14" rx="1" opacity="0.4"/></svg></button>
             </div>
+            
+            <!-- Library Panel -->
+            <div class="library-panel" id="libraryPanel">
+                <div class="library-tab" id="libraryTab" title="Loop Library (⌘⇧L)">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+                    Library
+                </div>
+                <div class="library-panel-inner">
+                    <div class="library-header">
+                        <span class="library-title">Library</span>
+                        <button class="library-close-btn" id="libraryCloseBtn" title="Close library">✕</button>
+                    </div>
+                    <div class="library-search">
+                        <input type="text" id="librarySearchInput" placeholder="Search loops..." spellcheck="false">
+                    </div>
+                    <button class="library-add-btn" id="libraryAddBtn">+ New Loop</button>
+                    <div class="library-grid" id="libraryGrid">
+                        <div class="library-empty" id="libraryEmpty">
+                            <div class="library-empty-icon">⬡</div>
+                            No loops yet.<br>Convert drawings with F8<br>or click + New Loop.
+                        </div>
+                    </div>
+                    <div class="library-detail" id="libraryDetail">
+                        <div class="library-detail-name" id="libraryDetailName"></div>
+                        <div class="library-detail-info" id="libraryDetailInfo"></div>
+                        <div class="library-detail-actions">
+                            <button class="library-detail-btn" id="libraryEditBtn">Edit</button>
+                            <button class="library-detail-btn" id="libraryDupeBtn">Duplicate</button>
+                            <button class="library-detail-btn danger" id="libraryDeleteBtn">Delete</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Convert to Loop dialog -->
+            <div class="lg-dialog-overlay" id="lgDialogOverlay">
+                <div class="lg-dialog">
+                    <div class="lg-dialog-title">Convert to Loop</div>
+                    <div class="lg-dialog-body">
+                        <div class="lg-dialog-field">
+                            <label class="lg-dialog-label">Name</label>
+                            <input class="lg-dialog-input" id="lgDialogName" spellcheck="false" placeholder="Loop 1">
+                        </div>
+                        <div class="lg-dialog-field">
+                            <label class="lg-dialog-label">Canvas Size</label>
+                            <div class="lg-dialog-radio-group" id="lgDialogSize">
+                                <label class="lg-dialog-radio"><input type="radio" name="lgSize" value="fit" checked> Fit to content</label>
+                                <label class="lg-dialog-radio"><input type="radio" name="lgSize" value="match"> Match project (<span id="lgDialogProjectSize"></span>)</label>
+                                <label class="lg-dialog-radio"><input type="radio" name="lgSize" value="custom"> Custom</label>
+                            </div>
+                            <div class="lg-dialog-row" id="lgDialogCustomSize" style="display:none; margin-top:4px; margin-left:18px;">
+                                <input class="lg-dialog-input" id="lgDialogW" type="number" min="1" value="128">
+                                <span class="lg-dialog-row-sep">×</span>
+                                <input class="lg-dialog-input" id="lgDialogH" type="number" min="1" value="128">
+                            </div>
+                        </div>
+                        <div class="lg-dialog-field">
+                            <label class="lg-dialog-label">Include</label>
+                            <div class="lg-dialog-radio-group" id="lgDialogInclude">
+                                <label class="lg-dialog-radio"><input type="radio" name="lgInclude" value="current" checked> Current frame only</label>
+                                <label class="lg-dialog-radio"><input type="radio" name="lgInclude" value="all"> All frames on this layer</label>
+                            </div>
+                        </div>
+                        <label class="lg-dialog-check">
+                            <input type="checkbox" id="lgDialogReplace" checked>
+                            Replace original with instance
+                        </label>
+                    </div>
+                    <div class="lg-dialog-footer">
+                        <button class="lg-dialog-btn cancel" id="lgDialogCancel">Cancel</button>
+                        <button class="lg-dialog-btn primary" id="lgDialogCreate">Create</button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Library context menu -->
+            <div class="library-ctx-menu" id="libraryCtxMenu">
+                <button class="library-ctx-item" data-action="rename">Rename</button>
+                <button class="library-ctx-item" data-action="edit">Edit Loop</button>
+                <button class="library-ctx-item" data-action="duplicate">Duplicate</button>
+                <div class="library-ctx-divider"></div>
+                <button class="library-ctx-item danger" data-action="delete">Delete</button>
+            </div>
         </div>
-
-        <!-- Combined Timeline & Layers Panel -->
         <div class="timeline" id="timelinePanel">
             <div class="timeline-resize-handle" id="timelineResizeHandle"></div>
             <div class="timeline-header">
@@ -4126,7 +4962,7 @@
                             <div class="play-mode-menu" id="playModeMenu">
                                 <button class="play-mode-item active" data-mode="layer"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="5" width="12" height="4" rx="1"/></svg> Active Layer<span class="shortcut">Space</span></button>
                                 <button class="play-mode-item" data-mode="timeline"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="2" width="12" height="3" rx="1"/><rect x="3" y="6" width="10" height="3" rx="1"/><rect x="1" y="10" width="8" height="3" rx="1"/></svg> Full Timeline<span class="shortcut">⇧Space</span></button>
-                                <button class="play-mode-item" data-mode="loop"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3.5L12 5l-2 1.5"/><path d="M2 5h10"/><path d="M4 10.5L2 9l2-1.5"/><path d="M12 9H2"/></svg> Loop Range<span class="shortcut">⌘⇧Space</span></button>
+                                <button class="play-mode-item" data-mode="loop"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3.5L12 5l-2 1.5"/><path d="M2 5h10"/><path d="M4 10.5L2 9l2-1.5"/><path d="M12 9H2"/></svg> Range Area<span class="shortcut">⌘⇧Space</span></button>
                             </div>
                         </div>
                         <button id="stopBtn" title="Stop (Space)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="10" height="10" rx="1" fill="currentColor" stroke="none"/></svg> <span class="btn-label">Stop</span></button>
@@ -4140,10 +4976,10 @@
                         <button id="clearFrame" title="Clear Frame (Backspace)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M5.5 5.5l5 5M10.5 5.5l-5 5"/></svg> <span class="btn-label">Clear</span></button>
                         <button id="deleteFrame" title="Delete Frame (⇧F5)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h12M6 4V2.5h4V4M5 4v9h6V4"/><path d="M7 7v3M9 7v3"/></svg> <span class="btn-label">Delete</span></button>
                     </div>
-                    <div class="loop-range-badge" id="loopRangeBadge" title="Loop Range — click to reset (3)">
+                    <div class="loop-range-badge" id="loopRangeBadge" title="Range Area — click to reset (3)">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 2.5L12 4l-1.5 1.5"/><path d="M2 4h10"/><path d="M3.5 11.5L2 10l1.5-1.5"/><path d="M12 10H2"/></svg>
                         <span class="loop-range-text"></span>
-                        <span class="loop-range-clear" title="Clear loop range">×</span>
+                        <span class="loop-range-clear" title="Clear range area">×</span>
                     </div>
                     <div class="dropdown-container" style="position:relative; margin-left:auto;">
                         <button id="onionSkinToggle" title="Onion Skin (O)" style="background:none; border:none; color:#aab; cursor:pointer; padding:4px 6px; border-radius:4px; display:flex; align-items:center;" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='none'"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 16" width="22" height="15" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="1" y="3" width="10" height="10" rx="1.5" opacity="0.35"/><rect x="7" y="1" width="10" height="10" rx="1.5" fill="currentColor" fill-opacity="0.15"/><rect x="13" y="3" width="10" height="10" rx="1.5" opacity="0.35"/></svg></button>
@@ -4372,10 +5208,16 @@
                 this.gridVisible = false;
                 this.brushCursor = document.getElementById('brushCursor');
                 
-                this.layers = [{ id: 1, name: 'Layer 1', visible: true, opacity: 1.0, frames: [], transformKeyframes: [], startFrame: 0, parentId: null }];
+                this.layers = [{ id: 1, name: 'Layer 1', visible: true, opacity: 1.0, frames: [], transformKeyframes: [], startFrame: 0, parentId: null, symbolInstances: [] }];
                 this.currentLayerId = 1;
                 this.currentFrameIndex = 0;
                 this.nextLayerId = 2;
+                
+                // Symbol system
+                this.symbolLibrary = {};  // id → SymbolDefinition
+                this.contextStack = [{ type: 'scene' }];  // navigation stack
+                this._nextSymbolId = 1;
+                this._nextInstanceId = 1;
                 
                 this.tool = 'brush';
                 this.color = '#000000';
@@ -4607,6 +5449,9 @@
                 
                 this.initializeFrame();
                 this.setupEventListeners();
+                this.initLibraryPanel();
+                this.initConvertDialog();
+                this.initInstPropsBar();
                 this.updateUndoRedoButtons();
                 this.applyZoom(); // Set initial fit-to-screen zoom
                 this.render();
@@ -5124,6 +5969,9 @@
             }
             
             initializeFrame() {
+                // Clear manual scrub position when navigating to actual frames
+                this._manualTimelinePos = undefined;
+                
                 // Clear any gradient preview/edit state when changing frames
                 if (this._gradientEdit) {
                     this._gradientEdit = null;
@@ -5136,8 +5984,9 @@
                 this._gradientMaskCache = null;
                 
                 const layer = this.getCurrentLayer();
-                if (!layer.frames[this.currentFrameIndex]) {
-                    layer.frames[this.currentFrameIndex] = this.createEmptyFrame();
+                // Fill any gaps so the frames array is never sparse
+                while (layer.frames.length <= this.currentFrameIndex) {
+                    layer.frames.push(this.createEmptyFrame());
                 }
             }
             
@@ -5435,10 +6284,25 @@
             }
             
             // NLE helpers: timeline position ↔ local frame index
+            // Get effective layer length including instance spans
+            getEffectiveLayerLength(layer) {
+                let len = layer.frames.length;
+                if (layer.symbolInstances) {
+                    for (const inst of layer.symbolInstances) {
+                        len = Math.max(len, inst.startFrame + inst.duration);
+                    }
+                }
+                return len;
+            }
+            
             getPlayheadPosition() {
-                // During timeline playback, use the raw timeline position
-                if (this.isPlaying && this._activePlayMode === 'timeline' && this._playbackTimelinePos !== undefined) {
+                // During any playback, use the tracked timeline position
+                if (this.isPlaying && this._playbackTimelinePos !== undefined) {
                     return this._playbackTimelinePos;
+                }
+                // During manual scrub into instance-only territory
+                if (this._manualTimelinePos !== undefined) {
+                    return this._manualTimelinePos;
                 }
                 const layer = this.getCurrentLayer();
                 return this.currentFrameIndex + (layer ? (layer.startFrame || 0) : 0);
@@ -5506,10 +6370,10 @@
                 if (playBtn) {
                     if (narrowed) {
                         playBtn.classList.add('has-loop-range');
-                        playBtn.title = `Play Loop [${this.loopRange.inPoint + 1}–${this.loopRange.outPoint + 1}] (Space)`;
+                        playBtn.title = `Play Range [${this.loopRange.inPoint + 1}–${this.loopRange.outPoint + 1}] (Space)`;
                     } else {
                         playBtn.classList.remove('has-loop-range');
-                        const titles = { layer: 'Play Active Layer (Space)', timeline: 'Play Full Timeline (Space)', loop: 'Play Loop Range (Space)' };
+                        const titles = { layer: 'Play Active Layer (Space)', timeline: 'Play Full Timeline (Space)', loop: 'Play Range Area (Space)' };
                         playBtn.title = titles[this.playbackMode] || titles.layer;
                     }
                 }
@@ -5582,10 +6446,826 @@
                 bar.style.width = Math.max(8, outX - inX) + 'px';
             }
             
+            // ═══════════════════════════════════════
+            // Symbol System
+            // ═══════════════════════════════════════
+            
+            generateSymbolId() {
+                return 'sym_' + (this._nextSymbolId++) + '_' + Date.now().toString(36);
+            }
+            
+            generateInstanceId() {
+                return 'inst_' + (this._nextInstanceId++) + '_' + Date.now().toString(36);
+            }
+            
+            // Create a new empty symbol definition and add it to the library
+            createSymbolDefinition(name, width, height) {
+                const id = this.generateSymbolId();
+                const sym = {
+                    id: id,
+                    name: name || 'Loop ' + Object.keys(this.symbolLibrary).length + 1,
+                    width: width || this.projectWidth,
+                    height: height || this.projectHeight,
+                    layers: [{
+                        id: 1,
+                        name: 'Layer 1',
+                        visible: true,
+                        opacity: 1.0,
+                        frames: [],
+                        transformKeyframes: [],
+                        startFrame: 0,
+                        parentId: null,
+                        symbolInstances: []
+                    }],
+                    created: Date.now(),
+                    thumbnail: null,
+                    _nextLayerId: 2
+                };
+                this.symbolLibrary[id] = sym;
+                return sym;
+            }
+            
+            // Get a symbol definition by ID
+            getSymbol(symbolId) {
+                return this.symbolLibrary[symbolId] || null;
+            }
+            
+            // Delete a symbol definition and remove all instances referencing it
+            deleteSymbol(symbolId) {
+                if (!this.symbolLibrary[symbolId]) return;
+                
+                // Remove all instances from all layers (in the main scene)
+                for (const layer of this.layers) {
+                    if (layer.symbolInstances) {
+                        layer.symbolInstances = layer.symbolInstances.filter(inst => inst.symbolId !== symbolId);
+                    }
+                }
+                
+                // Also remove instances inside other symbols
+                for (const symId in this.symbolLibrary) {
+                    const sym = this.symbolLibrary[symId];
+                    for (const layer of sym.layers) {
+                        if (layer.symbolInstances) {
+                            layer.symbolInstances = layer.symbolInstances.filter(inst => inst.symbolId !== symbolId);
+                        }
+                    }
+                }
+                
+                delete this.symbolLibrary[symbolId];
+            }
+            
+            // Duplicate a symbol definition (deep copy)
+            duplicateSymbol(symbolId) {
+                const original = this.symbolLibrary[symbolId];
+                if (!original) return null;
+                
+                const newSym = this.createSymbolDefinition(
+                    original.name + ' Copy',
+                    original.width,
+                    original.height
+                );
+                
+                // Deep copy layers and frames
+                newSym.layers = original.layers.map(layer => {
+                    const newLayer = {
+                        id: layer.id,
+                        name: layer.name,
+                        visible: layer.visible,
+                        opacity: layer.opacity,
+                        frames: layer.frames.map(frame => {
+                            if (!frame) return null;
+                            const c = document.createElement('canvas');
+                            c.width = frame.width;
+                            c.height = frame.height;
+                            c._originX = frame._originX || 0;
+                            c._originY = frame._originY || 0;
+                            c.getContext('2d').drawImage(frame, 0, 0);
+                            return c;
+                        }),
+                        transformKeyframes: JSON.parse(JSON.stringify(layer.transformKeyframes || [])),
+                        startFrame: layer.startFrame || 0,
+                        parentId: layer.parentId || null,
+                        symbolInstances: JSON.parse(JSON.stringify(layer.symbolInstances || []))
+                    };
+                    return newLayer;
+                });
+                newSym._nextLayerId = original._nextLayerId || 2;
+                
+                return newSym;
+            }
+            
+            // Create a symbol instance (span)
+            createSymbolInstance(symbolId, startFrame, duration, x, y) {
+                const sym = this.getSymbol(symbolId);
+                if (!sym) return null;
+                
+                // Default duration = symbol's frame count (one full cycle)
+                const symFrameCount = this.getSymbolFrameCount(sym);
+                
+                return {
+                    id: this.generateInstanceId(),
+                    symbolId: symbolId,
+                    startFrame: startFrame || 0,
+                    duration: duration || Math.max(1, symFrameCount),
+                    x: x || 0,
+                    y: y || 0,
+                    rotation: 0,
+                    scaleX: 1,
+                    scaleY: 1,
+                    opacity: 1,
+                    firstFrame: 0,
+                    loopMode: 'loop'  // 'loop' | 'play-once' | 'single-frame'
+                };
+            }
+            
+            // Get total frame count for a symbol (max across all its layers)
+            getSymbolFrameCount(sym) {
+                if (!sym || !sym.layers) return 1;
+                let max = 1;
+                for (const layer of sym.layers) {
+                    max = Math.max(max, (layer.startFrame || 0) + (layer.frames ? layer.frames.length : 0));
+                }
+                return max;
+            }
+            
+            // Calculate which symbol frame to show for a given parent frame
+            getSymbolFrameAtParent(instance, parentFrame) {
+                const sym = this.getSymbol(instance.symbolId);
+                if (!sym) return 0;
+                
+                const symFrameCount = this.getSymbolFrameCount(sym);
+                if (symFrameCount === 0) return 0;
+                
+                const offset = parentFrame - instance.startFrame + instance.firstFrame;
+                
+                switch (instance.loopMode) {
+                    case 'loop':
+                        return ((offset % symFrameCount) + symFrameCount) % symFrameCount; // handles negative
+                    case 'play-once':
+                        return Math.min(Math.max(0, offset), symFrameCount - 1);
+                    case 'single-frame':
+                        return Math.max(0, Math.min(instance.firstFrame, symFrameCount - 1));
+                    default:
+                        return ((offset % symFrameCount) + symFrameCount) % symFrameCount;
+                }
+            }
+            
+            // Check if an instance span covers a given parent frame
+            instanceCoversFrame(instance, parentFrame) {
+                return parentFrame >= instance.startFrame && parentFrame < instance.startFrame + instance.duration;
+            }
+            
+            // Get all instances on a layer that cover a given parent frame
+            getInstancesAtFrame(layer, parentFrame) {
+                if (!layer.symbolInstances) return [];
+                return layer.symbolInstances.filter(inst => this.instanceCoversFrame(inst, parentFrame));
+            }
+            
+            // Count how many instances reference a given symbol across all layers
+            countSymbolInstances(symbolId) {
+                let count = 0;
+                // Count in main scene layers
+                for (const layer of this.layers) {
+                    if (layer.symbolInstances) {
+                        count += layer.symbolInstances.filter(inst => inst.symbolId === symbolId).length;
+                    }
+                }
+                // Count inside other symbols
+                for (const symId in this.symbolLibrary) {
+                    const sym = this.symbolLibrary[symId];
+                    for (const layer of sym.layers) {
+                        if (layer.symbolInstances) {
+                            count += layer.symbolInstances.filter(inst => inst.symbolId === symbolId).length;
+                        }
+                    }
+                }
+                return count;
+            }
+            
+            // Check if placing symbolId inside targetSymbolId would create a circular reference
+            wouldCreateCircularRef(symbolId, targetSymbolId) {
+                if (symbolId === targetSymbolId) return true;
+                
+                // BFS: check all symbols reachable from symbolId
+                const visited = new Set();
+                const queue = [symbolId];
+                while (queue.length > 0) {
+                    const current = queue.shift();
+                    if (visited.has(current)) continue;
+                    visited.add(current);
+                    
+                    const sym = this.symbolLibrary[current];
+                    if (!sym) continue;
+                    
+                    for (const layer of sym.layers) {
+                        if (!layer.symbolInstances) continue;
+                        for (const inst of layer.symbolInstances) {
+                            if (inst.symbolId === targetSymbolId) return true;
+                            queue.push(inst.symbolId);
+                        }
+                    }
+                }
+                return false;
+            }
+            
+            // Get the current context (top of context stack)
+            getCurrentContext() {
+                return this.contextStack[this.contextStack.length - 1];
+            }
+            
+            // Check if we're currently inside a symbol (not at scene level)
+            isInsideSymbol() {
+                return this.contextStack.length > 1;
+            }
+            
+            // ═══════════════════════════════════════
+            // Library Panel UI
+            // ═══════════════════════════════════════
+            
+            initLibraryPanel() {
+                const panel = document.getElementById('libraryPanel');
+                const tab = document.getElementById('libraryTab');
+                const closeBtn = document.getElementById('libraryCloseBtn');
+                const searchInput = document.getElementById('librarySearchInput');
+                const addBtn = document.getElementById('libraryAddBtn');
+                const ctxMenu = document.getElementById('libraryCtxMenu');
+                
+                // Toggle panel
+                tab.addEventListener('click', () => this.toggleLibraryPanel());
+                closeBtn.addEventListener('click', () => this.toggleLibraryPanel(false));
+                
+                // Search
+                searchInput.addEventListener('input', () => this.renderLibraryGrid());
+                
+                // Add new symbol
+                addBtn.addEventListener('click', () => this.showNewSymbolDialog());
+                
+                // Detail panel buttons
+                document.getElementById('libraryEditBtn').addEventListener('click', () => {
+                    if (this._selectedLibrarySymbolId) {
+                        this.pushContext(this._selectedLibrarySymbolId);
+                    }
+                });
+                document.getElementById('libraryDupeBtn').addEventListener('click', () => {
+                    if (this._selectedLibrarySymbolId) {
+                        this.duplicateSymbol(this._selectedLibrarySymbolId);
+                        this.renderLibraryGrid();
+                    }
+                });
+                document.getElementById('libraryDeleteBtn').addEventListener('click', () => {
+                    if (this._selectedLibrarySymbolId) {
+                        this.confirmDeleteSymbol(this._selectedLibrarySymbolId);
+                    }
+                });
+                
+                // Context menu actions
+                ctxMenu.querySelectorAll('.library-ctx-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        const action = item.dataset.action;
+                        const symId = ctxMenu._targetSymbolId;
+                        const instId = ctxMenu._targetInstanceId;
+                        const targetLayer = ctxMenu._targetLayer;
+                        this.hideLibraryCtxMenu();
+                        
+                        // Restore default labels if they were changed for span context
+                        const items = ctxMenu.querySelectorAll('.library-ctx-item');
+                        items[0].textContent = 'Rename';
+                        items[0].dataset.action = 'rename';
+                        ctxMenu._targetInstanceId = null;
+                        ctxMenu._targetLayer = null;
+                        
+                        if (!symId) return;
+                        
+                        switch (action) {
+                            case 'rename':
+                                this.startRenamingSymbol(symId);
+                                break;
+                            case 'edit':
+                                this.pushContext(symId);
+                                break;
+                            case 'duplicate':
+                                this.duplicateSymbol(symId);
+                                this.renderLibraryGrid();
+                                break;
+                            case 'delete':
+                                this.confirmDeleteSymbol(symId);
+                                break;
+                            case 'remove-instance':
+                                if (instId && targetLayer && targetLayer.symbolInstances) {
+                                    this.saveFullState();
+                                    targetLayer.symbolInstances = targetLayer.symbolInstances.filter(inst => inst.id !== instId);
+                                    this._selectedInstanceId = null;
+                                    this._timelineDirty = true;
+                                    this._invalidateCompositeCache();
+                                    this.renderLibraryGrid();
+                                    this.render();
+                                }
+                                break;
+                        }
+                    });
+                });
+                
+                // Close ctx menu on click outside
+                document.addEventListener('pointerdown', (e) => {
+                    if (!ctxMenu.contains(e.target)) this.hideLibraryCtxMenu();
+                });
+                
+                this._selectedLibrarySymbolId = null;
+                this._renamingSymbolId = null;
+                this._selectedInstanceId = null;
+                this._selectedInstanceLayerId = null;
+                this._activeInstance = null; // Instance selected on canvas for transform
+                this._activeInstanceLayer = null;
+                this._instDrag = null; // { type: 'move'|'scale'|'rotate', startX, startY, ... }
+                this._lastInstanceClick = null; // { instanceId, time } for double-click detection
+                this._lastSpanClick = null; // { instanceId, time } for timeline span double-click
+                this._manualTimelinePos = undefined; // visual playhead pos when scrubbing past actual frames
+                this._showParentGhost = true; // Show dimmed parent behind loop
+            }
+            
+            toggleLibraryPanel(force) {
+                const panel = document.getElementById('libraryPanel');
+                const shouldExpand = force !== undefined ? force : !panel.classList.contains('expanded');
+                panel.classList.toggle('expanded', shouldExpand);
+                
+                // Trigger canvas re-fit after transition
+                setTimeout(() => {
+                    if (this.zoomLevel === null) this.zoomFit();
+                }, 220);
+            }
+            
+            renderLibraryGrid() {
+                const grid = document.getElementById('libraryGrid');
+                const empty = document.getElementById('libraryEmpty');
+                const searchTerm = (document.getElementById('librarySearchInput').value || '').toLowerCase().trim();
+                
+                // Gather symbols
+                const symbols = Object.values(this.symbolLibrary);
+                const filtered = searchTerm
+                    ? symbols.filter(s => s.name.toLowerCase().includes(searchTerm))
+                    : symbols;
+                
+                // Clear existing cards (keep empty message)
+                grid.querySelectorAll('.library-card').forEach(c => c.remove());
+                
+                if (filtered.length === 0) {
+                    empty.style.display = 'block';
+                    if (symbols.length > 0 && searchTerm) {
+                        empty.innerHTML = '<div class="library-empty-icon">🔍</div>No matches found.';
+                    } else {
+                        empty.innerHTML = '<div class="library-empty-icon">⬡</div>No loops yet.<br>Convert drawings with F8<br>or click + New Loop.';
+                    }
+                    this.updateLibraryDetail(null);
+                    return;
+                }
+                
+                empty.style.display = 'none';
+                
+                filtered.forEach(sym => {
+                    const card = document.createElement('div');
+                    card.className = 'library-card' + (sym.id === this._selectedLibrarySymbolId ? ' selected' : '');
+                    card.dataset.symbolId = sym.id;
+                    
+                    // Thumbnail
+                    const thumbWrap = document.createElement('div');
+                    thumbWrap.className = 'library-card-thumb';
+                    const thumbCanvas = document.createElement('canvas');
+                    thumbCanvas.width = 36;
+                    thumbCanvas.height = 36;
+                    this.renderSymbolThumbnail(sym, thumbCanvas);
+                    thumbWrap.appendChild(thumbCanvas);
+                    
+                    // Info
+                    const info = document.createElement('div');
+                    info.className = 'library-card-info';
+                    const nameEl = document.createElement('div');
+                    nameEl.className = 'library-card-name';
+                    nameEl.textContent = sym.name;
+                    const meta = document.createElement('div');
+                    meta.className = 'library-card-meta';
+                    const fc = this.getSymbolFrameCount(sym);
+                    const lc = sym.layers ? sym.layers.length : 0;
+                    meta.textContent = `${fc}f · ${lc} lyr${lc !== 1 ? 's' : ''}`;
+                    info.appendChild(nameEl);
+                    info.appendChild(meta);
+                    
+                    card.appendChild(thumbWrap);
+                    card.appendChild(info);
+                    
+                    // Click to select
+                    card.addEventListener('click', (e) => {
+                        if (this._renamingSymbolId) return;
+                        this._selectedLibrarySymbolId = sym.id;
+                        this.renderLibraryGrid();
+                        this.updateLibraryDetail(sym.id);
+                    });
+                    
+                    // Double-click to enter (wired later in Step 7)
+                    card.addEventListener('dblclick', (e) => {
+                        if (this._renamingSymbolId) return;
+                        console.log('Enter loop:', sym.id);
+                    });
+                    
+                    // Right-click for context menu
+                    card.addEventListener('contextmenu', (e) => {
+                        e.preventDefault();
+                        this._selectedLibrarySymbolId = sym.id;
+                        this.renderLibraryGrid();
+                        this.updateLibraryDetail(sym.id);
+                        this.showLibraryCtxMenu(e.clientX, e.clientY, sym.id);
+                    });
+                    
+                    grid.appendChild(card);
+                });
+            }
+            
+            renderSymbolThumbnail(sym, thumbCanvas) {
+                const ctx = thumbCanvas.getContext('2d');
+                ctx.clearRect(0, 0, thumbCanvas.width, thumbCanvas.height);
+                
+                if (!sym.layers || sym.layers.length === 0) return;
+                
+                // Composite first frame of all visible layers
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = sym.width;
+                tempCanvas.height = sym.height;
+                const tempCtx = tempCanvas.getContext('2d');
+                
+                for (const layer of sym.layers) {
+                    if (!layer.visible) continue;
+                    const frame = layer.frames[0];
+                    if (!frame) continue;
+                    tempCtx.globalAlpha = layer.opacity != null ? layer.opacity : 1;
+                    tempCtx.drawImage(frame, -(frame._originX || 0), -(frame._originY || 0));
+                    tempCtx.globalAlpha = 1;
+                }
+                
+                // Scale to fit thumbnail maintaining aspect ratio
+                const tw = thumbCanvas.width, th = thumbCanvas.height;
+                const sw = sym.width, sh = sym.height;
+                const scale = Math.min(tw / sw, th / sh) * 0.85;
+                const dx = (tw - sw * scale) / 2;
+                const dy = (th - sh * scale) / 2;
+                
+                ctx.imageSmoothingEnabled = false;
+                ctx.drawImage(tempCanvas, dx, dy, sw * scale, sh * scale);
+            }
+            
+            updateLibraryDetail(symbolId) {
+                const detail = document.getElementById('libraryDetail');
+                if (!symbolId || !this.symbolLibrary[symbolId]) {
+                    detail.classList.remove('visible');
+                    return;
+                }
+                
+                const sym = this.symbolLibrary[symbolId];
+                detail.classList.add('visible');
+                document.getElementById('libraryDetailName').textContent = sym.name;
+                
+                const fc = this.getSymbolFrameCount(sym);
+                const lc = sym.layers.length;
+                const ic = this.countSymbolInstances(symbolId);
+                document.getElementById('libraryDetailInfo').innerHTML =
+                    `${sym.width}×${sym.height}<br>${fc} frame${fc !== 1 ? 's' : ''} · ${lc} layer${lc !== 1 ? 's' : ''}<br>${ic} instance${ic !== 1 ? 's' : ''} placed`;
+            }
+            
+            showLibraryCtxMenu(x, y, symbolId) {
+                const menu = document.getElementById('libraryCtxMenu');
+                menu._targetSymbolId = symbolId;
+                menu.style.left = x + 'px';
+                menu.style.top = y + 'px';
+                
+                // Keep on screen
+                const mw = 140, mh = 120;
+                if (x + mw > window.innerWidth) menu.style.left = (window.innerWidth - mw - 4) + 'px';
+                if (y + mh > window.innerHeight) menu.style.top = (window.innerHeight - mh - 4) + 'px';
+                
+                menu.classList.add('show');
+            }
+            
+            hideLibraryCtxMenu() {
+                const menu = document.getElementById('libraryCtxMenu');
+                menu.classList.remove('show');
+                // Restore default labels if they were changed for span context
+                const items = menu.querySelectorAll('.library-ctx-item');
+                if (items[0] && items[0].dataset.action === 'remove-instance') {
+                    items[0].textContent = 'Rename';
+                    items[0].dataset.action = 'rename';
+                }
+                menu._targetInstanceId = null;
+                menu._targetLayer = null;
+            }
+            
+            startRenamingSymbol(symbolId) {
+                this._renamingSymbolId = symbolId;
+                const card = document.querySelector(`.library-card[data-symbol-id="${symbolId}"]`);
+                if (!card) return;
+                
+                const nameEl = card.querySelector('.library-card-name');
+                const sym = this.symbolLibrary[symbolId];
+                
+                // Replace name with input
+                const input = document.createElement('input');
+                input.className = 'library-card-name-input';
+                input.value = sym.name;
+                input.spellcheck = false;
+                nameEl.replaceWith(input);
+                input.focus();
+                input.select();
+                
+                const commit = () => {
+                    const newName = input.value.trim() || sym.name;
+                    sym.name = newName;
+                    this._renamingSymbolId = null;
+                    this.renderLibraryGrid();
+                    this.updateLibraryDetail(symbolId);
+                };
+                
+                input.addEventListener('blur', commit);
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+                    if (e.key === 'Escape') { input.value = sym.name; input.blur(); }
+                    e.stopPropagation(); // Don't trigger app shortcuts
+                });
+            }
+            
+            confirmDeleteSymbol(symbolId) {
+                const sym = this.symbolLibrary[symbolId];
+                if (!sym) return;
+                
+                const count = this.countSymbolInstances(symbolId);
+                const msg = count > 0
+                    ? `Delete "${sym.name}"?\n\nThis will also remove ${count} instance${count !== 1 ? 's' : ''} from the timeline.`
+                    : `Delete "${sym.name}"?`;
+                
+                if (confirm(msg)) {
+                    this.deleteSymbol(symbolId);
+                    if (this._selectedLibrarySymbolId === symbolId) {
+                        this._selectedLibrarySymbolId = null;
+                    }
+                    this.renderLibraryGrid();
+                    this.updateLibraryDetail(null);
+                    this.render();
+                }
+            }
+            
+            showNewSymbolDialog() {
+                const name = prompt('Loop name:', 'Loop ' + (Object.keys(this.symbolLibrary).length + 1));
+                if (!name) return;
+                
+                // For now, create with project dimensions. 
+                // Step 3 will add the full dialog with size options.
+                const sym = this.createSymbolDefinition(name, this.projectWidth, this.projectHeight);
+                
+                this._selectedLibrarySymbolId = sym.id;
+                this.renderLibraryGrid();
+                this.updateLibraryDetail(sym.id);
+                
+                // Auto-open the panel if collapsed
+                const panel = document.getElementById('libraryPanel');
+                if (!panel.classList.contains('expanded')) {
+                    this.toggleLibraryPanel(true);
+                }
+            }
+            
+            showConvertToLoopGroupDialog() {
+                const overlay = document.getElementById('lgDialogOverlay');
+                const nameInput = document.getElementById('lgDialogName');
+                const projectSizeSpan = document.getElementById('lgDialogProjectSize');
+                
+                // Set defaults
+                nameInput.value = 'Loop ' + (Object.keys(this.symbolLibrary).length + 1);
+                projectSizeSpan.textContent = `${this.projectWidth}×${this.projectHeight}`;
+                document.getElementById('lgDialogW').value = this.projectWidth;
+                document.getElementById('lgDialogH').value = this.projectHeight;
+                
+                // Reset radio buttons
+                document.querySelector('input[name="lgSize"][value="fit"]').checked = true;
+                document.querySelector('input[name="lgInclude"][value="current"]').checked = true;
+                document.getElementById('lgDialogReplace').checked = true;
+                document.getElementById('lgDialogCustomSize').style.display = 'none';
+                
+                overlay.classList.add('show');
+                nameInput.focus();
+                nameInput.select();
+            }
+            
+            hideConvertToLoopGroupDialog() {
+                document.getElementById('lgDialogOverlay').classList.remove('show');
+            }
+            
+            initConvertDialog() {
+                const overlay = document.getElementById('lgDialogOverlay');
+                const cancelBtn = document.getElementById('lgDialogCancel');
+                const createBtn = document.getElementById('lgDialogCreate');
+                const sizeRadios = document.querySelectorAll('input[name="lgSize"]');
+                const customRow = document.getElementById('lgDialogCustomSize');
+                
+                cancelBtn.addEventListener('click', () => this.hideConvertToLoopGroupDialog());
+                overlay.addEventListener('click', (e) => {
+                    if (e.target === overlay) this.hideConvertToLoopGroupDialog();
+                });
+                
+                // Show/hide custom size inputs
+                sizeRadios.forEach(r => {
+                    r.addEventListener('change', () => {
+                        customRow.style.display = r.value === 'custom' && r.checked ? 'flex' : 'none';
+                    });
+                });
+                
+                // Escape to close
+                overlay.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') { e.stopPropagation(); this.hideConvertToLoopGroupDialog(); }
+                    if (e.key === 'Enter') { e.preventDefault(); this.executeConvertToLoopGroup(); }
+                });
+                
+                createBtn.addEventListener('click', () => this.executeConvertToLoopGroup());
+            }
+            
+            executeConvertToLoopGroup() {
+                const name = document.getElementById('lgDialogName').value.trim() || 'Loop';
+                const sizeMode = document.querySelector('input[name="lgSize"]:checked').value;
+                const includeMode = document.querySelector('input[name="lgInclude"]:checked').value;
+                const replaceOriginal = document.getElementById('lgDialogReplace').checked;
+                
+                const layer = this.getCurrentLayer();
+                if (!layer) return;
+                
+                this.commitSelection();
+                this.saveFullState();
+                
+                // Gather source frames
+                let sourceFrameIndices = [];
+                if (includeMode === 'current') {
+                    sourceFrameIndices = [this.currentFrameIndex];
+                } else {
+                    // All frames that have content
+                    for (let i = 0; i < layer.frames.length; i++) {
+                        if (layer.frames[i]) sourceFrameIndices.push(i);
+                    }
+                    if (sourceFrameIndices.length === 0) sourceFrameIndices = [this.currentFrameIndex];
+                }
+                
+                // Find bounding box across all source frames
+                let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                const frameCanvases = [];
+                
+                for (const fi of sourceFrameIndices) {
+                    const frame = layer.frames[fi];
+                    if (!frame) {
+                        frameCanvases.push(null);
+                        continue;
+                    }
+                    
+                    const ctx = frame.getContext('2d');
+                    const imgData = ctx.getImageData(0, 0, frame.width, frame.height);
+                    const d = imgData.data;
+                    const ox = frame._originX || 0;
+                    const oy = frame._originY || 0;
+                    
+                    // Scan for non-transparent pixels
+                    let fMinX = frame.width, fMinY = frame.height, fMaxX = 0, fMaxY = 0;
+                    let hasContent = false;
+                    for (let y = 0; y < frame.height; y++) {
+                        for (let x = 0; x < frame.width; x++) {
+                            if (d[(y * frame.width + x) * 4 + 3] > 0) {
+                                fMinX = Math.min(fMinX, x);
+                                fMinY = Math.min(fMinY, y);
+                                fMaxX = Math.max(fMaxX, x);
+                                fMaxY = Math.max(fMaxY, y);
+                                hasContent = true;
+                            }
+                        }
+                    }
+                    
+                    if (hasContent) {
+                        // Convert to world coords
+                        minX = Math.min(minX, fMinX - ox);
+                        minY = Math.min(minY, fMinY - oy);
+                        maxX = Math.max(maxX, fMaxX - ox);
+                        maxY = Math.max(maxY, fMaxY - oy);
+                    }
+                    frameCanvases.push(frame);
+                }
+                
+                // If no content found, use project center
+                if (minX === Infinity) {
+                    minX = 0; minY = 0;
+                    maxX = this.projectWidth - 1;
+                    maxY = this.projectHeight - 1;
+                }
+                
+                const contentW = maxX - minX + 1;
+                const contentH = maxY - minY + 1;
+                
+                // Determine symbol canvas size
+                let symW, symH;
+                if (sizeMode === 'fit') {
+                    symW = Math.max(1, contentW);
+                    symH = Math.max(1, contentH);
+                } else if (sizeMode === 'match') {
+                    symW = this.projectWidth;
+                    symH = this.projectHeight;
+                } else {
+                    symW = parseInt(document.getElementById('lgDialogW').value) || this.projectWidth;
+                    symH = parseInt(document.getElementById('lgDialogH').value) || this.projectHeight;
+                }
+                
+                // Create the loop definition
+                const sym = this.createSymbolDefinition(name, symW, symH);
+                const symLayer = sym.layers[0];
+                symLayer.frames = [];
+                
+                // Copy frame content into the symbol
+                // Track hold-frame relationships
+                const holdMap = new Map();
+                
+                for (let i = 0; i < sourceFrameIndices.length; i++) {
+                    const fi = sourceFrameIndices[i];
+                    const srcFrame = layer.frames[fi];
+                    
+                    if (!srcFrame) {
+                        symLayer.frames.push(null);
+                        continue;
+                    }
+                    
+                    // Check for hold frames (same canvas reference)
+                    if (holdMap.has(srcFrame)) {
+                        symLayer.frames.push(holdMap.get(srcFrame));
+                        continue;
+                    }
+                    
+                    const c = document.createElement('canvas');
+                    c.width = symW;
+                    c.height = symH;
+                    c._originX = 0;
+                    c._originY = 0;
+                    const cCtx = c.getContext('2d');
+                    
+                    // Calculate where to draw the source content in the symbol canvas
+                    const ox = srcFrame._originX || 0;
+                    if (sizeMode === 'fit') {
+                        // Offset so content starts at (0,0) in the symbol
+                        cCtx.drawImage(srcFrame, -ox - minX, -(srcFrame._originY || 0) - minY);
+                    } else {
+                        // Keep original position
+                        cCtx.drawImage(srcFrame, -ox, -(srcFrame._originY || 0));
+                    }
+                    
+                    holdMap.set(srcFrame, c);
+                    symLayer.frames.push(c);
+                }
+                
+                // Create an instance on the layer if replacing
+                if (replaceOriginal) {
+                    const startFrame = Math.min(...sourceFrameIndices);
+                    const duration = sourceFrameIndices.length;
+                    
+                    // Position: where the content was in world space
+                    const instX = sizeMode === 'fit' ? minX : 0;
+                    const instY = sizeMode === 'fit' ? minY : 0;
+                    
+                    const instance = this.createSymbolInstance(sym.id, startFrame, duration, instX, instY);
+                    layer.symbolInstances.push(instance);
+                    
+                    // Clear the source frames (they're now in the symbol)
+                    if (includeMode === 'current') {
+                        layer.frames[this.currentFrameIndex] = this.createEmptyFrame();
+                    } else {
+                        for (const fi of sourceFrameIndices) {
+                            layer.frames[fi] = this.createEmptyFrame();
+                        }
+                    }
+                }
+                
+                // Update UI
+                this._selectedLibrarySymbolId = sym.id;
+                this.renderLibraryGrid();
+                this.updateLibraryDetail(sym.id);
+                this.hideConvertToLoopGroupDialog();
+                
+                // Open library panel if closed
+                const panel = document.getElementById('libraryPanel');
+                if (!panel.classList.contains('expanded')) {
+                    this.toggleLibraryPanel(true);
+                }
+                
+                this._timelineDirty = true;
+                this._invalidateCompositeCache();
+                this.render();
+            }
+            
+            
             getTimelineLength() {
                 let maxEnd = 1;
                 for (const layer of this.layers) {
                     maxEnd = Math.max(maxEnd, (layer.startFrame || 0) + layer.frames.length);
+                    // Include instance spans that extend past the frames array
+                    if (layer.symbolInstances) {
+                        for (const inst of layer.symbolInstances) {
+                            maxEnd = Math.max(maxEnd, (layer.startFrame || 0) + inst.startFrame + inst.duration);
+                        }
+                    }
                 }
                 // Include audio track ends (for ruler/UI width only)
                 for (const track of this.audioTracks) {
@@ -5600,6 +7280,12 @@
                 let maxEnd = 1;
                 for (const layer of this.layers) {
                     maxEnd = Math.max(maxEnd, (layer.startFrame || 0) + layer.frames.length);
+                    // Include instance spans — they are visual content
+                    if (layer.symbolInstances) {
+                        for (const inst of layer.symbolInstances) {
+                            maxEnd = Math.max(maxEnd, (layer.startFrame || 0) + inst.startFrame + inst.duration);
+                        }
+                    }
                 }
                 return maxEnd;
             }
@@ -5911,12 +7597,24 @@
                 }, true);
                 // Pointer path (desktop off-canvas lift)
                 document.addEventListener('pointerup', (e) => {
+                    if (this._instDrag) {
+                        this._instDrag = null;
+                        this._invalidateCompositeCache();
+                        this.updateInstPropsBar();
+                        this.render();
+                        return;
+                    }
                     if (this.isPanning) { this.stopPan(); return; }
                     if (this.isDrawing || this.isTransforming) {
                         this.stopDrawing();
                     }
                 });
                 document.addEventListener('pointercancel', (e) => {
+                    if (this._instDrag) {
+                        this._instDrag = null;
+                        this.render();
+                        return;
+                    }
                     if (this.isPanning) { this.stopPan(); return; }
                     if (this.isDrawing || this.isTransforming) {
                         this.stopDrawing();
@@ -5924,12 +7622,18 @@
                 });
                 // Touch path (iPad off-canvas lift)
                 document.addEventListener('touchend', (e) => {
+                    if (this._instDrag) {
+                        this._instDrag = null;
+                        this.render();
+                        return;
+                    }
                     if (this.isPanning) { this.stopPan(); this._touchPanFingers = 0; return; }
                     if (this.isDrawing || this.isTransforming) {
                         this.stopDrawing();
                     }
                 }, { passive: true });
                 document.addEventListener('touchcancel', (e) => {
+                    if (this._instDrag) { this._instDrag = null; this.render(); return; }
                     if (this.isPanning) { this.stopPan(); this._touchPanFingers = 0; return; }
                     if (this.isDrawing || this.isTransforming) {
                         this.stopDrawing();
@@ -5942,12 +7646,12 @@
                         e.preventDefault();
                         e.stopPropagation();
                         // Pen tool: double-click finalizes open path
-                        // But suppress if a point was just placed (e.g. fast Apple Pencil taps)
                         if (this.tool === 'pen' && this._penActive) {
                             const timeSinceLastPoint = performance.now() - (this._penLastPointTime || 0);
                             if (timeSinceLastPoint > 400) {
                                 this._penFinalize(false);
                             }
+                            return;
                         }
                     });
                     
@@ -6519,9 +8223,30 @@
                     } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'n' || e.key === 'N')) {
                         e.preventDefault();
                         this.addLayer();
+                    } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'l' || e.key === 'L')) {
+                        e.preventDefault();
+                        this.toggleLibraryPanel();
                     } else if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
                         e.preventDefault();
-                        this.duplicateFrame();
+                        if (this._activeInstance && this._activeInstanceLayer) {
+                            this.saveFullState();
+                            const inst = this._activeInstance;
+                            const layer = this._activeInstanceLayer;
+                            const newInst = this.createSymbolInstance(inst.symbolId, inst.startFrame, inst.duration, inst.x + 20, inst.y + 20);
+                            newInst.scaleX = inst.scaleX;
+                            newInst.scaleY = inst.scaleY;
+                            newInst.rotation = inst.rotation;
+                            newInst.opacity = inst.opacity;
+                            newInst.loopMode = inst.loopMode;
+                            newInst.firstFrame = inst.firstFrame;
+                            layer.symbolInstances.push(newInst);
+                            this.selectInstance(newInst, layer);
+                            this._timelineDirty = true;
+                            this._invalidateCompositeCache();
+                            this.render();
+                        } else {
+                            this.duplicateFrame();
+                        }
                     } else if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
                         e.preventDefault();
                         this.selectTool('transform');
@@ -6555,6 +8280,32 @@
                     } else if (e.key === 'Escape' && this._penActive) {
                         e.preventDefault();
                         this._penCancel();
+                    } else if (e.key === 'Escape' && this._activeInstance) {
+                        e.preventDefault();
+                        this.deselectInstance();
+                        this.render();
+                    } else if ((e.key === 'Delete' || e.key === 'Backspace') && this._activeInstance) {
+                        e.preventDefault();
+                        this.saveFullState();
+                        const layer = this._activeInstanceLayer;
+                        if (layer && layer.symbolInstances) {
+                            layer.symbolInstances = layer.symbolInstances.filter(inst => inst.id !== this._activeInstance.id);
+                        }
+                        this.deselectInstance();
+                        this._timelineDirty = true;
+                        this._invalidateCompositeCache();
+                        this.renderLibraryGrid();
+                        this.render();
+                    } else if (this._activeInstance && (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+                        e.preventDefault();
+                        const step = e.shiftKey ? 10 : 1;
+                        if (e.key === 'ArrowUp') this._activeInstance.y -= step;
+                        else if (e.key === 'ArrowDown') this._activeInstance.y += step;
+                        else if (e.key === 'ArrowLeft') this._activeInstance.x -= step;
+                        else if (e.key === 'ArrowRight') this._activeInstance.x += step;
+                        this._invalidateCompositeCache();
+                        this.updateInstPropsBar();
+                        this.renderCanvasOnly();
                     } else if (e.key === 'Enter' && this.selection) {
                         e.preventDefault();
                         this._dismissTransform();
@@ -6563,6 +8314,12 @@
                         this.clearSelection();
                         this.selectTool('brush');
                         this.render();
+                    } else if (e.key === 'Escape' && this.isInsideSymbol()) {
+                        e.preventDefault();
+                        this.popContext();
+                    } else if ((e.ctrlKey || e.metaKey) && e.key === 'Enter' && this._activeInstance) {
+                        e.preventDefault();
+                        this.pushContext(this._activeInstance.symbolId, this._activeInstance.id);
                     } else if ((e.key === 'Delete' || e.key === 'Backspace') && this.selection) {
                         e.preventDefault();
                         this.clearSelection();
@@ -6723,6 +8480,10 @@
                                 e.preventDefault();
                                 this.insertFrameAfterCurrent();
                                 break;
+                            case 'F8':
+                                e.preventDefault();
+                                this.showConvertToLoopGroupDialog();
+                                break;
                             case 'Backspace':
                                 if (!this.selection) {
                                     e.preventDefault();
@@ -6860,7 +8621,7 @@
                         const titles = {
                             layer: 'Play Active Layer (Space)',
                             timeline: 'Play Full Timeline (Space)',
-                            loop: 'Play Loop Range (Space)'
+                            loop: 'Play Range Area (Space)'
                         };
                         document.getElementById('playBtn').title = titles[this.playbackMode] || titles.layer;
                     });
@@ -7095,11 +8856,21 @@
                     const layer = this.getCurrentLayer();
                     const offset = layer.startFrame || 0;
                     const localIdx = timelinePos - offset;
-                    const maxLocal = layer.frames.length - 1;
-                    const newIdx = Math.max(0, Math.min(maxLocal, localIdx));
-                    if (newIdx !== this.currentFrameIndex) {
+                    const maxLocal = this.getEffectiveLayerLength(layer) - 1;
+                    const clampedLocal = Math.max(0, Math.min(maxLocal, localIdx));
+                    const clampedTimeline = clampedLocal + offset;
+                    
+                    const prevPlayhead = this.getPlayheadPosition();
+                    
+                    // Clamp currentFrameIndex to actual drawing frames
+                    this.currentFrameIndex = Math.max(0, Math.min(layer.frames.length - 1, clampedLocal));
+                    
+                    // Track visual timeline position (may extend past actual frames)
+                    this._manualTimelinePos = (clampedLocal >= layer.frames.length) ? clampedTimeline : undefined;
+                    
+                    if (this.getPlayheadPosition() !== prevPlayhead) {
                         if (this.selection) { this._dismissTransform(); }
-                        this.currentFrameIndex = newIdx;
+                        this._timelineDirty = true;
                         this.render();
                         this.scrubAudio(this.getPlayheadPosition());
                     }
@@ -7435,6 +9206,12 @@
                 // Clear selection when switching away from transform (but not for pan/magnifier)
                 const isTransformTool = tool === 'transform' || tool === 'scale' || tool === 'rotate' || tool === 'skew' || tool === 'distort';
                 const isNavTool = tool === 'pan' || tool === 'magnifier' || tool === 'magnifier-out';
+                
+                // Deselect instance when switching away from transform tools
+                if (!isTransformTool && !isNavTool && this._activeInstance) {
+                    this.deselectInstance();
+                }
+                
                 if (!isTransformTool && !isNavTool && this.selection) {
                     this.applySelection();
                     this.clearSelection();
@@ -7696,7 +9473,8 @@
                                 };
                             }),
                             transformKeyframes: (layer.transformKeyframes || []).map(kf => ({...kf})),
-                            parentId: layer.parentId || null
+                            parentId: layer.parentId || null,
+                            symbolInstances: JSON.parse(JSON.stringify(layer.symbolInstances || []))
                         };
                     }),
                     currentLayerId: this.currentLayerId,
@@ -7867,6 +9645,7 @@
                     startFrame: layer.startFrame || 0,
                     parentId: layer.parentId || null,
                     transformKeyframes: (layer.transformKeyframes || []).map(kf => ({...kf})),
+                    symbolInstances: JSON.parse(JSON.stringify(layer.symbolInstances || [])),
                     frames: (() => {
                         const canvasMap = new Map();
                         return layer.frames.map((snapshot, fi) => {
@@ -7910,6 +9689,48 @@
             startDrawing(e) {
                 // Pan and magnifier tools don't draw
                 if (this.tool === 'pan' || this.tool === 'magnifier' || this.tool === 'magnifier-out') return;
+                
+                // ── Instance interaction (at pointerdown level, before any tool logic) ──
+                // For non-transform tools: clicking on an instance selects it (blocks drawing),
+                // double-clicking enters the loop.
+                // Transform tools have their own instance handling below, so skip this.
+                const _isXformTool = this.tool === 'transform' || this.tool === 'scale' || 
+                                     this.tool === 'rotate' || this.tool === 'skew' || this.tool === 'distort';
+                if (!_isXformTool && (this.tool !== 'pen' || !this._penActive)) {
+                    const canvas = e.target === this.selectionCanvas ? this.selectionCanvas : this.canvas;
+                    const rect = canvas.getBoundingClientRect();
+                    const _sx = canvas.width / rect.width;
+                    const _sy = canvas.height / rect.height;
+                    const _cx = (e.clientX - rect.left) * _sx;
+                    const _cy = (e.clientY - rect.top) * _sy;
+                    const instHit = this.hitTestInstances(_cx, _cy);
+                    
+                    if (instHit) {
+                        const now = performance.now();
+                        const prev = this._lastInstanceClick;
+                        if (prev && prev.instanceId === instHit.instance.id && (now - prev.time) < 400) {
+                            // Double-click → enter loop
+                            this._lastInstanceClick = null;
+                            this.pushContext(instHit.instance.symbolId, instHit.instance.id);
+                            return;
+                        }
+                        // First click → select instance, block drawing
+                        this._lastInstanceClick = { instanceId: instHit.instance.id, time: now };
+                        this.selectInstance(instHit.instance, instHit.layer);
+                        return;
+                    } else {
+                        this._lastInstanceClick = null;
+                        // Clicked off instance — deselect if one was active
+                        if (this._activeInstance) {
+                            const isXform = this.tool === 'transform' || this.tool === 'scale' || 
+                                           this.tool === 'rotate' || this.tool === 'skew' || this.tool === 'distort';
+                            if (!isXform) {
+                                this.deselectInstance();
+                                this.render();
+                            }
+                        }
+                    }
+                }
                 
                 // Handle fill tool
                 if (this.tool === 'fill') {
@@ -8018,6 +9839,68 @@
                     const scaleY = canvas.height / rect.height;
                     const x = (e.clientX - rect.left) * scaleX;
                     const y = (e.clientY - rect.top) * scaleY;
+                    
+                    // === Instance handle/body check (before pixel selection) ===
+                    if (this._activeInstance) {
+                        const inst = this._activeInstance;
+                        const sym = this.getSymbol(inst.symbolId);
+                        if (sym) {
+                            // Check instance handles
+                            const handleType = this._hitTestInstanceHandles(inst, sym, x, y);
+                            if (handleType) {
+                                this._startInstanceDrag(handleType, x, y, inst);
+                                return;
+                            }
+                            
+                            // Check instance body
+                            const bb = this._getInstanceBBox(inst, sym);
+                            const cx = bb.x + bb.w / 2, cy = bb.y + bb.h / 2;
+                            const rot = -(inst.rotation || 0) * Math.PI / 180;
+                            const dx = x - cx, dy = y - cy;
+                            const lx = dx * Math.cos(rot) - dy * Math.sin(rot) + bb.w / 2;
+                            const ly = dx * Math.sin(rot) + dy * Math.cos(rot) + bb.h / 2;
+                            if (lx >= 0 && lx <= bb.w && ly >= 0 && ly <= bb.h) {
+                                // Double-click check → enter loop
+                                const now = performance.now();
+                                const prev = this._lastInstanceClick;
+                                if (prev && prev.instanceId === inst.id && (now - prev.time) < 400) {
+                                    this._lastInstanceClick = null;
+                                    this.pushContext(inst.symbolId, inst.id);
+                                    return;
+                                }
+                                this._lastInstanceClick = { instanceId: inst.id, time: now };
+                                this._startInstanceDrag('move', x, y, inst);
+                                return;
+                            }
+                        }
+                    }
+                    
+                    // Hit-test instances on canvas (even if no active instance yet)
+                    const instHit = this.hitTestInstances(x, y);
+                    if (instHit) {
+                        // Double-click check → enter loop
+                        const now = performance.now();
+                        const prev = this._lastInstanceClick;
+                        if (prev && prev.instanceId === instHit.instance.id && (now - prev.time) < 400) {
+                            this._lastInstanceClick = null;
+                            this.pushContext(instHit.instance.symbolId, instHit.instance.id);
+                            return;
+                        }
+                        this._lastInstanceClick = { instanceId: instHit.instance.id, time: now };
+                        this.selectInstance(instHit.instance, instHit.layer);
+                        this._startInstanceDrag('move', x, y, instHit.instance);
+                        return;
+                    }
+                    
+                    // No instance hit — deselect any active instance
+                    if (this._activeInstance) {
+                        this.deselectInstance();
+                        // Don't fall through to pixel selection — just deselect
+                        this.render();
+                        this._lastInstanceClick = null;
+                        return;
+                    }
+                    this._lastInstanceClick = null;
                     
                     for (let handle of this.transformHandles) {
                         const dist = Math.sqrt(Math.pow(x - handle.x, 2) + Math.pow(y - handle.y, 2));
@@ -8266,6 +10149,57 @@
             
             
             draw(e) {
+                // === Instance drag handling ===
+                if (this._instDrag && this._activeInstance) {
+                    const canvas = e.target === this.selectionCanvas ? this.selectionCanvas : this.canvas;
+                    const rect = canvas.getBoundingClientRect();
+                    const sx = canvas.width / rect.width;
+                    const sy = canvas.height / rect.height;
+                    const mx = (e.clientX - rect.left) * sx;
+                    const my = (e.clientY - rect.top) * sy;
+                    const d = this._instDrag;
+                    const inst = this._activeInstance;
+                    
+                    if (d.type === 'move') {
+                        inst.x = d.origX + (mx - d.startX);
+                        inst.y = d.origY + (my - d.startY);
+                    } else if (d.type === 'rotate') {
+                        const angle1 = Math.atan2(d.startY - d.centerY, d.startX - d.centerX);
+                        const angle2 = Math.atan2(my - d.centerY, mx - d.centerX);
+                        let deg = d.origRotation + (angle2 - angle1) * 180 / Math.PI;
+                        if (e.shiftKey) deg = Math.round(deg / 15) * 15;
+                        inst.rotation = deg;
+                    } else {
+                        // Scale (corner/edge handles)
+                        const dx = mx - d.startX;
+                        const dy = my - d.startY;
+                        const isCorner = d.type === 'nw' || d.type === 'ne' || d.type === 'se' || d.type === 'sw';
+                        const isH = d.type === 'e' || d.type === 'w' || isCorner;
+                        const isV = d.type === 'n' || d.type === 's' || isCorner;
+                        const sign = d.type.includes('w') || d.type.includes('n') ? -1 : 1;
+                        
+                        if (isH) {
+                            const newW = d.symW * d.origScaleX + dx * (d.type.includes('w') ? -1 : 1);
+                            inst.scaleX = Math.max(0.01, newW / d.symW);
+                        }
+                        if (isV) {
+                            const newH = d.symH * d.origScaleY + dy * (d.type.includes('n') ? -1 : 1);
+                            inst.scaleY = Math.max(0.01, newH / d.symH);
+                        }
+                        if (e.shiftKey && isCorner) {
+                            // Constrain proportions
+                            const avgScale = (inst.scaleX + inst.scaleY) / 2;
+                            inst.scaleX = avgScale;
+                            inst.scaleY = avgScale;
+                        }
+                    }
+                    
+                    this._invalidateCompositeCache();
+                    this.updateInstPropsBar();
+                    this.renderCanvasOnly();
+                    return;
+                }
+                
                 // Handle hover detection for rotation mode (free transform only, not scale-only)
                 if (this.tool === 'transform' && this.selection && !this.isDrawing && !this.isTransforming) {
                     this.checkRotationHover(e);
@@ -9747,7 +11681,8 @@
                     frames: [],
                     transformKeyframes: [],
                     startFrame: 0,
-                    parentId: null
+                    parentId: null,
+                    symbolInstances: []
                 };
                 
                 // Insert above (after in array) the current layer
@@ -9790,7 +11725,8 @@
                     }),
                     transformKeyframes: (currentLayer.transformKeyframes || []).map(kf => ({...kf})),
                     startFrame: currentLayer.startFrame || 0,
-                    parentId: currentLayer.parentId || null
+                    parentId: currentLayer.parentId || null,
+                    symbolInstances: (currentLayer.symbolInstances || []).map(inst => ({...inst, id: this.generateInstanceId()}))
                 };
                 
                 // Insert after current layer
@@ -9891,6 +11827,7 @@
                 if (this.selection) { this._dismissTransform(); }
                 if (this.frameSelectMode) this.exitFrameSelectMode();
                 else this.selectedFrames.clear();
+                this._manualTimelinePos = undefined;
                 if (this.currentFrameIndex !== 0) {
                     this.currentFrameIndex = 0;
                     this.initializeFrame();
@@ -9905,6 +11842,7 @@
                 if (this.selection) { this._dismissTransform(); }
                 if (this.frameSelectMode) this.exitFrameSelectMode();
                 else this.selectedFrames.clear();
+                this._manualTimelinePos = undefined;
                 const layer = this.getCurrentLayer();
                 const lastIdx = layer.frames.length - 1;
                 if (this.currentFrameIndex !== lastIdx) {
@@ -9921,6 +11859,7 @@
                 if (this.selection) { this._dismissTransform(); }
                 if (this.frameSelectMode) this.exitFrameSelectMode();
                 else this.selectedFrames.clear();
+                this._manualTimelinePos = undefined;
                 const layer = this.getCurrentLayer();
                 if (this.currentFrameIndex < layer.frames.length - 1) {
                     this.currentFrameIndex++;
@@ -9934,6 +11873,7 @@
                 if (this.selection) { this._dismissTransform(); }
                 if (this.frameSelectMode) this.exitFrameSelectMode();
                 else this.selectedFrames.clear();
+                this._manualTimelinePos = undefined;
                 const layer = this.getCurrentLayer();
                 if (this.currentFrameIndex < layer.frames.length - 1) {
                     this.currentFrameIndex++;
@@ -9948,11 +11888,28 @@
                 else { this.commitSelection(); }
                 this.saveFullState();
                 this._timelineDirty = true;
+                this._manualTimelinePos = undefined;
                 const layer = this.getCurrentLayer();
                 const newFrame = this.createEmptyFrame();
-                const newFrameIndex = this.currentFrameIndex + 1;
-                layer.frames.splice(newFrameIndex, 0, newFrame);
-                this.currentFrameIndex = newFrameIndex;
+                
+                // If an instance spans past the current position, insert after the instance end
+                let insertIdx = this.currentFrameIndex + 1;
+                if (layer.symbolInstances) {
+                    for (const inst of layer.symbolInstances) {
+                        const instEnd = inst.startFrame + inst.duration;
+                        if (this.currentFrameIndex >= inst.startFrame && this.currentFrameIndex < instEnd) {
+                            insertIdx = Math.max(insertIdx, instEnd);
+                        }
+                    }
+                }
+                
+                // Fill gaps if inserting past current frames length
+                while (layer.frames.length < insertIdx) {
+                    layer.frames.push(this.createEmptyFrame());
+                }
+                
+                layer.frames.splice(insertIdx, 0, newFrame);
+                this.currentFrameIndex = insertIdx;
                 this.render();
                 this._scrollTimelineToFrame(this.currentFrameIndex);
             }
@@ -9961,6 +11918,30 @@
                 if (this.selection) { this._dismissTransform(); }
                 else { this.commitSelection(); }
                 const layer = this.getCurrentLayer();
+                
+                // If playhead is on a loop instance span, extend the clip instead
+                if (layer.symbolInstances) {
+                    const playheadLocal = this.currentFrameIndex;
+                    for (const inst of layer.symbolInstances) {
+                        if (playheadLocal >= inst.startFrame && playheadLocal < inst.startFrame + inst.duration) {
+                            this.saveFullState();
+                            const count = this.selectedFrames.size > 1 ? this.selectedFrames.size : 1;
+                            inst.duration += count;
+                            // Auto-expand loop range if needed
+                            const instEnd = (layer.startFrame || 0) + inst.startFrame + inst.duration - 1;
+                            if (instEnd > this.loopRange.outPoint) {
+                                this.loopRange.outPoint = instEnd;
+                                this._updateLoopRangeBadge();
+                            }
+                            this.selectedFrames.clear();
+                            this._timelineDirty = true;
+                            this._invalidateCompositeCache();
+                            this.render();
+                            return;
+                        }
+                    }
+                }
+                
                 const currentCanvas = layer.frames[this.currentFrameIndex];
                 if (!currentCanvas) return;
                 
@@ -10551,7 +12532,7 @@
             
             drawLayerWithTransform(ctx, layer, timelinePos) {
                 const frame = this.getFrameAtPosition(layer, timelinePos);
-                if (!layer.visible || !frame) return;
+                if (!layer.visible) return;
                 
                 const localIdx = timelinePos - (layer.startFrame || 0);
                 const tf = this.getLayerTransformAtFrame(layer, localIdx);
@@ -10561,9 +12542,9 @@
                 const parentChain = this._getParentChain(layer);
                 const hasParents = parentChain.length > 0;
                 
-                // Frame position relative to viewport
-                const offX = (frame._originX || 0) - this.viewportX;
-                const offY = (frame._originY || 0) - this.viewportY;
+                // Check if there's anything to draw
+                const instances = this.getInstancesAtFrame(layer, localIdx);
+                if (!frame && instances.length === 0) return;
                 
                 ctx.save();
                 ctx.globalAlpha = tf.opacity;
@@ -10582,8 +12563,651 @@
                     this._applyLayerTransform(ctx, tf);
                 }
                 
-                ctx.drawImage(frame, offX, offY);
+                // Draw frame pixel content
+                if (frame) {
+                    const offX = (frame._originX || 0) - this.viewportX;
+                    const offY = (frame._originY || 0) - this.viewportY;
+                    ctx.drawImage(frame, offX, offY);
+                }
+                
+                // Draw symbol instances on this layer at this frame
+                if (instances.length > 0) {
+                    for (const inst of instances) {
+                        this.compositeSymbolInstance(ctx, inst, localIdx, 0);
+                    }
+                }
+                
                 ctx.restore();
+            }
+            
+            // Composite a single symbol instance onto ctx
+            // parentFrame = local frame index on the parent layer
+            // depth = recursion depth for nested symbols (max 8)
+            compositeSymbolInstance(ctx, instance, parentFrame, depth) {
+                if (depth > 8) return; // prevent infinite recursion
+                
+                const sym = this.getSymbol(instance.symbolId);
+                if (!sym || !sym.layers) return;
+                
+                const symFrameCount = this.getSymbolFrameCount(sym);
+                if (symFrameCount === 0) return;
+                
+                // Calculate which symbol frame to show
+                const symFrame = this.getSymbolFrameAtParent(instance, parentFrame);
+                
+                // Composite all visible symbol layers at this frame onto a temp canvas
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = sym.width;
+                tempCanvas.height = sym.height;
+                const tempCtx = tempCanvas.getContext('2d');
+                
+                let hasContent = false;
+                for (const symLayer of sym.layers) {
+                    if (!symLayer.visible) continue;
+                    
+                    const layerLocalIdx = symFrame - (symLayer.startFrame || 0);
+                    if (layerLocalIdx < 0 || layerLocalIdx >= symLayer.frames.length) continue;
+                    const frame = symLayer.frames[layerLocalIdx];
+                    if (!frame) continue;
+                    
+                    tempCtx.globalAlpha = symLayer.opacity != null ? symLayer.opacity : 1;
+                    tempCtx.drawImage(frame, -(frame._originX || 0), -(frame._originY || 0));
+                    tempCtx.globalAlpha = 1;
+                    hasContent = true;
+                    
+                    // Render nested instances inside this symbol layer
+                    const nestedInstances = this.getInstancesAtFrame(symLayer, layerLocalIdx);
+                    for (const nestedInst of nestedInstances) {
+                        this.compositeSymbolInstance(tempCtx, nestedInst, layerLocalIdx, depth + 1);
+                    }
+                }
+                
+                if (!hasContent) return;
+                
+                // Apply instance transform and draw onto parent ctx
+                ctx.save();
+                ctx.globalAlpha *= instance.opacity;
+                
+                // Translate to instance position (offset by viewport)
+                const ix = instance.x - this.viewportX;
+                const iy = instance.y - this.viewportY;
+                ctx.translate(ix + sym.width * instance.scaleX / 2, iy + sym.height * instance.scaleY / 2);
+                
+                // Rotate around center
+                if (instance.rotation) {
+                    ctx.rotate(instance.rotation * Math.PI / 180);
+                }
+                
+                // Scale
+                if (instance.scaleX !== 1 || instance.scaleY !== 1) {
+                    ctx.scale(instance.scaleX, instance.scaleY);
+                }
+                
+                // Draw centered
+                ctx.drawImage(tempCanvas, -sym.width / 2, -sym.height / 2);
+                ctx.restore();
+            }
+            
+            // ═══════════════════════════════════════
+            // Instance Selection & Transform (Step 6)
+            // ═══════════════════════════════════════
+            
+            // Hit-test instances on current layer at current frame
+            // Returns { instance, layer } or null
+            hitTestInstances(canvasX, canvasY) {
+                const layer = this.getCurrentLayer();
+                if (!layer || !layer.symbolInstances) return null;
+                
+                const localIdx = this.currentFrameIndex;
+                // Test back to front (last = topmost)
+                const instances = this.getInstancesAtFrame(layer, localIdx);
+                
+                for (let i = instances.length - 1; i >= 0; i--) {
+                    const inst = instances[i];
+                    const sym = this.getSymbol(inst.symbolId);
+                    if (!sym) continue;
+                    
+                    // Get instance bounding box in canvas coords
+                    const bb = this._getInstanceBBox(inst, sym);
+                    
+                    // Quick AABB test first (expanded for handles)
+                    const pad = 12;
+                    if (canvasX < bb.x - pad || canvasX > bb.x + bb.w + pad ||
+                        canvasY < bb.y - pad || canvasY > bb.y + bb.h + pad) continue;
+                    
+                    // More precise: transform click into instance local coords
+                    // and check if within the bounding rect
+                    const cx = bb.x + bb.w / 2;
+                    const cy = bb.y + bb.h / 2;
+                    const rot = -(inst.rotation || 0) * Math.PI / 180;
+                    const dx = canvasX - cx, dy = canvasY - cy;
+                    const lx = dx * Math.cos(rot) - dy * Math.sin(rot) + bb.w / 2;
+                    const ly = dx * Math.sin(rot) + dy * Math.cos(rot) + bb.h / 2;
+                    
+                    if (lx >= -pad && lx <= bb.w + pad && ly >= -pad && ly <= bb.h + pad) {
+                        return { instance: inst, layer };
+                    }
+                }
+                return null;
+            }
+            
+            // Get bounding box of an instance in canvas (viewport) coordinates
+            _getInstanceBBox(inst, sym) {
+                const x = inst.x - this.viewportX;
+                const y = inst.y - this.viewportY;
+                const w = sym.width * inst.scaleX;
+                const h = sym.height * inst.scaleY;
+                return { x, y, w, h };
+            }
+            
+            // Select an instance for on-canvas transform
+            selectInstance(inst, layer) {
+                this._activeInstance = inst;
+                this._activeInstanceLayer = layer;
+                this._selectedInstanceId = inst.id;
+                this._selectedInstanceLayerId = layer.id;
+                
+                // Deselect any pixel selection
+                if (this.selection) {
+                    this.commitSelection();
+                }
+                
+                this.updateInstPropsBar();
+                this.render();
+            }
+            
+            deselectInstance() {
+                this._activeInstance = null;
+                this._activeInstanceLayer = null;
+                this._instDrag = null;
+                document.getElementById('instPropsBar').classList.remove('visible');
+            }
+            
+            // Hit test instance handles. Returns handle type or null
+            _hitTestInstanceHandles(inst, sym, canvasX, canvasY) {
+                const bb = this._getInstanceBBox(inst, sym);
+                const cx = bb.x + bb.w / 2;
+                const cy = bb.y + bb.h / 2;
+                const rot = (inst.rotation || 0) * Math.PI / 180;
+                
+                // Handle positions in local (un-rotated) space relative to center
+                const hw = bb.w / 2, hh = bb.h / 2;
+                const handles = [
+                    { type: 'nw', lx: -hw, ly: -hh },
+                    { type: 'n',  lx: 0,   ly: -hh },
+                    { type: 'ne', lx: hw,  ly: -hh },
+                    { type: 'e',  lx: hw,  ly: 0 },
+                    { type: 'se', lx: hw,  ly: hh },
+                    { type: 's',  lx: 0,   ly: hh },
+                    { type: 'sw', lx: -hw, ly: hh },
+                    { type: 'w',  lx: -hw, ly: 0 },
+                    { type: 'rotate', lx: 0, ly: -hh - 24 },
+                ];
+                
+                const hitRadius = 14;
+                for (const h of handles) {
+                    // Rotate handle position to canvas space
+                    const rx = cx + h.lx * Math.cos(rot) - h.ly * Math.sin(rot);
+                    const ry = cy + h.lx * Math.sin(rot) + h.ly * Math.cos(rot);
+                    if (Math.hypot(canvasX - rx, canvasY - ry) < hitRadius) {
+                        return h.type;
+                    }
+                }
+                return null;
+            }
+            
+            // Draw bounding box & handles for selected instance
+            drawInstanceOverlay(ctx) {
+                const inst = this._activeInstance;
+                if (!inst) return;
+                const sym = this.getSymbol(inst.symbolId);
+                if (!sym) return;
+                
+                const bb = this._getInstanceBBox(inst, sym);
+                const cx = bb.x + bb.w / 2;
+                const cy = bb.y + bb.h / 2;
+                const rot = (inst.rotation || 0) * Math.PI / 180;
+                
+                ctx.save();
+                ctx.translate(cx, cy);
+                ctx.rotate(rot);
+                
+                // Bounding box
+                ctx.strokeStyle = 'rgba(72, 160, 80, 0.8)';
+                ctx.lineWidth = 1.5;
+                ctx.setLineDash([]);
+                ctx.strokeRect(-bb.w / 2, -bb.h / 2, bb.w, bb.h);
+                
+                // Rotation handle line
+                ctx.beginPath();
+                ctx.moveTo(0, -bb.h / 2);
+                ctx.lineTo(0, -bb.h / 2 - 20);
+                ctx.strokeStyle = 'rgba(72, 160, 80, 0.5)';
+                ctx.stroke();
+                
+                // Handles
+                const hw = bb.w / 2, hh = bb.h / 2;
+                const handlePositions = [
+                    [-hw, -hh], [0, -hh], [hw, -hh],
+                    [-hw, 0],             [hw, 0],
+                    [-hw, hh],  [0, hh],  [hw, hh],
+                ];
+                
+                for (const [hx, hy] of handlePositions) {
+                    ctx.fillStyle = '#fff';
+                    ctx.strokeStyle = 'rgba(72, 160, 80, 0.9)';
+                    ctx.lineWidth = 1.5;
+                    ctx.beginPath();
+                    ctx.rect(hx - 4, hy - 4, 8, 8);
+                    ctx.fill();
+                    ctx.stroke();
+                }
+                
+                // Rotation handle (circle)
+                ctx.fillStyle = '#fff';
+                ctx.strokeStyle = 'rgba(72, 160, 80, 0.9)';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(0, -hh - 24, 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                
+                ctx.restore();
+                
+                // Label below
+                const labelY = cy + bb.h / 2 * Math.abs(Math.cos(rot)) + bb.w / 2 * Math.abs(Math.sin(rot)) + 16;
+                ctx.save();
+                ctx.font = '600 9px -apple-system, BlinkMacSystemFont, sans-serif';
+                ctx.fillStyle = 'rgba(72, 160, 80, 0.7)';
+                ctx.textAlign = 'center';
+                ctx.fillText('⬡ ' + (sym.name || '?'), cx, labelY);
+                ctx.restore();
+            }
+            
+            // Update the properties bar
+            updateInstPropsBar() {
+                const inst = this._activeInstance;
+                const bar = document.getElementById('instPropsBar');
+                if (!inst) {
+                    bar.classList.remove('visible');
+                    return;
+                }
+                const sym = this.getSymbol(inst.symbolId);
+                bar.classList.add('visible');
+                
+                document.getElementById('instPropsName').textContent = sym ? sym.name : '?';
+                document.getElementById('instPropsX').value = Math.round(inst.x);
+                document.getElementById('instPropsY').value = Math.round(inst.y);
+                document.getElementById('instPropsW').textContent = sym ? Math.round(sym.width * inst.scaleX) : '?';
+                document.getElementById('instPropsH').textContent = sym ? Math.round(sym.height * inst.scaleY) : '?';
+                document.getElementById('instPropsRot').value = Math.round(inst.rotation || 0);
+                document.getElementById('instPropsAlpha').value = Math.round((inst.opacity ?? 1) * 100);
+            }
+            
+            initInstPropsBar() {
+                const xIn = document.getElementById('instPropsX');
+                const yIn = document.getElementById('instPropsY');
+                const rotIn = document.getElementById('instPropsRot');
+                const alphaIn = document.getElementById('instPropsAlpha');
+                
+                const applyProp = () => {
+                    if (!this._activeInstance) return;
+                    this.saveFullState();
+                    this._activeInstance.x = parseFloat(xIn.value) || 0;
+                    this._activeInstance.y = parseFloat(yIn.value) || 0;
+                    this._activeInstance.rotation = parseFloat(rotIn.value) || 0;
+                    this._activeInstance.opacity = Math.max(0, Math.min(1, (parseFloat(alphaIn.value) || 100) / 100));
+                    this._invalidateCompositeCache();
+                    this.render();
+                };
+                
+                for (const input of [xIn, yIn, rotIn, alphaIn]) {
+                    input.addEventListener('change', applyProp);
+                    input.addEventListener('keydown', (e) => {
+                        e.stopPropagation(); // Don't trigger app shortcuts
+                        if (e.key === 'Enter') { input.blur(); applyProp(); }
+                    });
+                }
+            }
+            
+            // Start an instance transform drag
+            _startInstanceDrag(type, canvasX, canvasY, inst) {
+                const sym = this.getSymbol(inst.symbolId);
+                if (!sym) return;
+                this.saveFullState();
+                
+                const bb = this._getInstanceBBox(inst, sym);
+                this._instDrag = {
+                    type,
+                    startX: canvasX,
+                    startY: canvasY,
+                    origX: inst.x,
+                    origY: inst.y,
+                    origScaleX: inst.scaleX,
+                    origScaleY: inst.scaleY,
+                    origRotation: inst.rotation || 0,
+                    symW: sym.width,
+                    symH: sym.height,
+                    centerX: bb.x + bb.w / 2,
+                    centerY: bb.y + bb.h / 2,
+                };
+            }
+            
+            // ═══════════════════════════════════════
+            // Context Stack & Loop Editing (Step 7)
+            // ═══════════════════════════════════════
+            
+            pushContext(symbolId, instanceId) {
+                const sym = this.getSymbol(symbolId);
+                if (!sym) return;
+                
+                // Deselect any active instance
+                if (this._activeInstance) this.deselectInstance();
+                
+                // Commit any in-progress selection
+                this.commitSelection();
+                
+                // Capture parent ghost snapshot
+                const ghostCanvas = document.createElement('canvas');
+                ghostCanvas.width = this.canvas.width;
+                ghostCanvas.height = this.canvas.height;
+                const ghostCtx = ghostCanvas.getContext('2d');
+                const playheadPos = this.getPlayheadPosition();
+                for (const layer of this.layers) {
+                    this.drawLayerWithTransform(ghostCtx, layer, playheadPos);
+                }
+                
+                // Save current state
+                const ctx = {
+                    type: 'symbol',
+                    symbolId,
+                    instanceId: instanceId || null,
+                    // Symbol frame count at entry (to detect growth on exit)
+                    symFrameCountAtEntry: this.getSymbolFrameCount(sym),
+                    // Scene state
+                    layers: this.layers,
+                    currentLayerId: this.currentLayerId,
+                    currentFrameIndex: this.currentFrameIndex,
+                    // Canvas state
+                    projectWidth: this.projectWidth,
+                    projectHeight: this.projectHeight,
+                    viewportX: this.viewportX,
+                    viewportY: this.viewportY,
+                    zoomLevel: this.zoomLevel,
+                    // Loop range
+                    loopRange: { ...this.loopRange },
+                    // Undo
+                    undoStack: this.undoStack,
+                    redoStack: this.redoStack,
+                    undoPointer: this.undoPointer,
+                    // Timeline
+                    _openTransformLayers: new Set(this._openTransformLayers),
+                    scrollLeft: document.getElementById('timelineFramesSection')?.scrollLeft || 0,
+                    // Ghost
+                    ghostCanvas,
+                };
+                this.contextStack.push(ctx);
+                
+                // Swap to symbol workspace
+                this.layers = sym.layers;
+                this.currentLayerId = sym.layers.length > 0 ? sym.layers[0].id : null;
+                this.currentFrameIndex = 0;
+                
+                // Resize canvas to symbol dimensions
+                this.projectWidth = sym.width;
+                this.projectHeight = sym.height;
+                
+                // Reset viewport
+                this.viewportX = 0;
+                this.viewportY = 0;
+                this.zoomLevel = null; // will be recalculated by applyZoom
+                
+                // Reset loop range for symbol
+                const maxFrame = this.getTimelineLength() - 1;
+                this.loopRange = { inPoint: 0, outPoint: Math.max(0, maxFrame) };
+                
+                // Reset undo/redo for symbol context
+                this.undoStack = [];
+                this.redoStack = [];
+                this.undoPointer = -1;
+                
+                // Clear timeline state
+                this._openTransformLayers = new Set();
+                this._timelineDirty = true;
+                
+                // Update canvas wrapper size
+                this.canvas.width = this.projectWidth;
+                this.canvas.height = this.projectHeight;
+                this.onionCanvas.width = this.projectWidth;
+                this.onionCanvas.height = this.projectHeight;
+                this.gridCanvas.width = this.projectWidth;
+                this.gridCanvas.height = this.projectHeight;
+                this.selectionCanvas.width = this.projectWidth;
+                this.selectionCanvas.height = this.projectHeight;
+                
+                // Re-fit zoom
+                this.applyZoom();
+                
+                // Update UI
+                this.renderBreadcrumb();
+                this.initializeFrame();
+                this.updateUndoRedoButtons();
+                this._updateLoopRangeBadge();
+                this.render();
+                
+                if (this.gridVisible) this.drawGrid();
+            }
+            
+            popContext() {
+                if (this.contextStack.length <= 1) return; // Already at scene root
+                
+                // Commit any in-progress edits
+                this.commitSelection();
+                if (this._activeInstance) this.deselectInstance();
+                
+                const ctx = this.contextStack.pop();
+                
+                // ── Auto-update instance durations when symbol grew ──
+                // Like Animate's graphic symbols: instances that were "one full cycle"
+                // should stay "one full cycle" when the symbol gains frames.
+                const sym = this.getSymbol(ctx.symbolId);
+                if (sym) {
+                    const oldFrameCount = ctx.symFrameCountAtEntry;
+                    const newFrameCount = this.getSymbolFrameCount(sym);
+                    if (newFrameCount !== oldFrameCount) {
+                        // Update all instances of this symbol across all parent layers
+                        // whose duration matched the old frame count (= "full cycle" instances)
+                        for (const layer of ctx.layers) {
+                            if (!layer.symbolInstances) continue;
+                            for (const inst of layer.symbolInstances) {
+                                if (inst.symbolId === ctx.symbolId && inst.duration === oldFrameCount) {
+                                    inst.duration = newFrameCount;
+                                }
+                            }
+                        }
+                        // Also check instances inside other symbols
+                        for (const symId in this.symbolLibrary) {
+                            const otherSym = this.symbolLibrary[symId];
+                            for (const layer of otherSym.layers) {
+                                if (!layer.symbolInstances) continue;
+                                for (const inst of layer.symbolInstances) {
+                                    if (inst.symbolId === ctx.symbolId && inst.duration === oldFrameCount) {
+                                        inst.duration = newFrameCount;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Restore scene state
+                this.layers = ctx.layers;
+                this.currentLayerId = ctx.currentLayerId;
+                this.currentFrameIndex = ctx.currentFrameIndex;
+                
+                // Restore canvas
+                this.projectWidth = ctx.projectWidth;
+                this.projectHeight = ctx.projectHeight;
+                this.viewportX = ctx.viewportX;
+                this.viewportY = ctx.viewportY;
+                this.zoomLevel = ctx.zoomLevel;
+                
+                // Restore loop range — but expand if timeline grew due to symbol edits
+                this.loopRange = ctx.loopRange;
+                const newTimelineLen = this.getDrawingTimelineLength();
+                // If the saved outPoint was at or near the old max, extend to new max
+                // (the user hadn't manually narrowed the range)
+                const savedMax = Math.max(
+                    ...ctx.layers.map(l => (l.startFrame || 0) + l.frames.length)
+                );
+                if (this.loopRange.outPoint >= savedMax - 1 && newTimelineLen > savedMax) {
+                    this.loopRange.outPoint = newTimelineLen - 1;
+                }
+                
+                // Restore undo
+                this.undoStack = ctx.undoStack;
+                this.redoStack = ctx.redoStack;
+                this.undoPointer = ctx.undoPointer;
+                
+                // Restore timeline state
+                this._openTransformLayers = ctx._openTransformLayers;
+                this._timelineDirty = true;
+                
+                // Resize canvas back
+                this.canvas.width = this.projectWidth;
+                this.canvas.height = this.projectHeight;
+                this.onionCanvas.width = this.projectWidth;
+                this.onionCanvas.height = this.projectHeight;
+                this.gridCanvas.width = this.projectWidth;
+                this.gridCanvas.height = this.projectHeight;
+                this.selectionCanvas.width = this.projectWidth;
+                this.selectionCanvas.height = this.projectHeight;
+                
+                // Re-fit zoom
+                this.applyZoom();
+                
+                // Restore timeline scroll
+                requestAnimationFrame(() => {
+                    const framesSection = document.getElementById('timelineFramesSection');
+                    if (framesSection) framesSection.scrollLeft = ctx.scrollLeft;
+                });
+                
+                // Update UI
+                this.renderBreadcrumb();
+                this.renderLibraryGrid(); // thumbnails may have changed
+                this.initializeFrame();
+                this.updateUndoRedoButtons();
+                this._updateLoopRangeBadge();
+                this._invalidateCompositeCache();
+                this.render();
+                
+                if (this.gridVisible) this.drawGrid();
+            }
+            
+            popToContext(targetIndex) {
+                // Pop contexts until we reach targetIndex
+                while (this.contextStack.length > targetIndex + 1) {
+                    this.popContext();
+                }
+            }
+            
+            renderBreadcrumb() {
+                const bar = document.getElementById('breadcrumbBar');
+                bar.innerHTML = '';
+                
+                // SVG icon templates
+                const easelSVG = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="2" width="10" height="8" rx="0.5"/><line x1="5" y1="10" x2="3" y2="14.5"/><line x1="11" y1="10" x2="13" y2="14.5"/><line x1="8" y1="10" x2="8" y2="13"/><line x1="4.5" y1="12" x2="11.5" y2="12"/></svg>';
+                const infinitySVG = '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M8 8c-1.2-2-2.3-3-3.8-3C2.4 5 1 6.3 1 8s1.4 3 3.2 3c1.5 0 2.6-1 3.8-3 1.2-2 2.3-3 3.8-3 1.8 0 3.2 1.3 3.2 3s-1.4 3-3.2 3c-1.5 0-2.6-1-3.8-3z"/></svg>';
+                
+                if (this.contextStack.length <= 1) {
+                    bar.classList.remove('visible');
+                    return;
+                }
+                
+                bar.classList.add('visible');
+                
+                // Scene root
+                const sceneSeg = document.createElement('span');
+                sceneSeg.className = 'breadcrumb-seg';
+                sceneSeg.innerHTML = easelSVG + ' Scene';
+                sceneSeg.addEventListener('click', () => this.popToContext(0));
+                bar.appendChild(sceneSeg);
+                
+                // Symbol levels
+                for (let i = 1; i < this.contextStack.length; i++) {
+                    const sep = document.createElement('span');
+                    sep.className = 'breadcrumb-sep';
+                    sep.textContent = '›';
+                    bar.appendChild(sep);
+                    
+                    const ctx = this.contextStack[i];
+                    const sym = this.getSymbol(ctx.symbolId);
+                    const seg = document.createElement('span');
+                    const isLast = i === this.contextStack.length - 1;
+                    seg.className = 'breadcrumb-seg' + (isLast ? ' active' : '');
+                    seg.innerHTML = infinitySVG + ' ' + (sym ? sym.name : '?');
+                    
+                    if (!isLast) {
+                        const targetIdx = i;
+                        seg.addEventListener('click', () => this.popToContext(targetIdx));
+                    }
+                    bar.appendChild(seg);
+                }
+                
+                // Ghost toggle
+                const ghost = document.createElement('span');
+                ghost.className = 'breadcrumb-ghost-toggle' + (this._showParentGhost ? ' on' : '');
+                ghost.innerHTML = (this._showParentGhost ? '👁' : '👁‍🗨') + ' Ghost';
+                ghost.addEventListener('click', () => {
+                    this._showParentGhost = !this._showParentGhost;
+                    ghost.className = 'breadcrumb-ghost-toggle' + (this._showParentGhost ? ' on' : '');
+                    ghost.innerHTML = (this._showParentGhost ? '👁' : '👁‍🗨') + ' Ghost';
+                    this.render();
+                });
+                bar.appendChild(ghost);
+            }
+            
+            // Draw dimmed parent scene behind symbol editing canvas
+            drawParentGhost(ctx) {
+                if (!this._showParentGhost || this.contextStack.length <= 1) return;
+                
+                const parentCtx = this.contextStack[this.contextStack.length - 1];
+                if (!parentCtx || !parentCtx.ghostCanvas) return;
+                
+                ctx.save();
+                ctx.globalAlpha = 0.15;
+                ctx.filter = 'grayscale(0.5)';
+                
+                // Scale parent ghost to fit current canvas
+                const pw = parentCtx.projectWidth;
+                const ph = parentCtx.projectHeight;
+                const sw = this.projectWidth;
+                const sh = this.projectHeight;
+                
+                // Find the instance to get its position offset
+                const instance = parentCtx.instanceId ? 
+                    this._findInstanceById(parentCtx.instanceId, parentCtx.layers) : null;
+                
+                if (instance) {
+                    // Draw parent ghost offset so the instance area aligns
+                    const ox = -instance.x - this.viewportX;
+                    const oy = -instance.y - this.viewportY;
+                    ctx.drawImage(parentCtx.ghostCanvas, ox, oy, pw, ph);
+                } else {
+                    ctx.drawImage(parentCtx.ghostCanvas, -this.viewportX, -this.viewportY, pw, ph);
+                }
+                
+                ctx.restore();
+            }
+            
+            _findInstanceById(instanceId, layers) {
+                for (const layer of layers) {
+                    if (layer.symbolInstances) {
+                        const found = layer.symbolInstances.find(i => i.id === instanceId);
+                        if (found) return found;
+                    }
+                }
+                return null;
             }
             
             drawAnchorIndicator(ctx) {
@@ -13434,6 +16058,9 @@
                 
                 this.isPlaying = true;
                 
+                // Clear instance selection
+                if (this._activeInstance) this.deselectInstance();
+                
                 // Clear any gradient edit state
                 this._gradientEdit = null;
                 this._gradientDrag = null;
@@ -13463,9 +16090,10 @@
                     this._playbackEndPos = maxFrames;
                 } else {
                     // Active layer only
-                    maxFrames = layer.frames.length;
+                    maxFrames = this.getEffectiveLayerLength(layer);
                     frameIndex = 0;
                     this.currentFrameIndex = 0;
+                    this._playbackTimelinePos = layerOffset; // track for instance rendering
                     // Audio window: layer's timeline span
                     this._playbackStartPos = layerOffset;
                     this._playbackEndPos = layerOffset + maxFrames;
@@ -13529,7 +16157,9 @@
                             }
                             this.currentFrameIndex = Math.max(0, Math.min(layer.frames.length - 1, this.currentFrameIndex));
                         } else {
-                            this.currentFrameIndex = frameIndex;
+                            // Layer mode — track position for instance rendering
+                            this._playbackTimelinePos = layerOffset + frameIndex;
+                            this.currentFrameIndex = Math.min(frameIndex, layer.frames.length - 1);
                         }
                         
                         // Detect loop — restart audio aligned to loop boundary
@@ -13558,6 +16188,7 @@
                 this.isPlaying = false;
                 this._activePlayMode = null;
                 this._playbackTimelinePos = undefined;
+                this._manualTimelinePos = undefined;
                 this._lastPlayLoop = undefined;
                 this._playbackStartPos = undefined;
                 this._playbackEndPos = undefined;
@@ -13573,6 +16204,12 @@
                 }
                 this.stopAudioPlayback();
                 this.hideAudioPlayhead();
+                
+                // Clamp currentFrameIndex to actual drawing frames
+                const layer = this.getCurrentLayer();
+                if (layer && this.currentFrameIndex >= layer.frames.length) {
+                    this.currentFrameIndex = Math.max(0, layer.frames.length - 1);
+                }
                 
                 // Restore onion canvas visibility
                 this.onionCanvas.style.display = '';
@@ -14182,6 +16819,9 @@
                 
                 // Draw all visible layers for current frame ON THE MAIN CANVAS
                 const playheadPos = this.getPlayheadPosition();
+                
+                // Draw parent ghost when inside a loop
+                this.drawParentGhost(this.ctx);
                 if (this.layers.length > 2 && !this.isPlaying) {
                     // Use composite cache — only redraws active layer each frame
                     this._drawWithCompositeCache(this.ctx, playheadPos);
@@ -14212,6 +16852,16 @@
                 // Draw selection if it exists (with rotation, skew, distort)
                 if (this.selection) {
                     this._drawSelectionPreview(this.ctx);
+                }
+                
+                // Draw instance selection overlay
+                if (this._activeInstance && !this.isPlaying) {
+                    // Auto-deselect if instance no longer covers current frame
+                    if (!this.instanceCoversFrame(this._activeInstance, this.currentFrameIndex)) {
+                        this.deselectInstance();
+                    } else {
+                        this.drawInstanceOverlay(this.ctx);
+                    }
                 }
                 
                 // Draw gradient edit overlay if active
@@ -14364,6 +17014,7 @@
                 }
                 
                 const playheadPos = this.getPlayheadPosition();
+                this.drawParentGhost(this.ctx);
                 if (this.layers.length > 2 && !this.isPlaying) {
                     this._drawWithCompositeCache(this.ctx, playheadPos);
                 } else {
@@ -14376,6 +17027,11 @@
                 
                 if (this.selection && !this.isPlaying) {
                     this._drawSelectionPreview(this.ctx);
+                }
+                
+                // Draw instance selection overlay
+                if (this._activeInstance && !this.isPlaying) {
+                    this.drawInstanceOverlay(this.ctx);
                 }
                 
                 // Draw gradient edit overlay if active
@@ -15255,7 +17911,13 @@
                     
                     const offset = layer.startFrame || 0;
                     const playheadPos = this.getPlayheadPosition();
-                    const layerLocalMax = Math.max(layer.frames.length, isActive ? this.currentFrameIndex + 1 : 0);
+                    let layerLocalMax = Math.max(layer.frames.length, isActive ? this.currentFrameIndex + 1 : 0);
+                    // Extend to cover instance spans
+                    if (layer.symbolInstances) {
+                        for (const inst of layer.symbolInstances) {
+                            layerLocalMax = Math.max(layerLocalMax, inst.startFrame + inst.duration);
+                        }
+                    }
                     
                     // Spacer for offset
                     if (offset > 0) {
@@ -15288,7 +17950,9 @@
                         layer, layerLocalMax, offset, holdFrameSet, holdColorMap,
                         holdSegData,
                         isActive, playheadPos, keyframeSet, cellW, frameW, gap,
-                        renderedRange: null
+                        renderedRange: null,
+                        // Build instance span coverage map: frameIndex → instance
+                        instanceMap: this._buildInstanceMap(layer)
                     };
                     
                     // Slide handle on left edge
@@ -16175,6 +18839,250 @@
             }
             
             // Populate visible frame elements in a virtualized blockWrap
+            // Build a map from local frame index → instance for span rendering
+            _buildInstanceMap(layer) {
+                const map = new Map(); // frameIndex → { instance, isStart }
+                if (!layer.symbolInstances) return map;
+                for (const inst of layer.symbolInstances) {
+                    for (let f = inst.startFrame; f < inst.startFrame + inst.duration; f++) {
+                        map.set(f, { instance: inst, isStart: f === inst.startFrame });
+                    }
+                }
+                return map;
+            }
+            
+            // Create a loop span element for the timeline
+            _createLgSpanEl(instance, v) {
+                const sym = this.getSymbol(instance.symbolId);
+                const symFrameCount = sym ? this.getSymbolFrameCount(sym) : 1;
+                const spanEl = document.createElement('div');
+                spanEl.className = 'lg-span';
+                spanEl.dataset.instanceId = instance.id;
+                spanEl.dataset.symbolId = instance.symbolId;
+                spanEl.dataset.frameIndex = instance.startFrame;
+                spanEl.dataset.layerId = v.layer.id;
+                spanEl.dataset.duration = instance.duration;
+                
+                const dur = instance.duration;
+                const totalWidth = dur * v.cellW - v.gap;
+                const h = v.cellW; // frame height = frame width
+                const hexW = Math.min(14, totalWidth * 0.15); // hex point inset
+                
+                spanEl.style.left = (instance.startFrame * v.cellW + 2) + 'px';
+                spanEl.style.top = '0';
+                spanEl.style.width = totalWidth + 'px';
+                spanEl.style.height = h + 'px';
+                
+                // Loop range dimming
+                const timelinePos = v.offset + instance.startFrame;
+                if (this.isLoopRangeNarrowed()) {
+                    const spanEnd = timelinePos + dur - 1;
+                    if (spanEnd < this.loopRange.inPoint || timelinePos > this.loopRange.outPoint) {
+                        spanEl.style.opacity = '0.3';
+                    }
+                }
+                
+                // Playhead within span → selected
+                const playheadLocal = v.playheadPos - v.offset;
+                if (v.isActive && playheadLocal >= instance.startFrame && playheadLocal < instance.startFrame + dur) {
+                    spanEl.classList.add('selected');
+                }
+                
+                // ── Build SVG hex shape ──
+                const ns = 'http://www.w3.org/2000/svg';
+                const svg = document.createElementNS(ns, 'svg');
+                svg.setAttribute('class', 'lg-span-svg');
+                svg.setAttribute('viewBox', `0 0 ${totalWidth} ${h}`);
+                svg.setAttribute('preserveAspectRatio', 'none');
+                
+                // Hex path: pointed left and right edges
+                const hexPath = `M ${hexW} 0 L ${totalWidth - hexW} 0 L ${totalWidth} ${h/2} L ${totalWidth - hexW} ${h} L ${hexW} ${h} L 0 ${h/2} Z`;
+                
+                // Unique clip ID for this instance
+                const clipId = 'lgClip_' + instance.id;
+                const defs = document.createElementNS(ns, 'defs');
+                const clipPath = document.createElementNS(ns, 'clipPath');
+                clipPath.setAttribute('id', clipId);
+                const clipShape = document.createElementNS(ns, 'path');
+                clipShape.setAttribute('d', hexPath);
+                clipPath.appendChild(clipShape);
+                defs.appendChild(clipPath);
+                svg.appendChild(defs);
+                
+                // Base fill
+                const baseFill = document.createElementNS(ns, 'path');
+                baseFill.setAttribute('d', hexPath);
+                baseFill.setAttribute('class', 'lg-span-hex-fill');
+                svg.appendChild(baseFill);
+                
+                // Alternating cycle bands clipped to hex
+                const cycles = Math.max(1, Math.ceil(dur / symFrameCount));
+                if (cycles > 1) {
+                    const bandGroup = document.createElementNS(ns, 'g');
+                    bandGroup.setAttribute('clip-path', `url(#${clipId})`);
+                    for (let ci = 0; ci < cycles; ci++) {
+                        const startF = ci * symFrameCount;
+                        const endF = Math.min(startF + symFrameCount, dur);
+                        const x0 = startF * v.cellW;
+                        const bandW = (endF - startF) * v.cellW;
+                        const band = document.createElementNS(ns, 'rect');
+                        band.setAttribute('x', x0);
+                        band.setAttribute('y', 0);
+                        band.setAttribute('width', bandW);
+                        band.setAttribute('height', h);
+                        band.setAttribute('class', ci % 2 === 0 ? 'lg-span-band-even' : 'lg-span-band-odd');
+                        bandGroup.appendChild(band);
+                    }
+                    svg.appendChild(bandGroup);
+                }
+                
+                // Frame ticks clipped to hex
+                const tickGroup = document.createElementNS(ns, 'g');
+                tickGroup.setAttribute('clip-path', `url(#${clipId})`);
+                for (let t = 1; t < dur; t++) {
+                    const tx = t * v.cellW;
+                    const tick = document.createElementNS(ns, 'line');
+                    tick.setAttribute('x1', tx);
+                    tick.setAttribute('y1', h * 0.3);
+                    tick.setAttribute('x2', tx);
+                    tick.setAttribute('y2', h * 0.7);
+                    tick.setAttribute('stroke', 'rgba(255,255,255,0.05)');
+                    tick.setAttribute('stroke-width', '1');
+                    tickGroup.appendChild(tick);
+                }
+                svg.appendChild(tickGroup);
+                
+                // Hex outline stroke (on top)
+                const outline = document.createElementNS(ns, 'path');
+                outline.setAttribute('d', hexPath);
+                outline.setAttribute('class', 'lg-span-hex-stroke');
+                svg.appendChild(outline);
+                
+                spanEl.appendChild(svg);
+                
+                // ── Label overlay ──
+                if (totalWidth > 40) {
+                    const label = document.createElement('div');
+                    label.className = 'lg-span-label';
+                    label.style.left = (hexW + 6) + 'px';
+                    label.style.maxWidth = (totalWidth - hexW * 2 - 12) + 'px';
+                    
+                    const icon = document.createElement('span');
+                    icon.className = 'lg-span-label-icon';
+                    icon.textContent = '⬡';
+                    label.appendChild(icon);
+                    
+                    if (totalWidth > 80) {
+                        const text = document.createElement('span');
+                        text.className = 'lg-span-label-text';
+                        const name = sym ? sym.name : '?';
+                        text.textContent = totalWidth > 140 ? `${name} (${symFrameCount}f)` : name;
+                        label.appendChild(text);
+                    }
+                    spanEl.appendChild(label);
+                }
+                
+                // Resize handle
+                const resizeHandle = document.createElement('div');
+                resizeHandle.className = 'lg-span-resize';
+                spanEl.appendChild(resizeHandle);
+                
+                // Frame number
+                const num = document.createElement('div');
+                num.className = 'lg-span-number';
+                num.textContent = timelinePos + 1;
+                spanEl.appendChild(num);
+                
+                // === Interactions ===
+                
+                // Click to select / double-click to enter
+                spanEl.addEventListener('pointerdown', (e) => {
+                    if (e.target === resizeHandle) return; // let resize handle take over
+                    e.stopPropagation();
+                    
+                    // Double-click detection (render() destroys DOM so native dblclick won't fire)
+                    const now = performance.now();
+                    if (this._lastSpanClick && this._lastSpanClick.instanceId === instance.id && now - this._lastSpanClick.time < 400) {
+                        this._lastSpanClick = null;
+                        this.pushContext(instance.symbolId, instance.id);
+                        return;
+                    }
+                    this._lastSpanClick = { instanceId: instance.id, time: now };
+                    
+                    this._selectedInstanceId = instance.id;
+                    this._selectedInstanceLayerId = v.layer.id;
+                    // Navigate playhead to span start (clamped to actual frames)
+                    const targetFrame = Math.min(instance.startFrame, v.layer.frames.length - 1);
+                    this.currentFrameIndex = Math.max(0, targetFrame);
+                    if (v.layer.id !== this.currentLayerId) {
+                        this.currentLayerId = v.layer.id;
+                    }
+                    this._timelineDirty = true;
+                    this.render();
+                });
+                
+                // Right-click context menu
+                spanEl.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this._selectedInstanceId = instance.id;
+                    this._selectedInstanceLayerId = v.layer.id;
+                    this.showLgSpanCtxMenu(e.clientX, e.clientY, instance, v.layer);
+                });
+                
+                // Resize handle drag
+                resizeHandle.addEventListener('pointerdown', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const startX = e.clientX;
+                    const startDuration = instance.duration;
+                    
+                    const onMove = (me) => {
+                        const dx = me.clientX - startX;
+                        const frameDelta = Math.round(dx / v.cellW);
+                        const newDuration = Math.max(1, startDuration + frameDelta);
+                        instance.duration = newDuration;
+                        // Auto-expand loop range if instance extends past it
+                        const instEnd = instance.startFrame + newDuration - 1;
+                        if (instEnd > this.loopRange.outPoint) {
+                            this.loopRange.outPoint = instEnd;
+                            this._updateLoopRangeBadge();
+                        }
+                        this._timelineDirty = true;
+                        this._invalidateCompositeCache();
+                        this.render();
+                    };
+                    const onUp = () => {
+                        document.removeEventListener('pointermove', onMove);
+                        document.removeEventListener('pointerup', onUp);
+                    };
+                    document.addEventListener('pointermove', onMove);
+                    document.addEventListener('pointerup', onUp);
+                });
+                
+                return spanEl;
+            }
+            
+            showLgSpanCtxMenu(x, y, instance, layer) {
+                // Reuse library context menu with modified options
+                const menu = document.getElementById('libraryCtxMenu');
+                menu._targetSymbolId = instance.symbolId;
+                menu._targetInstanceId = instance.id;
+                menu._targetLayer = layer;
+                
+                // Temporarily replace "Rename" with "Remove Instance"
+                const items = menu.querySelectorAll('.library-ctx-item');
+                items[0].textContent = 'Remove Instance';
+                items[0].dataset.action = 'remove-instance';
+                
+                menu.style.left = x + 'px';
+                menu.style.top = y + 'px';
+                const mw = 140, mh = 120;
+                if (x + mw > window.innerWidth) menu.style.left = (window.innerWidth - mw - 4) + 'px';
+                if (y + mh > window.innerHeight) menu.style.top = (window.innerHeight - mh - 4) + 'px';
+                menu.classList.add('show');
+            }
+            
             _populateBlockFrames(blockWrap) {
                 const v = blockWrap._virt;
                 if (!v) return;
@@ -16197,14 +19105,22 @@
                 
                 const { frameMap } = v.holdSegData;
                 
-                // Remove out-of-range elements (both .frame and .hold-block)
-                const existing = blockWrap.querySelectorAll('.frame, .hold-block');
+                // Remove out-of-range elements (both .frame, .hold-block, and .lg-span)
+                const existing = blockWrap.querySelectorAll('.frame, .hold-block, .lg-span');
                 for (const el of existing) {
                     const idx = parseInt(el.dataset.frameIndex);
                     if (el.classList.contains('hold-block')) {
                         const hEnd = idx + parseInt(el.dataset.holdLength);
                         // Remove if entire block is out of range
                         if (hEnd <= startIdx || idx >= endIdx) el.remove();
+                    } else if (el.classList.contains('lg-span')) {
+                        const inst = v.instanceMap.get(idx);
+                        if (inst) {
+                            const spanEnd = inst.instance.startFrame + inst.instance.duration;
+                            if (spanEnd <= startIdx || idx >= endIdx) el.remove();
+                        } else {
+                            el.remove(); // orphaned span
+                        }
                     } else {
                         if (idx < startIdx || idx >= endIdx) el.remove();
                     }
@@ -16219,12 +19135,47 @@
                     const hl = parseInt(el.dataset.holdLength);
                     for (let hi = hs; hi < hs + hl; hi++) rendered.add(hi);
                 });
+                // LG spans cover their frame range
+                blockWrap.querySelectorAll('.lg-span').forEach(el => {
+                    const inst = v.instanceMap.get(parseInt(el.dataset.frameIndex));
+                    if (inst) {
+                        const instance = inst.instance;
+                        for (let si = instance.startFrame; si < instance.startFrame + instance.duration; si++) {
+                            rendered.add(si);
+                        }
+                    }
+                });
                 
                 // Create missing frame elements
                 const frag = document.createDocumentFragment();
                 let i = startIdx;
                 while (i < endIdx) {
                     if (rendered.has(i)) { i++; continue; }
+                    
+                    // Check if this frame is covered by an instance span
+                    const instEntry = v.instanceMap.get(i);
+                    if (instEntry) {
+                        if (instEntry.isStart) {
+                            // Start of a span — create the hex block
+                            const instance = instEntry.instance;
+                            frag.appendChild(this._createLgSpanEl(instance, v));
+                            for (let si = instance.startFrame; si < instance.startFrame + instance.duration; si++) {
+                                rendered.add(si);
+                            }
+                            i = instance.startFrame + instance.duration;
+                        } else {
+                            // Interior of a span — check if start needs rendering
+                            const instance = instEntry.instance;
+                            if (!rendered.has(instance.startFrame)) {
+                                frag.appendChild(this._createLgSpanEl(instance, v));
+                                for (let si = instance.startFrame; si < instance.startFrame + instance.duration; si++) {
+                                    rendered.add(si);
+                                }
+                            }
+                            i++;
+                        }
+                        continue;
+                    }
                     
                     const seg = frameMap.get(i);
                     if (seg) {
@@ -16516,13 +19467,63 @@
                             frames: frames,
                             transformKeyframes: layer.transformKeyframes || [],
                             startFrame: layer.startFrame || 0,
-                            parentId: layer.parentId || null
+                            parentId: layer.parentId || null,
+                            symbolInstances: layer.symbolInstances || []
                         });
+                    }
+                    
+                    // Serialize symbol library
+                    const symbolLibraryData = {};
+                    for (const symId in this.symbolLibrary) {
+                        const sym = this.symbolLibrary[symId];
+                        const symLayers = [];
+                        for (const layer of sym.layers) {
+                            const symFrames = [];
+                            const symCanvasIdMap = new Map();
+                            for (let fi = 0; fi < layer.frames.length; fi++) {
+                                const frame = layer.frames[fi];
+                                if (frame) {
+                                    if (symCanvasIdMap.has(frame)) {
+                                        symFrames.push({ holdRef: symCanvasIdMap.get(frame) });
+                                    } else {
+                                        symCanvasIdMap.set(frame, fi);
+                                        const fData = { data: frame.toDataURL('image/png') };
+                                        if (frame._originX || frame._originY) {
+                                            fData.originX = frame._originX || 0;
+                                            fData.originY = frame._originY || 0;
+                                        }
+                                        symFrames.push(fData);
+                                    }
+                                } else {
+                                    symFrames.push(null);
+                                }
+                            }
+                            symLayers.push({
+                                id: layer.id,
+                                name: layer.name,
+                                visible: layer.visible,
+                                opacity: layer.opacity,
+                                frames: symFrames,
+                                transformKeyframes: layer.transformKeyframes || [],
+                                startFrame: layer.startFrame || 0,
+                                parentId: layer.parentId || null,
+                                symbolInstances: layer.symbolInstances || []
+                            });
+                        }
+                        symbolLibraryData[symId] = {
+                            id: sym.id,
+                            name: sym.name,
+                            width: sym.width,
+                            height: sym.height,
+                            layers: symLayers,
+                            created: sym.created,
+                            _nextLayerId: sym._nextLayerId || 2
+                        };
                     }
                     
                     const project = {
                         format: 'FrameBoy',
-                        version: 1,
+                        version: 2,
                         canvasWidth: this.projectWidth,
                         canvasHeight: this.projectHeight,
                         bgColor: this.bgColor,
@@ -16531,6 +19532,7 @@
                         currentFrameIndex: this.currentFrameIndex,
                         nextLayerId: this.nextLayerId,
                         layers: layerData,
+                        symbolLibrary: symbolLibraryData,
                         loopRange: this.hasLoopRange() ? { inPoint: this.loopRange.inPoint, outPoint: this.loopRange.outPoint } : null
                     };
                     
@@ -16712,7 +19714,8 @@
                             frames: frames,
                             transformKeyframes: layerData.transformKeyframes || [],
                             startFrame: layerData.startFrame || 0,
-                            parentId: layerData.parentId || null
+                            parentId: layerData.parentId || null,
+                            symbolInstances: layerData.symbolInstances || []
                         });
                     }
                     
@@ -16721,6 +19724,82 @@
                     this.currentLayerId = project.currentLayerId || layers[0].id;
                     this.currentFrameIndex = project.currentFrameIndex || 0;
                     this.nextLayerId = project.nextLayerId || (Math.max(...layers.map(l => l.id)) + 1);
+                    
+                    // Restore symbol library
+                    this.symbolLibrary = {};
+                    this.contextStack = [{ type: 'scene' }];
+                    this._nextSymbolId = 1;
+                    this._nextInstanceId = 1;
+                    
+                    if (project.symbolLibrary) {
+                        for (const symId in project.symbolLibrary) {
+                            const symData = project.symbolLibrary[symId];
+                            const symLayers = [];
+                            for (const symLayerData of symData.layers) {
+                                const symFrames = [];
+                                const symHoldMap = new Map();
+                                for (let fi = 0; fi < symLayerData.frames.length; fi++) {
+                                    const frameData = symLayerData.frames[fi];
+                                    if (frameData && typeof frameData === 'object' && frameData.holdRef !== undefined) {
+                                        symFrames.push(symHoldMap.get(frameData.holdRef) || null);
+                                    } else if (frameData) {
+                                        const dataUrl = (typeof frameData === 'string') ? frameData : frameData.data;
+                                        const originX = (typeof frameData === 'object') ? (frameData.originX || 0) : 0;
+                                        const originY = (typeof frameData === 'object') ? (frameData.originY || 0) : 0;
+                                        const canvas = await loadImage(dataUrl, originX, originY);
+                                        symHoldMap.set(fi, canvas);
+                                        symFrames.push(canvas);
+                                    } else {
+                                        symFrames.push(null);
+                                    }
+                                }
+                                symLayers.push({
+                                    id: symLayerData.id,
+                                    name: symLayerData.name || 'Layer 1',
+                                    visible: symLayerData.visible !== false,
+                                    opacity: symLayerData.opacity != null ? symLayerData.opacity : 1.0,
+                                    frames: symFrames,
+                                    transformKeyframes: symLayerData.transformKeyframes || [],
+                                    startFrame: symLayerData.startFrame || 0,
+                                    parentId: symLayerData.parentId || null,
+                                    symbolInstances: symLayerData.symbolInstances || []
+                                });
+                            }
+                            this.symbolLibrary[symId] = {
+                                id: symData.id,
+                                name: symData.name,
+                                width: symData.width,
+                                height: symData.height,
+                                layers: symLayers,
+                                created: symData.created || Date.now(),
+                                thumbnail: null,
+                                _nextLayerId: symData._nextLayerId || 2
+                            };
+                        }
+                        
+                        // Restore ID counters to avoid collisions
+                        let maxSymId = 0, maxInstId = 0;
+                        for (const symId in this.symbolLibrary) {
+                            const match = symId.match(/^sym_(\d+)/);
+                            if (match) maxSymId = Math.max(maxSymId, parseInt(match[1]));
+                            const sym = this.symbolLibrary[symId];
+                            for (const layer of sym.layers) {
+                                for (const inst of (layer.symbolInstances || [])) {
+                                    const instMatch = inst.id.match(/^inst_(\d+)/);
+                                    if (instMatch) maxInstId = Math.max(maxInstId, parseInt(instMatch[1]));
+                                }
+                            }
+                        }
+                        // Also scan main layer instances
+                        for (const layer of this.layers) {
+                            for (const inst of (layer.symbolInstances || [])) {
+                                const instMatch = inst.id.match(/^inst_(\d+)/);
+                                if (instMatch) maxInstId = Math.max(maxInstId, parseInt(instMatch[1]));
+                            }
+                        }
+                        this._nextSymbolId = maxSymId + 1;
+                        this._nextInstanceId = maxInstId + 1;
+                    }
                     
                     // Reset undo/redo
                     this.undoStack = [];
@@ -16789,6 +19868,7 @@
                     
                     this.render();
                     this.drawGrid();
+                    this.renderLibraryGrid();
                     
                     // Scroll to current frame and repopulate virtualized frames
                     // (must happen after render so timeline DOM exists)
