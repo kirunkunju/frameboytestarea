@@ -1474,6 +1474,51 @@
             background: rgba(91, 141, 239, 0.25);
         }
 
+        .app-toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.92);
+            background: rgba(28, 30, 34, 0.96);
+            border: 1.5px solid rgba(255, 90, 90, 0.5);
+            color: #e8e8e8;
+            padding: 16px 24px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 500;
+            line-height: 1.5;
+            text-align: center;
+            max-width: 360px;
+            z-index: 99999;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.25s ease, transform 0.25s ease;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        }
+        .app-toast.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+        .app-toast .toast-icon {
+            font-size: 24px;
+            display: block;
+            margin-bottom: 8px;
+        }
+        .app-toast.toast-info {
+            top: auto;
+            bottom: 80px;
+            left: 50%;
+            transform: translate(-50%, 8px) scale(0.95);
+            border-color: rgba(100, 160, 255, 0.4);
+            padding: 8px 16px;
+            font-size: 12px;
+            max-width: 260px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+        }
+        .app-toast.toast-info.show {
+            transform: translate(-50%, 0) scale(1);
+        }
+        
         .magnifier-marquee {
             display: none;
             position: absolute;
@@ -1483,6 +1528,31 @@
             z-index: 15;
             border-radius: 2px;
             box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.15);
+        }
+        
+        .lib-drag-ghost {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.85;
+            background: rgba(28, 30, 34, 0.92);
+            border: 1.5px solid rgba(72, 160, 80, 0.6);
+            border-radius: 6px;
+            padding: 4px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .lib-drag-ghost canvas {
+            border-radius: 3px;
+        }
+        .lib-drag-ghost-label {
+            font-size: 9px;
+            font-weight: 600;
+            color: rgba(72, 160, 80, 0.9);
+            white-space: nowrap;
+            padding-right: 6px;
         }
         
         .zoom-label {
@@ -4779,14 +4849,15 @@
                 <div class="dropdown-container">
                     <button id="lassoTool" title="Lasso Selection (L)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="8" cy="7" rx="6" ry="4.5"/><path d="M12.5 10c0 1.5-1 3-2 3.5s-1.5.5-1.5 1.5"/></svg> <span class="btn-label">Lasso ▼</span></button>
                     <div class="dropdown-menu" id="lassoToolDropdown">
+                        <button class="dropdown-item" data-selecttool="select"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" stroke="none" width="14" height="14"><path d="M3 1.5l10 6.5-4.5.5L11 14l-2.5-1-2.5-5.5L3 10z"/></svg> Select<span class="shortcut">V</span></button>
                         <button class="dropdown-item" data-selecttool="lasso"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><ellipse cx="8" cy="7" rx="6" ry="4.5"/><path d="M12.5 10c0 1.5-1 3-2 3.5s-1.5.5-1.5 1.5"/></svg> Lasso<span class="shortcut">L</span></button>
                         <button class="dropdown-item" data-selecttool="marquee"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="2" y="2" width="12" height="12" rx="0.5" stroke-dasharray="2 2"/></svg> Marquee<span class="shortcut">M</span></button>
                     </div>
                 </div>
                 <div class="dropdown-container">
-                    <button id="transformTool" title="Free Transform (V/T)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="2.5" x2="8" y2="13.5"/><line x1="2.5" y1="8" x2="13.5" y2="8"/><path d="M8 2.5L6.5 4"/><path d="M8 2.5L9.5 4"/><path d="M8 13.5L6.5 12"/><path d="M8 13.5L9.5 12"/><path d="M2.5 8L4 6.5"/><path d="M2.5 8L4 9.5"/><path d="M13.5 8L12 6.5"/><path d="M13.5 8L12 9.5"/><circle cx="3.5" cy="3.5" r="1" fill="currentColor" stroke="none"/><circle cx="12.5" cy="3.5" r="1" fill="currentColor" stroke="none"/><circle cx="3.5" cy="12.5" r="1" fill="currentColor" stroke="none"/><circle cx="12.5" cy="12.5" r="1" fill="currentColor" stroke="none"/></svg> <span class="btn-label">Transform ▼</span></button>
+                    <button id="transformTool" title="Free Transform (Q/T)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="2.5" x2="8" y2="13.5"/><line x1="2.5" y1="8" x2="13.5" y2="8"/><path d="M8 2.5L6.5 4"/><path d="M8 2.5L9.5 4"/><path d="M8 13.5L6.5 12"/><path d="M8 13.5L9.5 12"/><path d="M2.5 8L4 6.5"/><path d="M2.5 8L4 9.5"/><path d="M13.5 8L12 6.5"/><path d="M13.5 8L12 9.5"/><circle cx="3.5" cy="3.5" r="1" fill="currentColor" stroke="none"/><circle cx="12.5" cy="3.5" r="1" fill="currentColor" stroke="none"/><circle cx="3.5" cy="12.5" r="1" fill="currentColor" stroke="none"/><circle cx="12.5" cy="12.5" r="1" fill="currentColor" stroke="none"/></svg> <span class="btn-label">Transform ▼</span></button>
                     <div class="dropdown-menu" id="transformToolDropdown">
-                        <button class="dropdown-item" data-xformtool="transform"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="8" y1="2.5" x2="8" y2="13.5"/><line x1="2.5" y1="8" x2="13.5" y2="8"/><path d="M8 2.5L6.5 4"/><path d="M8 2.5L9.5 4"/><path d="M8 13.5L6.5 12"/><path d="M8 13.5L9.5 12"/><path d="M2.5 8L4 6.5"/><path d="M2.5 8L4 9.5"/><path d="M13.5 8L12 6.5"/><path d="M13.5 8L12 9.5"/><circle cx="3.5" cy="3.5" r="1" fill="currentColor" stroke="none"/><circle cx="12.5" cy="3.5" r="1" fill="currentColor" stroke="none"/><circle cx="3.5" cy="12.5" r="1" fill="currentColor" stroke="none"/><circle cx="12.5" cy="12.5" r="1" fill="currentColor" stroke="none"/></svg> Free Transform <span class="shortcut">V</span></button>
+                        <button class="dropdown-item" data-xformtool="transform"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="8" y1="2.5" x2="8" y2="13.5"/><line x1="2.5" y1="8" x2="13.5" y2="8"/><path d="M8 2.5L6.5 4"/><path d="M8 2.5L9.5 4"/><path d="M8 13.5L6.5 12"/><path d="M8 13.5L9.5 12"/><path d="M2.5 8L4 6.5"/><path d="M2.5 8L4 9.5"/><path d="M13.5 8L12 6.5"/><path d="M13.5 8L12 9.5"/><circle cx="3.5" cy="3.5" r="1" fill="currentColor" stroke="none"/><circle cx="12.5" cy="3.5" r="1" fill="currentColor" stroke="none"/><circle cx="3.5" cy="12.5" r="1" fill="currentColor" stroke="none"/><circle cx="12.5" cy="12.5" r="1" fill="currentColor" stroke="none"/></svg> Free Transform <span class="shortcut">Q</span></button>
                         <button class="dropdown-item" data-xformtool="scale"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M10 2h4v4"/><path d="M14 2l-4.5 4.5"/><path d="M6 14H2v-4"/><path d="M2 14l4.5-4.5"/></svg> Scale <span class="shortcut">S</span></button>
                         <button class="dropdown-item" data-xformtool="rotate"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M13.5 8A5.5 5.5 0 112.5 5.5"/><path d="M2.5 1.5v4h4"/></svg> Rotate <span class="shortcut">R</span></button>
                         <button class="dropdown-item" data-xformtool="skew"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M4 2.5h9.5v11H2.5V6"/><circle cx="4" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="2.5" cy="13.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="13.5" r="1" fill="currentColor" stroke="none"/></svg> Skew</button>
@@ -5118,6 +5189,7 @@
     <input type="file" id="importAudioInput" accept="audio/*" style="display: none;">
     <div class="frame-context-menu" id="frameContextMenu">
         <button class="frame-context-menu-item" id="ctxCopyFrame"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="5" y="1.5" width="8" height="10" rx="1"/><path d="M2 4v8a1 1 0 001 1h6"/></svg> Copy Frame<span class="shortcut">Ctrl+C</span></button>
+        <button class="frame-context-menu-item" id="ctxCutFrame"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><circle cx="5" cy="12" r="2.5"/><circle cx="11" cy="12" r="2.5"/><path d="M7.2 10.5L12 2"/><path d="M8.8 10.5L4 2"/></svg> Cut Frame<span class="shortcut">Ctrl+X</span></button>
         <button class="frame-context-menu-item" id="ctxPasteFrame"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="3" y="3" width="9" height="10" rx="1"/><path d="M5.5 3V2a1 1 0 011-1h2a1 1 0 011 1v1"/></svg> Paste Frame<span class="shortcut">Ctrl+V</span></button>
         <div class="frame-context-menu-divider"></div>
         <button class="frame-context-menu-item" id="ctxDuplicateFrame"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="1" y="4" width="7" height="7" rx="1"/><rect x="5" y="1" width="7" height="7" rx="1"/></svg> Duplicate Frame<span class="shortcut">Ctrl+D</span></button>
@@ -5401,10 +5473,16 @@
                 this.transformStart = null;
                 this._activeTransformTool = 'transform'; // 'transform', 'scale', 'rotate'
                 
-                // Clipboard properties
-                this.copiedSelection = null; // For selection copy/paste
-                this.copiedFrame = null; // For frame copy/paste
-                this.copiedFrames = []; // For multi-frame copy/paste
+                // ── Dual Clipboard System ──
+                // Canvas clipboard: pixel selections & loop instances (independent of timeline)
+                this._canvasClipboard = { type: null, instance: null, selection: null };
+                // Timeline clipboard: frames (independent of canvas)
+                this._timelineClipboard = { frame: null, frames: [] };
+                // Legacy aliases (used throughout codebase)
+                this.copiedSelection = null;
+                this.copiedFrame = null;
+                this.copiedFrames = [];
+                this._copiedInstance = null;
                 this.selectedFrames = new Set(); // Multi-frame selection (indices)
                 this.frameSelectMode = false; // Long-press selection mode (iPad)
                 this._longPressTimer = null;
@@ -6792,10 +6870,12 @@
                 this._instDrag = null; // { type: 'move'|'scale'|'rotate', startX, startY, ... }
                 this._instRotationMode = false;
                 this._instHoverTimer = null;
+                this._libDragPending = null; // { symbolId, startX, startY, thumbCanvas }
+                this._libDragActive = null;  // { symbolId, ghostEl }
                 this._lastInstanceClick = null; // { instanceId, time } for double-click detection
                 this._lastSpanClick = null; // { instanceId, time } for timeline span double-click
                 this._manualTimelinePos = undefined; // visual playhead pos when scrubbing past actual frames
-                this._activeSelectTool = 'lasso'; // lasso or marquee
+                this._activeSelectTool = 'lasso'; // select, lasso, or marquee
                 this._showParentGhost = true; // Show dimmed parent behind loop
             }
             
@@ -6868,9 +6948,21 @@
                     card.appendChild(thumbWrap);
                     card.appendChild(info);
                     
+                    // Drag to canvas initiation
+                    card.addEventListener('pointerdown', (e) => {
+                        if (this._renamingSymbolId || e.button !== 0) return;
+                        this._libDragPending = {
+                            symbolId: sym.id,
+                            startX: e.clientX,
+                            startY: e.clientY,
+                            thumbCanvas: thumbCanvas
+                        };
+                    });
+                    
                     // Click to select
                     card.addEventListener('click', (e) => {
                         if (this._renamingSymbolId) return;
+                        if (this._libDragJustCompleted) { this._libDragJustCompleted = false; return; }
                         this._selectedLibrarySymbolId = sym.id;
                         this.renderLibraryGrid();
                         this.updateLibraryDetail(sym.id);
@@ -7235,7 +7327,7 @@
                 // Create an instance on the layer if replacing
                 if (replaceOriginal) {
                     const startFrame = Math.min(...sourceFrameIndices);
-                    const duration = sourceFrameIndices.length;
+                    const duration = Math.max(sourceFrameIndices.length, layer.frames.length);
                     
                     // Position: where the content was in world space
                     const instX = sizeMode === 'fit' ? minX : 0;
@@ -7655,6 +7747,137 @@
                         this.stopDrawing();
                     }
                 }, { passive: true });
+
+                // === Library Drag-to-Canvas Handlers ===
+                document.addEventListener('pointermove', (e) => {
+                    // Promote pending drag to active after deadzone
+                    if (this._libDragPending && !this._libDragActive) {
+                        const dx = e.clientX - this._libDragPending.startX;
+                        const dy = e.clientY - this._libDragPending.startY;
+                        if (Math.hypot(dx, dy) > 5) {
+                            const sym = this.getSymbol(this._libDragPending.symbolId);
+                            if (!sym) { this._libDragPending = null; return; }
+                            
+                            // Create ghost element
+                            const ghost = document.createElement('div');
+                            ghost.className = 'lib-drag-ghost';
+                            const tc = document.createElement('canvas');
+                            tc.width = 36; tc.height = 36;
+                            this.renderSymbolThumbnail(sym, tc);
+                            ghost.appendChild(tc);
+                            const lbl = document.createElement('div');
+                            lbl.className = 'lib-drag-ghost-label';
+                            lbl.textContent = '∞ ' + sym.name;
+                            ghost.appendChild(lbl);
+                            document.body.appendChild(ghost);
+                            
+                            this._libDragActive = {
+                                symbolId: this._libDragPending.symbolId,
+                                ghostEl: ghost
+                            };
+                            document.body.style.cursor = 'grabbing';
+                        }
+                    }
+                    
+                    // Move ghost
+                    if (this._libDragActive) {
+                        const ghost = this._libDragActive.ghostEl;
+                        ghost.style.left = (e.clientX + 12) + 'px';
+                        ghost.style.top = (e.clientY + 12) + 'px';
+                        
+                        // Check if over canvas — show drop indicator
+                        const canvasRect = this.canvasContainer.getBoundingClientRect();
+                        const overCanvas = e.clientX >= canvasRect.left && e.clientX <= canvasRect.right &&
+                                           e.clientY >= canvasRect.top && e.clientY <= canvasRect.bottom;
+                        ghost.style.borderColor = overCanvas ? 'rgba(72, 160, 80, 0.9)' : 'rgba(72, 160, 80, 0.4)';
+                        ghost.style.opacity = overCanvas ? '1' : '0.7';
+                    }
+                });
+                
+                document.addEventListener('pointerup', (e) => {
+                    if (this._libDragActive) {
+                        const sym = this.getSymbol(this._libDragActive.symbolId);
+                        
+                        // Remove ghost
+                        if (this._libDragActive.ghostEl) {
+                            this._libDragActive.ghostEl.remove();
+                        }
+                        document.body.style.cursor = '';
+                        
+                        // Check if dropped on canvas
+                        const canvasRect = this.canvasContainer.getBoundingClientRect();
+                        const overCanvas = e.clientX >= canvasRect.left && e.clientX <= canvasRect.right &&
+                                           e.clientY >= canvasRect.top && e.clientY <= canvasRect.bottom;
+                        
+                        if (overCanvas && sym) {
+                            // Prevent placing a loop inside itself (would cause infinite recursion)
+                            const droppedId = this._libDragActive.symbolId;
+                            const isSelfNesting = this.contextStack.some(ctx => ctx.symbolId === droppedId);
+                            if (isSelfNesting) {
+                                this.showToast('A loop cannot be placed within itself.<br>It would create a tear in the space time continuum.', '<svg width="48" height="48" viewBox="0 0 48 48" fill="none"><defs><radialGradient id="bh-void" cx="50%" cy="50%" r="50%"><stop offset="0%" stop-color="#000"/><stop offset="55%" stop-color="#000"/><stop offset="80%" stop-color="transparent"/></radialGradient></defs><ellipse cx="24" cy="24" rx="22" ry="18" stroke="rgba(140,120,255,0.2)" stroke-width="0.7" fill="none"/><ellipse cx="24" cy="24" rx="19" ry="15" stroke="rgba(180,140,255,0.25)" stroke-width="0.8" fill="none"/><ellipse cx="24" cy="24" rx="16" ry="13" stroke="rgba(200,160,255,0.3)" stroke-width="1" fill="none"/><ellipse cx="24" cy="24" rx="13" ry="11" stroke="rgba(220,180,255,0.4)" stroke-width="1.2" fill="none"/><circle cx="24" cy="24" r="10" fill="none" stroke="rgba(255,200,140,0.5)" stroke-width="1.5"/><circle cx="24" cy="24" r="8" fill="url(#bh-void)"/><circle cx="24" cy="24" r="6" fill="#000"/><circle cx="34" cy="23" r="1.5" fill="rgba(255,220,160,0.6)"/></svg>', 3000);
+                            } else {
+                            this.saveFullState();
+                            
+                            // Convert screen to world coords
+                            const world = this.screenToWorld(e);
+                            const instX = world.x - sym.width / 2;
+                            const instY = world.y - sym.height / 2;
+                            
+                            // Place at current frame
+                            const layer = this.getCurrentLayer();
+                            if (!layer.symbolInstances) layer.symbolInstances = [];
+                            
+                            // Determine duration: match existing timeline if loops exist, else use symbol length
+                            const symLength = this.getSymbolFrameCount(sym);
+                            const hasExistingInstances = layer.symbolInstances.length > 0;
+                            const duration = hasExistingInstances ? this.getEffectiveLayerLength(layer) : symLength;
+                            const instance = this.createSymbolInstance(
+                                sym.id, 0, duration, instX, instY
+                            );
+                            layer.symbolInstances.push(instance);
+                            
+                            // Auto-expand loop range
+                            const instEnd = duration - 1;
+                            if (instEnd > this.loopRange.outPoint) {
+                                this.loopRange.outPoint = instEnd;
+                                this._updateLoopRangeBadge();
+                            }
+                            
+                            // Select the new instance and switch to transform
+                            this.selectTool('transform');
+                            this.selectInstance(instance, layer);
+                            this._selectedInstanceId = instance.id;
+                            this._selectedInstanceLayerId = layer.id;
+                            
+                            this._timelineDirty = true;
+                            this._invalidateCompositeCache();
+                            this.render();
+                            }
+                        }
+                        
+                        this._libDragJustCompleted = true;
+                        this._libDragActive = null;
+                        this._libDragPending = null;
+                        return;
+                    }
+                    
+                    // Clear pending if never activated
+                    if (this._libDragPending) {
+                        this._libDragPending = null;
+                    }
+                });
+                
+                // Escape to cancel library drag
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape' && this._libDragActive) {
+                        if (this._libDragActive.ghostEl) {
+                            this._libDragActive.ghostEl.remove();
+                        }
+                        document.body.style.cursor = '';
+                        this._libDragActive = null;
+                        this._libDragPending = null;
+                    }
+                });
 
                 // Prevent iOS double-tap text selection menu and context menu
                 const preventIOSMenus = (canvasEl) => {
@@ -8138,10 +8361,28 @@
                 
                 // Copy/Paste buttons
                 document.getElementById('copyBtn').addEventListener('click', () => {
-                    if (this.selection) {
+                    if (this._activeInstance) {
+                        // Canvas clipboard ← instance
+                        const inst = this._activeInstance;
+                        this._copiedInstance = {
+                            symbolId: inst.symbolId, startFrame: inst.startFrame, duration: inst.duration,
+                            x: inst.x, y: inst.y, scaleX: inst.scaleX, scaleY: inst.scaleY,
+                            rotation: inst.rotation || 0, opacity: inst.opacity != null ? inst.opacity : 1,
+                            firstFrame: inst.firstFrame || 0, loopMode: inst.loopMode || 'loop'
+                        };
+                        this.copiedSelection = null;
+                        const sym = this.getSymbol(inst.symbolId);
+                        this._clipboardToast('Copied loop' + (sym ? ' "' + sym.name + '"' : ''));
+                    } else if (this.selection) {
+                        // Canvas clipboard ← selection
                         this.copySelection();
+                        this._copiedInstance = null;
+                        this._clipboardToast('Selection copied');
                     } else {
+                        // Timeline clipboard ← frames (never touches canvas clipboard)
+                        const count = this.selectedFrames.size > 1 ? this.selectedFrames.size : 1;
                         this.copyFrame();
+                        this._clipboardToast(count > 1 ? count + ' frames copied' : 'Frame copied');
                         if (this.frameSelectMode) {
                             this.frameSelectMode = false;
                             document.getElementById('frameSelectBanner').classList.remove('show');
@@ -8151,16 +8392,10 @@
                     }
                 });
                 document.getElementById('pasteBtn').addEventListener('click', () => {
-                    if (this.copiedSelection) {
-                        this.pasteSelection();
-                    } else if (this.copiedFrame || this.copiedFrames.length > 0) {
-                        this.pasteFrame();
-                    }
+                    this._smartPaste(false);
                 });
                 document.getElementById('pasteInPlaceBtn').addEventListener('click', () => {
-                    if (this.copiedSelection) {
-                        this.pasteSelectionInPlace();
-                    }
+                    this._smartPaste(true);
                 });
                 
                 // Undo/Redo controls
@@ -8231,10 +8466,33 @@
                         this.redo();
                     } else if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
                         e.preventDefault();
-                        if (this.selection) {
+                        if (this._activeInstance) {
+                            // Canvas clipboard ← instance (clears canvas selection, NOT timeline)
+                            const inst = this._activeInstance;
+                            this._copiedInstance = {
+                                symbolId: inst.symbolId,
+                                startFrame: inst.startFrame,
+                                duration: inst.duration,
+                                x: inst.x, y: inst.y,
+                                scaleX: inst.scaleX, scaleY: inst.scaleY,
+                                rotation: inst.rotation || 0,
+                                opacity: inst.opacity != null ? inst.opacity : 1,
+                                firstFrame: inst.firstFrame || 0,
+                                loopMode: inst.loopMode || 'loop'
+                            };
+                            this.copiedSelection = null; // within canvas clipboard only
+                            const sym = this.getSymbol(inst.symbolId);
+                            this._clipboardToast('Copied loop' + (sym ? ' "' + sym.name + '"' : ''));
+                        } else if (this.selection) {
+                            // Canvas clipboard ← pixel selection (clears canvas instance, NOT timeline)
                             this.copySelection();
+                            this._copiedInstance = null; // within canvas clipboard only
+                            this._clipboardToast('Selection copied');
                         } else {
+                            // Timeline clipboard ← frames (never touches canvas clipboard)
+                            const count = this.selectedFrames.size > 1 ? this.selectedFrames.size : 1;
                             this.copyFrame();
+                            this._clipboardToast(count > 1 ? count + ' frames copied' : 'Frame copied');
                             if (this.frameSelectMode) {
                                 this.frameSelectMode = false;
                                 document.getElementById('frameSelectBanner').classList.remove('show');
@@ -8242,18 +8500,71 @@
                                 this.renderTimeline();
                             }
                         }
+                    } else if ((e.ctrlKey || e.metaKey) && e.key === 'x') {
+                        e.preventDefault();
+                        if (this._activeInstance) {
+                            // Cut instance → canvas clipboard (doesn't touch timeline)
+                            this.saveFullState();
+                            const inst = this._activeInstance;
+                            const layer = this._activeInstanceLayer;
+                            const sym = this.getSymbol(inst.symbolId);
+                            this._copiedInstance = {
+                                symbolId: inst.symbolId,
+                                startFrame: inst.startFrame,
+                                duration: inst.duration,
+                                x: inst.x, y: inst.y,
+                                scaleX: inst.scaleX, scaleY: inst.scaleY,
+                                rotation: inst.rotation || 0,
+                                opacity: inst.opacity != null ? inst.opacity : 1,
+                                firstFrame: inst.firstFrame || 0,
+                                loopMode: inst.loopMode || 'loop'
+                            };
+                            this.copiedSelection = null; // within canvas clipboard only
+                            if (layer && layer.symbolInstances) {
+                                layer.symbolInstances = layer.symbolInstances.filter(i => i.id !== inst.id);
+                            }
+                            this.deselectInstance();
+                            this._timelineDirty = true;
+                            this._invalidateCompositeCache();
+                            this.render();
+                            this._clipboardToast('Cut loop' + (sym ? ' "' + sym.name + '"' : ''));
+                        } else if (this.selection) {
+                            // Cut pixel selection → canvas clipboard (doesn't touch timeline)
+                            // Manually copy selection to clipboard WITHOUT applying back to frame
+                            const _cutCanvas = document.createElement('canvas');
+                            _cutCanvas.width = this.selection.imageData.width;
+                            _cutCanvas.height = this.selection.imageData.height;
+                            _cutCanvas.getContext('2d').drawImage(this.selection.imageData, 0, 0);
+                            this.copiedSelection = {
+                                imageData: _cutCanvas,
+                                width: this.selection.bounds.width,
+                                height: this.selection.bounds.height,
+                                x: this.selection.bounds.x,
+                                y: this.selection.bounds.y
+                            };
+                            this._copiedInstance = null;
+                            // Discard the floating selection — do NOT apply back
+                            this.selection = null;
+                            this.transformHandles = [];
+                            this.selectionUndoStack = [];
+                            this.selectionRedoStack = [];
+                            this.selectionCtx.clearRect(0, 0, this.selectionCanvas.width, this.selectionCanvas.height);
+                            this._invalidateCompositeCache();
+                            const _cutLayer = this.getCurrentLayer();
+                            if (_cutLayer) this._dirtyThumb(_cutLayer.frames[this.currentFrameIndex]);
+                            this._timelineDirty = true;
+                            this.render();
+                            this._clipboardToast('Selection cut');
+                        } else {
+                            // Cut frames → timeline clipboard (doesn't touch canvas)
+                            this.cutFrame();
+                        }
                     } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'v' || e.key === 'V')) {
                         e.preventDefault();
-                        if (this.copiedSelection) {
-                            this.pasteSelectionInPlace();
-                        }
+                        this._smartPaste(true); // paste in place
                     } else if ((e.ctrlKey || e.metaKey) && e.key === 'v') {
                         e.preventDefault();
-                        if (this.copiedSelection) {
-                            this.pasteSelection();
-                        } else if (this.copiedFrame || this.copiedFrames.length > 0) {
-                            this.pasteFrame();
-                        }
+                        this._smartPaste(false); // paste with offset
                     } else if ((e.ctrlKey || e.metaKey) && e.shiftKey && (e.key === 'n' || e.key === 'N')) {
                         e.preventDefault();
                         this.addLayer();
@@ -8317,6 +8628,8 @@
                     } else if (e.key === 'Escape' && this._activeInstance) {
                         e.preventDefault();
                         this.deselectInstance();
+                        this._activeSelectTool = 'select';
+                        this.selectTool('select');
                         this.render();
                     } else if ((e.key === 'Delete' || e.key === 'Backspace') && this._activeInstance) {
                         e.preventDefault();
@@ -8343,10 +8656,13 @@
                     } else if (e.key === 'Enter' && this.selection) {
                         e.preventDefault();
                         this._dismissTransform();
+                        this._activeSelectTool = 'select';
+                        this.selectTool('select');
                     } else if (e.key === 'Escape' && this.selection) {
                         e.preventDefault();
                         this.clearSelection();
-                        this.selectTool('brush');
+                        this._activeSelectTool = 'select';
+                        this.selectTool('select');
                         this.render();
                     } else if (e.key === 'Escape' && this.isInsideSymbol()) {
                         e.preventDefault();
@@ -8444,6 +8760,11 @@
                                 this.selectTool('pen');
                                 break;
                             case 'v':
+                                e.preventDefault();
+                                this._activeSelectTool = 'select';
+                                this.selectTool('select');
+                                break;
+                            case 'q':
                             case 't':
                                 e.preventDefault();
                                 this._activeTransformTool = 'transform';
@@ -8770,7 +9091,13 @@
                 // Frame context menu
                 const ctxMenu = document.getElementById('frameContextMenu');
                 document.getElementById('ctxCopyFrame').addEventListener('click', () => {
+                    const count = this.selectedFrames.size > 1 ? this.selectedFrames.size : 1;
                     this.copyFrame(this.contextMenuFrameIndex);
+                    this._clipboardToast(count > 1 ? count + ' frames copied' : 'Frame copied');
+                    ctxMenu.classList.remove('show');
+                });
+                document.getElementById('ctxCutFrame').addEventListener('click', () => {
+                    this.cutFrame(this.contextMenuFrameIndex);
                     ctxMenu.classList.remove('show');
                 });
                 document.getElementById('ctxPasteFrame').addEventListener('click', () => {
@@ -9221,17 +9548,18 @@
                 }
                 
                 // For selection sub-tools, highlight the lassoTool dropdown button and update icon
-                if (tool === 'lasso' || tool === 'marquee') {
+                if (tool === 'lasso' || tool === 'marquee' || tool === 'select') {
                     document.getElementById('lassoTool').classList.add('active');
                     const _selIcons = {
+                        'select': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" stroke="none" width="16" height="16"><path d="M3 1.5l10 6.5-4.5.5L11 14l-2.5-1-2.5-5.5L3 10z"/></svg>',
                         'lasso': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="8" cy="7" rx="6" ry="4.5"/><path d="M12.5 10c0 1.5-1 3-2 3.5s-1.5.5-1.5 1.5"/></svg>',
                         'marquee': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="12" height="12" rx="0.5" stroke-dasharray="2 2"/></svg>'
                     };
-                    const _selNames = { 'lasso': 'Lasso', 'marquee': 'Marquee' };
-                    const _selShortcuts = { 'lasso': 'L', 'marquee': 'M' };
+                    const _selNames = { 'select': 'Select', 'lasso': 'Lasso', 'marquee': 'Marquee' };
+                    const _selShortcuts = { 'select': 'V', 'lasso': 'L', 'marquee': 'M' };
                     const _sb = document.getElementById('lassoTool');
                     _sb.innerHTML = `${_selIcons[tool]} <span class="btn-label">${_selNames[tool]} ▼</span>`;
-                    _sb.title = `${_selNames[tool]} Selection (${_selShortcuts[tool]})`;
+                    _sb.title = `${_selNames[tool]} (${_selShortcuts[tool]})`;
                 }
                 
                 // For fill sub-tools, highlight the fillTool dropdown button
@@ -9260,13 +9588,14 @@
                 // Clear selection when switching away from transform (but not for pan/magnifier)
                 const isTransformTool = tool === 'transform' || tool === 'scale' || tool === 'rotate' || tool === 'skew' || tool === 'distort';
                 const isNavTool = tool === 'pan' || tool === 'magnifier' || tool === 'magnifier-out';
+                const isSelectTool = tool === 'select';
                 
-                // Deselect instance when switching away from transform tools
-                if (!isTransformTool && !isNavTool && this._activeInstance) {
+                // Deselect instance when switching away from transform/select tools
+                if (!isTransformTool && !isNavTool && !isSelectTool && this._activeInstance) {
                     this.deselectInstance();
                 }
                 
-                if (!isTransformTool && !isNavTool && this.selection) {
+                if (!isTransformTool && !isNavTool && !isSelectTool && this.selection) {
                     this.applySelection();
                     this.clearSelection();
                 }
@@ -9290,6 +9619,12 @@
                 } else if (tool === 'fill' || tool === 'gradient' || tool === 'lasso' || tool === 'marquee') {
                     this.canvas.style.cursor = 'crosshair';
                     this.selectionCanvas.style.cursor = 'crosshair';
+                    this.canvasContainer.style.cursor = '';
+                    this.canvasWrapper.style.cursor = '';
+                    this.brushCursor.style.display = 'none';
+                } else if (tool === 'select') {
+                    this.canvas.style.cursor = 'default';
+                    this.selectionCanvas.style.cursor = 'default';
                     this.canvasContainer.style.cursor = '';
                     this.canvasWrapper.style.cursor = '';
                     this.brushCursor.style.display = 'none';
@@ -9750,6 +10085,24 @@
                 // Transform tools have their own instance handling below, so skip this.
                 const _isXformTool = this.tool === 'transform' || this.tool === 'scale' || 
                                      this.tool === 'rotate' || this.tool === 'skew' || this.tool === 'distort';
+                // Select tool with active instance: check handles first
+                if (this.tool === 'select' && this._activeInstance) {
+                    const canvas = e.target === this.selectionCanvas ? this.selectionCanvas : this.canvas;
+                    const rect = canvas.getBoundingClientRect();
+                    const _hsx = canvas.width / rect.width;
+                    const _hsy = canvas.height / rect.height;
+                    const _hx = (e.clientX - rect.left) * _hsx;
+                    const _hy = (e.clientY - rect.top) * _hsy;
+                    const inst = this._activeInstance;
+                    const sym = this.getSymbol(inst.symbolId);
+                    if (sym) {
+                        const handleType = this._hitTestInstanceHandles(inst, sym, _hx, _hy);
+                        if (handleType) {
+                            this._startInstanceDrag(handleType, _hx, _hy, inst);
+                            return;
+                        }
+                    }
+                }
                 if (!_isXformTool && (this.tool !== 'pen' || !this._penActive)) {
                     const canvas = e.target === this.selectionCanvas ? this.selectionCanvas : this.canvas;
                     const rect = canvas.getBoundingClientRect();
@@ -9771,6 +10124,11 @@
                         // First click → select instance, block drawing
                         this._lastInstanceClick = { instanceId: instHit.instance.id, time: now };
                         this.selectInstance(instHit.instance, instHit.layer);
+                        // Select tool: also start drag for immediate move
+                        if (this.tool === 'select') {
+                            const world = this.screenToWorld(e);
+                            this._startInstanceDrag('move', world.x, world.y, instHit.instance);
+                        }
                         return;
                     } else {
                         this._lastInstanceClick = null;
@@ -9784,6 +10142,40 @@
                             }
                         }
                     }
+                }
+                
+                // Handle select tool — flood-select pixel artwork
+                if (this.tool === 'select') {
+                    const canvas = e.target === this.selectionCanvas ? this.selectionCanvas : this.canvas;
+                    const rect = canvas.getBoundingClientRect();
+                    const scaleX = canvas.width / rect.width;
+                    const scaleY = canvas.height / rect.height;
+                    const canvasX = (e.clientX - rect.left) * scaleX;
+                    const canvasY = (e.clientY - rect.top) * scaleY;
+                    const worldX = canvasX + this.viewportX;
+                    const worldY = canvasY + this.viewportY;
+                    const layer = this.getCurrentLayer();
+                    const frame = layer.frames[this.currentFrameIndex];
+                    if (frame) {
+                        const local = this.worldToLocal(worldX, worldY, frame);
+                        const lx = Math.floor(local.x);
+                        const ly = Math.floor(local.y);
+                        if (lx >= 0 && lx < frame.width && ly >= 0 && ly < frame.height) {
+                            const px = frame.getContext('2d').getImageData(lx, ly, 1, 1).data;
+                            if (px[3] > 0) {
+                                // Pixel has content — flood select
+                                this.floodSelect(lx, ly);
+                                return;
+                            }
+                        }
+                    }
+                    // Clicked empty — deselect
+                    if (this.selection) {
+                        this.applySelection();
+                        this.clearSelection();
+                        this.render();
+                    }
+                    return;
                 }
                 
                 // Handle fill tool
@@ -9964,9 +10356,10 @@
                     // No instance hit — deselect any active instance
                     if (this._activeInstance) {
                         this.deselectInstance();
-                        // Don't fall through to pixel selection — just deselect
                         this.render();
                         this._lastInstanceClick = null;
+                        this._activeSelectTool = 'select';
+                        this.selectTool('select');
                         return;
                     }
                     this._lastInstanceClick = null;
@@ -10016,9 +10409,11 @@
                         return;
                     }
                     
-                    // Clicked outside selection — apply, deselect, switch to lasso
+                    // Clicked outside selection — apply, deselect, switch to select
                     if (this.selection) {
                         this._dismissTransform();
+                        this._activeSelectTool = 'select';
+                        this.selectTool('select');
                         return;
                     }
                     return;
@@ -10274,7 +10669,7 @@
                 }
                 
                 // Instance rotation hover detection (same behavior as free transform)
-                if (this._activeInstance && !this._instDrag && (this.tool === 'transform' || this.tool === 'scale' || this.tool === 'rotate' || this.tool === 'skew' || this.tool === 'distort')) {
+                if (this._activeInstance && !this._instDrag && (this.tool === 'transform' || this.tool === 'scale' || this.tool === 'rotate' || this.tool === 'skew' || this.tool === 'distort' || this.tool === 'select')) {
                     const canvas = e.target === this.selectionCanvas ? this.selectionCanvas : this.canvas;
                     const rect = canvas.getBoundingClientRect();
                     const sx = canvas.width / rect.width;
@@ -13214,13 +13609,13 @@
                     const oldFrameCount = ctx.symFrameCountAtEntry;
                     const newFrameCount = this.getSymbolFrameCount(sym);
                     if (newFrameCount !== oldFrameCount) {
-                        // Update all instances of this symbol across all parent layers
-                        // whose duration matched the old frame count (= "full cycle" instances)
                         for (const layer of ctx.layers) {
                             if (!layer.symbolInstances) continue;
                             for (const inst of layer.symbolInstances) {
-                                if (inst.symbolId === ctx.symbolId && inst.duration === oldFrameCount) {
-                                    inst.duration = newFrameCount;
+                                if (inst.symbolId === ctx.symbolId) {
+                                    if (inst.duration < newFrameCount) {
+                                        inst.duration = newFrameCount;
+                                    }
                                 }
                             }
                         }
@@ -13230,8 +13625,10 @@
                             for (const layer of otherSym.layers) {
                                 if (!layer.symbolInstances) continue;
                                 for (const inst of layer.symbolInstances) {
-                                    if (inst.symbolId === ctx.symbolId && inst.duration === oldFrameCount) {
-                                        inst.duration = newFrameCount;
+                                    if (inst.symbolId === ctx.symbolId) {
+                                        if (inst.duration < newFrameCount) {
+                                            inst.duration = newFrameCount;
+                                        }
                                     }
                                 }
                             }
@@ -13308,6 +13705,48 @@
                 while (this.contextStack.length > targetIndex + 1) {
                     this.popContext();
                 }
+            }
+            
+            showToast(message, icon, duration) {
+                // Remove any existing toast
+                const old = document.querySelector('.app-toast');
+                if (old) old.remove();
+                
+                const el = document.createElement('div');
+                el.className = 'app-toast';
+                el.innerHTML = (icon ? '<span class="toast-icon">' + icon + '</span>' : '') + message;
+                document.body.appendChild(el);
+                
+                // Trigger animation
+                requestAnimationFrame(() => el.classList.add('show'));
+                
+                const dismiss = () => {
+                    el.classList.remove('show');
+                    setTimeout(() => el.remove(), 300);
+                    document.removeEventListener('pointerdown', dismiss, true);
+                };
+                
+                // Click anywhere to dismiss
+                setTimeout(() => document.addEventListener('pointerdown', dismiss, true), 50);
+                
+                // Auto-dismiss after duration
+                setTimeout(dismiss, duration || 2500);
+            }
+            
+            _clipboardToast(message) {
+                const old = document.querySelector('.app-toast.toast-info');
+                if (old) old.remove();
+                
+                const el = document.createElement('div');
+                el.className = 'app-toast toast-info';
+                el.textContent = message;
+                document.body.appendChild(el);
+                
+                requestAnimationFrame(() => el.classList.add('show'));
+                setTimeout(() => {
+                    el.classList.remove('show');
+                    setTimeout(() => el.remove(), 250);
+                }, 1200);
             }
             
             renderBreadcrumb() {
@@ -14908,7 +15347,84 @@
                 }
             }
             
+            // ── Dual Clipboard Helpers ──
+            _hasCanvasClipboard() {
+                return !!(this._copiedInstance || this.copiedSelection);
+            }
+            
+            _hasTimelineClipboard() {
+                return !!(this.copiedFrame || this.copiedFrames.length > 0);
+            }
+            
+            // Smart paste: routes to the right clipboard based on context
+            _smartPaste(inPlace) {
+                const hasCanvas = this._hasCanvasClipboard();
+                const hasTimeline = this._hasTimelineClipboard();
+                
+                if (hasCanvas && !this.frameSelectMode) {
+                    // Canvas clipboard takes priority when not in frame select mode
+                    if (this._copiedInstance) {
+                        this._pasteInstance(!inPlace);
+                    } else if (this.copiedSelection) {
+                        if (inPlace) {
+                            this.pasteSelectionInPlace();
+                        } else {
+                            this.pasteSelection();
+                        }
+                    }
+                } else if (hasTimeline) {
+                    // Timeline clipboard: paste frames at playhead
+                    this.pasteFrame();
+                }
+            }
+            
             // Clipboard Methods - Selection
+            _pasteInstance(withOffset) {
+                if (!this._copiedInstance) return;
+                const ci = this._copiedInstance;
+                
+                // Verify the symbol still exists
+                const sym = this.getSymbol(ci.symbolId);
+                if (!sym) return;
+                
+                this.saveFullState();
+                
+                const layer = this.getCurrentLayer();
+                if (!layer.symbolInstances) layer.symbolInstances = [];
+                
+                // Determine duration — match existing timeline or use copied duration
+                const hasExisting = layer.symbolInstances.length > 0;
+                const duration = hasExisting ? Math.max(ci.duration, this.getEffectiveLayerLength(layer)) : ci.duration;
+                
+                const offset = withOffset ? 20 : 0;
+                const newInst = this.createSymbolInstance(ci.symbolId, ci.startFrame, duration, ci.x + offset, ci.y + offset);
+                newInst.scaleX = ci.scaleX;
+                newInst.scaleY = ci.scaleY;
+                newInst.rotation = ci.rotation;
+                newInst.opacity = ci.opacity;
+                newInst.firstFrame = ci.firstFrame;
+                newInst.loopMode = ci.loopMode;
+                
+                layer.symbolInstances.push(newInst);
+                
+                // Auto-expand loop range
+                const instEnd = newInst.startFrame + newInst.duration - 1;
+                if (instEnd > this.loopRange.outPoint) {
+                    this.loopRange.outPoint = instEnd;
+                    this._updateLoopRangeBadge();
+                }
+                
+                // Select the pasted instance
+                this.selectInstance(newInst, layer);
+                this._activeSelectTool = 'select';
+                this.selectTool('select');
+                
+                this._timelineDirty = true;
+                this._invalidateCompositeCache();
+                this.render();
+                this._clipboardToast('Pasted loop' + (sym ? ' "' + sym.name + '"' : ''));
+            }
+            
             copySelection() {
                 if (!this.selection) return;
                 
@@ -14975,6 +15491,7 @@
                 // Switch to transform tool so the user can position it
                 this.selectTool('transform');
                 this.render();
+                this._clipboardToast('Selection pasted');
             }
             
             pasteSelectionInPlace() {
@@ -15018,6 +15535,7 @@
                 // Switch to transform tool
                 this.selectTool('transform');
                 this.render();
+                this._clipboardToast('Selection pasted in place');
             }
             
             // Clipboard Methods - Frames
@@ -15064,6 +15582,73 @@
                 
                 this.copiedFrame = copyCanvas;
                 this.copiedFrames = [copyCanvas];
+            }
+            
+            cutFrame(frameIndex) {
+                const layer = this.getCurrentLayer();
+                
+                // Multi-frame cut
+                if (this.selectedFrames.size > 1) {
+                    if (this.selectedFrames.size >= layer.frames.length) {
+                        this.showToast('Cannot cut all frames. At least one frame must remain.', null, 1500);
+                        return;
+                    }
+                    
+                    // Copy first
+                    this.copyFrame(frameIndex);
+                    this.saveFullState();
+                    
+                    const count = this.selectedFrames.size;
+                    const sortedDesc = [...this.selectedFrames].sort((a, b) => b - a);
+                    for (const idx of sortedDesc) {
+                        if (idx >= 0 && idx < layer.frames.length) {
+                            layer.frames.splice(idx, 1);
+                        }
+                    }
+                    
+                    const minDeleted = Math.min(...this.selectedFrames);
+                    this.currentFrameIndex = Math.min(minDeleted, layer.frames.length - 1);
+                    if (this.currentFrameIndex < 0) this.currentFrameIndex = 0;
+                    this.selectedFrames.clear();
+                    if (this.frameSelectMode) {
+                        this.frameSelectMode = false;
+                        document.getElementById('frameSelectBanner').classList.remove('show');
+                    }
+                    this._clipboardToast(count + ' frames cut');
+                    this.render();
+                    return;
+                }
+                
+                // Single frame cut
+                if (layer.frames.length <= 1) {
+                    // Only one frame — copy it but replace with blank instead of removing
+                    this.copyFrame(frameIndex);
+                    this.saveState();
+                    const idx = (frameIndex !== undefined) ? frameIndex : this.currentFrameIndex;
+                    layer.frames[idx] = this.createEmptyFrame();
+                    this._clipboardToast('Frame cut');
+                    this.render();
+                    return;
+                }
+                
+                // Copy then delete
+                this.copyFrame(frameIndex);
+                this.saveFullState();
+                
+                const idx = (frameIndex !== undefined) ? frameIndex : this.currentFrameIndex;
+                layer.frames.splice(idx, 1);
+                
+                if (this.currentFrameIndex >= layer.frames.length) {
+                    this.currentFrameIndex = layer.frames.length - 1;
+                }
+                
+                this.selectedFrames.clear();
+                if (this.frameSelectMode) {
+                    this.frameSelectMode = false;
+                    document.getElementById('frameSelectBanner').classList.remove('show');
+                }
+                this._clipboardToast('Frame cut');
+                this.render();
             }
             
             isFrameBlank(frame) {
@@ -15132,6 +15717,8 @@
                 
                 this.render();
                 this._scrollTimelineToFrame(this.currentFrameIndex);
+                const pasteCount = newFrames.length;
+                this._clipboardToast(pasteCount > 1 ? pasteCount + ' frames pasted' : 'Frame pasted');
             }
             
             duplicateFrame(frameIndex) {
@@ -16182,6 +16769,113 @@
             }
             
             // Flood Fill (Paint Bucket) Algorithm
+            floodSelect(startX, startY) {
+                const layer = this.getCurrentLayer();
+                const frame = layer.frames[this.currentFrameIndex];
+                if (!frame) return;
+                const frameCtx = frame.getContext('2d');
+                const width = frame.width;
+                const height = frame.height;
+                
+                const imageData = frameCtx.getImageData(0, 0, width, height);
+                const data = imageData.data;
+                
+                if (startX < 0 || startX >= width || startY < 0 || startY >= height) return;
+                if (data[(startY * width + startX) * 4 + 3] === 0) return;
+                
+                this.saveState();
+                
+                // Flood fill selecting ALL non-transparent contiguous pixels
+                // This ensures anti-aliased edges are fully captured
+                const visited = new Uint8Array(width * height);
+                const stack = [startX + startY * width];
+                let minX = width, minY = height, maxX = 0, maxY = 0;
+                
+                while (stack.length > 0) {
+                    let idx = stack.pop();
+                    let x = idx % width;
+                    const y = (idx - x) / width;
+                    
+                    // Scan left to find row start
+                    while (x > 0 && !visited[idx - 1] && data[(idx - 1) * 4 + 3] > 0) { x--; idx--; }
+                    
+                    let spanAbove = false, spanBelow = false;
+                    
+                    while (x < width && !visited[idx] && data[idx * 4 + 3] > 0) {
+                        visited[idx] = 1;
+                        minX = Math.min(minX, x);
+                        maxX = Math.max(maxX, x);
+                        minY = Math.min(minY, y);
+                        maxY = Math.max(maxY, y);
+                        
+                        if (y > 0) {
+                            const aboveIdx = idx - width;
+                            if (!visited[aboveIdx] && data[aboveIdx * 4 + 3] > 0) {
+                                if (!spanAbove) { stack.push(aboveIdx); spanAbove = true; }
+                            } else { spanAbove = false; }
+                        }
+                        if (y < height - 1) {
+                            const belowIdx = idx + width;
+                            if (!visited[belowIdx] && data[belowIdx * 4 + 3] > 0) {
+                                if (!spanBelow) { stack.push(belowIdx); spanBelow = true; }
+                            } else { spanBelow = false; }
+                        }
+                        x++; idx++;
+                    }
+                }
+                
+                if (maxX < minX) return;
+                
+                const selW = maxX - minX + 1;
+                const selH = maxY - minY + 1;
+                
+                // Extract selected pixels into a selection canvas
+                const selectedCanvas = document.createElement('canvas');
+                selectedCanvas.width = selW;
+                selectedCanvas.height = selH;
+                const selCtx = selectedCanvas.getContext('2d');
+                const selData = selCtx.createImageData(selW, selH);
+                
+                for (let y = minY; y <= maxY; y++) {
+                    for (let x = minX; x <= maxX; x++) {
+                        const srcIdx = y * width + x;
+                        if (!visited[srcIdx]) continue;
+                        const srcPos = srcIdx * 4;
+                        const dstPos = ((y - minY) * selW + (x - minX)) * 4;
+                        selData.data[dstPos] = data[srcPos];
+                        selData.data[dstPos + 1] = data[srcPos + 1];
+                        selData.data[dstPos + 2] = data[srcPos + 2];
+                        selData.data[dstPos + 3] = data[srcPos + 3];
+                    }
+                }
+                selCtx.putImageData(selData, 0, 0);
+                
+                // Erase selected pixels from original frame
+                const eraseData = frameCtx.getImageData(0, 0, width, height);
+                for (let i = 0; i < visited.length; i++) {
+                    if (visited[i]) {
+                        const pos = i * 4;
+                        eraseData.data[pos] = 0;
+                        eraseData.data[pos + 1] = 0;
+                        eraseData.data[pos + 2] = 0;
+                        eraseData.data[pos + 3] = 0;
+                    }
+                }
+                frameCtx.putImageData(eraseData, 0, 0);
+                this._invalidateCompositeCache();
+                
+                // Store selection
+                this.selection = {
+                    imageData: selectedCanvas,
+                    bounds: { x: minX, y: minY, width: selW, height: selH },
+                    originalBounds: { x: minX, y: minY, width: selW, height: selH }
+                };
+                
+                // Switch to transform tool to enable moving
+                this.selectTool('transform');
+                this.render();
+            }
+            
             floodFill(startX, startY) {
                 // Flush any pending async saveState from a previous brush stroke
                 if (this._pendingSaveTimer) {
