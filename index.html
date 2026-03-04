@@ -183,11 +183,17 @@
             vertical-align: middle;
         }
         
+        #loopBtn svg { color: rgba(72, 160, 80, 0.85); }
+        #loopBtn:hover svg { color: rgba(72, 160, 80, 1); }
+        
         .dropdown-item svg {
             flex-shrink: 0;
             vertical-align: middle;
             opacity: 0.85;
         }
+
+        #loopBtn svg { color: rgba(72, 160, 80, 0.85); }
+        #loopBtn:hover svg { color: rgba(72, 160, 80, 1); }
 
         .btn-label {
             display: inline;
@@ -1027,7 +1033,7 @@
             box-sizing: border-box;
         }
         .library-search input:focus {
-            border-color: rgba(91,141,239,0.4);
+            border-color: rgba(72, 160, 80, 0.4);
         }
         .library-search input::placeholder {
             color: #444;
@@ -1037,10 +1043,10 @@
         .library-add-btn {
             margin: 0 10px 6px;
             padding: 6px 0;
-            background: rgba(91,141,239,0.1);
-            border: 1px dashed rgba(91,141,239,0.3);
+            background: rgba(72, 160, 80, 0.1);
+            border: 1px dashed rgba(72, 160, 80, 0.3);
             border-radius: 5px;
-            color: #5b8def;
+            color: rgba(72, 160, 80, 0.9);
             font-size: 10px;
             font-weight: 600;
             cursor: pointer;
@@ -1049,8 +1055,8 @@
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
         .library-add-btn:hover {
-            background: rgba(91,141,239,0.2);
-            border-color: rgba(91,141,239,0.5);
+            background: rgba(72, 160, 80, 0.2);
+            border-color: rgba(72, 160, 80, 0.5);
         }
         
         /* Thumbnail grid */
@@ -1099,8 +1105,8 @@
             background: rgba(255,255,255,0.04);
         }
         .library-card.selected {
-            background: rgba(91,141,239,0.12);
-            box-shadow: inset 0 0 0 1px rgba(91,141,239,0.3);
+            background: rgba(72, 160, 80, 0.12);
+            box-shadow: inset 0 0 0 1px rgba(72, 160, 80, 0.3);
         }
         .library-card-thumb {
             width: 36px;
@@ -1158,7 +1164,7 @@
         }
         .library-card-name-input {
             background: #26282c;
-            border: 1px solid rgba(91,141,239,0.4);
+            border: 1px solid rgba(72, 160, 80, 0.4);
             border-radius: 3px;
             color: #ccc;
             font-size: 10px;
@@ -1316,7 +1322,7 @@
             font-family: inherit;
         }
         .lg-dialog-input:focus {
-            border-color: rgba(91,141,239,0.4);
+            border-color: rgba(72, 160, 80, 0.4);
         }
         .lg-dialog-row {
             display: flex;
@@ -1345,7 +1351,7 @@
             color: #aaa;
         }
         .lg-dialog-radio input[type="radio"] {
-            accent-color: #5b8def;
+            accent-color: rgba(72, 160, 80, 0.9);
             margin: 0;
         }
         .lg-dialog-check {
@@ -1357,7 +1363,7 @@
             color: #aaa;
         }
         .lg-dialog-check input[type="checkbox"] {
-            accent-color: #5b8def;
+            accent-color: rgba(72, 160, 80, 0.9);
             margin: 0;
         }
         .lg-dialog-footer {
@@ -1385,12 +1391,12 @@
             background: rgba(255,255,255,0.08);
         }
         .lg-dialog-btn.primary {
-            background: #5b8def;
+            background: rgba(72, 160, 80, 0.85);
             color: #fff;
-            border-color: #5b8def;
+            border-color: rgba(72, 160, 80, 0.85);
         }
         .lg-dialog-btn.primary:hover {
-            background: #4a7de0;
+            background: rgba(72, 160, 80, 1);
         }
         
         .canvas-wrapper {
@@ -3313,22 +3319,21 @@
             bottom: 6px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(20, 22, 26, 0.92);
-            border: 1px solid rgba(72, 160, 80, 0.3);
-            border-radius: 8px;
-            padding: 5px 10px;
+            background: rgba(20, 22, 26, 0.94);
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 10px;
+            padding: 5px 6px;
             z-index: 15;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
             font-size: 10px;
             color: #aaa;
-            display: none;
             align-items: center;
-            gap: 10px;
+            gap: 0;
             white-space: nowrap;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+            box-shadow: 0 6px 24px rgba(0,0,0,0.5);
             pointer-events: auto;
-            backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
         }
         .inst-props-bar.visible { display: flex; }
         .inst-props-bar-name {
@@ -3338,16 +3343,19 @@
             display: flex;
             align-items: center;
             gap: 4px;
+            padding: 0 8px 0 4px;
         }
         .inst-props-bar-sep {
             width: 1px;
-            height: 14px;
-            background: rgba(255,255,255,0.08);
+            height: 16px;
+            background: rgba(255,255,255,0.06);
+            margin: 0 6px;
         }
         .inst-props-bar-field {
             display: flex;
             align-items: center;
             gap: 3px;
+            padding: 0 2px;
         }
         .inst-props-bar-label {
             color: #555;
@@ -3355,25 +3363,56 @@
             font-size: 9px;
         }
         .inst-props-bar-value {
-            color: #999;
+            color: #888;
             font-variant-numeric: tabular-nums;
-        }
-        .inst-props-bar-input {
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 3px;
-            color: #ccc;
             font-size: 10px;
-            width: 42px;
-            padding: 2px 4px;
+            min-width: 24px;
+            text-align: center;
+        }
+        .inst-props-bar-pill {
+            display: flex;
+            align-items: center;
+            background: #1a1b1e;
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 5px;
+            overflow: hidden;
+            transition: border-color 0.15s;
+        }
+        .inst-props-bar-pill:focus-within {
+            border-color: rgba(72, 160, 80, 0.4);
+        }
+        .inst-props-bar-pill input {
+            width: 36px;
+            background: transparent;
+            border: none;
+            color: #ddd;
+            font-size: 10px;
+            padding: 4px 2px;
             text-align: center;
             outline: none;
             font-family: inherit;
             font-variant-numeric: tabular-nums;
+            -moz-appearance: textfield;
         }
-        .inst-props-bar-input:focus {
-            border-color: rgba(72, 160, 80, 0.4);
+        .inst-props-bar-pill input::-webkit-inner-spin-button,
+        .inst-props-bar-pill input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        .inst-props-bar-pm {
+            width: 16px;
+            height: 24px;
+            border: none;
+            background: transparent;
+            color: #555;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 11px;
+            padding: 0;
+            transition: color 0.1s, background 0.1s;
+            font-family: inherit;
         }
+        .inst-props-bar-pm:hover { color: #ccc; background: rgba(255,255,255,0.06); }
+        .inst-props-bar-pm:active { background: rgba(255,255,255,0.1); }
         
         /* ── Breadcrumb Bar ── */
         .breadcrumb-bar {
@@ -3466,16 +3505,27 @@
             font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: 0.6px;
             font-weight: 600;
         }
-        .lrp-field input[type="number"] {
-            width: 100%; box-sizing: border-box;
+        .lrp-input-wrap {
+            display: flex; align-items: center;
             background: #1a1b1e; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px;
-            color: #e0e0e0; padding: 6px 8px; font-size: 12px; font-family: inherit;
-            transition: border-color 0.15s;
-            -moz-appearance: textfield;
+            overflow: hidden; transition: border-color 0.15s;
         }
-        .lrp-field input[type="number"]::-webkit-inner-spin-button,
-        .lrp-field input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-        .lrp-field input[type="number"]:focus { outline: none; border-color: #5b8def; }
+        .lrp-input-wrap:focus-within { border-color: rgba(72, 160, 80, 0.5); }
+        .lrp-input-wrap input[type="number"] {
+            flex: 1; width: 100%; background: transparent; border: none;
+            color: #e0e0e0; padding: 6px 2px; font-size: 12px; font-family: inherit;
+            text-align: center; -moz-appearance: textfield; outline: none;
+        }
+        .lrp-input-wrap input[type="number"]::-webkit-inner-spin-button,
+        .lrp-input-wrap input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        .lrp-pm {
+            width: 26px; height: 30px; border: none; background: transparent;
+            color: #555; cursor: pointer; display: flex; align-items: center; justify-content: center;
+            font-size: 14px; font-family: inherit; transition: color 0.12s, background 0.12s;
+            flex-shrink: 0; padding: 0;
+        }
+        .lrp-pm:hover { color: #ccc; background: rgba(255,255,255,0.06); }
+        .lrp-pm:active { background: rgba(255,255,255,0.1); }
         /* ── Chain link (aspect lock) ── */
         .lrp-lock {
             width: 28px; display: flex; align-items: center; justify-content: center;
@@ -3489,8 +3539,8 @@
             padding: 0;
         }
         .lrp-lock-btn:hover { background: rgba(255,255,255,0.06); color: #999; }
-        .lrp-lock-btn.locked { color: #5b8def; }
-        .lrp-lock-btn.locked:hover { color: #7ba3f7; }
+        .lrp-lock-btn.locked { color: rgba(72, 160, 80, 0.9); }
+        .lrp-lock-btn.locked:hover { color: rgba(72, 160, 80, 1); }
         /* ── Divider ── */
         .lrp-divider { height: 1px; background: rgba(255,255,255,0.06); margin: 2px 0 8px; }
         /* ── Action buttons ── */
@@ -3508,12 +3558,12 @@
         /* ── Apply button ── */
         .lrp-apply-btn {
             width: 100%; padding: 7px 0; border: none; border-radius: 6px;
-            background: #5b8def; color: #fff; font-size: 11px; font-weight: 600;
+            background: rgba(72, 160, 80, 0.85); color: #fff; font-size: 11px; font-weight: 600;
             cursor: pointer; font-family: inherit; transition: background 0.15s;
             letter-spacing: 0.2px; text-align: center;
             display: flex; align-items: center; justify-content: center;
         }
-        .lrp-apply-btn:hover { background: #6d9af5; }
+        .lrp-apply-btn:hover { background: rgba(72, 160, 80, 1); }
         
         .frame-select-banner {
             display: none;
@@ -4997,16 +5047,24 @@
                 <div class="magnifier-marquee" id="magnifierMarquee"></div>
                 <!-- Instance properties bar -->
                 <div class="inst-props-bar" id="instPropsBar">
-                    <div class="inst-props-bar-name"><span>⬡</span> <span id="instPropsName">—</span></div>
+                    <div class="inst-props-bar-name"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M8 1l6.93 4v8L8 17.93 1.07 13V5z" transform="translate(0,-1) scale(0.93)"/></svg> <span id="instPropsName">—</span></div>
                     <div class="inst-props-bar-sep"></div>
-                    <div class="inst-props-bar-field"><span class="inst-props-bar-label">X</span><input class="inst-props-bar-input" id="instPropsX" type="number"></div>
-                    <div class="inst-props-bar-field"><span class="inst-props-bar-label">Y</span><input class="inst-props-bar-input" id="instPropsY" type="number"></div>
+                    <div class="inst-props-bar-field"><span class="inst-props-bar-label">X</span>
+                        <div class="inst-props-bar-pill"><button class="inst-props-bar-pm" data-target="instPropsX" data-dir="-1">−</button><input id="instPropsX" type="number"><button class="inst-props-bar-pm" data-target="instPropsX" data-dir="1">+</button></div>
+                    </div>
+                    <div class="inst-props-bar-field"><span class="inst-props-bar-label">Y</span>
+                        <div class="inst-props-bar-pill"><button class="inst-props-bar-pm" data-target="instPropsY" data-dir="-1">−</button><input id="instPropsY" type="number"><button class="inst-props-bar-pm" data-target="instPropsY" data-dir="1">+</button></div>
+                    </div>
                     <div class="inst-props-bar-sep"></div>
                     <div class="inst-props-bar-field"><span class="inst-props-bar-label">W</span><span class="inst-props-bar-value" id="instPropsW">—</span></div>
                     <div class="inst-props-bar-field"><span class="inst-props-bar-label">H</span><span class="inst-props-bar-value" id="instPropsH">—</span></div>
                     <div class="inst-props-bar-sep"></div>
-                    <div class="inst-props-bar-field"><span class="inst-props-bar-label">↻</span><input class="inst-props-bar-input" id="instPropsRot" type="number" style="width:36px"></div>
-                    <div class="inst-props-bar-field"><span class="inst-props-bar-label">α</span><input class="inst-props-bar-input" id="instPropsAlpha" type="number" min="0" max="100" style="width:36px"></div>
+                    <div class="inst-props-bar-field"><span class="inst-props-bar-label">↻</span>
+                        <div class="inst-props-bar-pill"><button class="inst-props-bar-pm" data-target="instPropsRot" data-dir="-1">−</button><input id="instPropsRot" type="number" style="width:28px"><button class="inst-props-bar-pm" data-target="instPropsRot" data-dir="1">+</button></div>
+                    </div>
+                    <div class="inst-props-bar-field"><span class="inst-props-bar-label">O</span>
+                        <div class="inst-props-bar-pill"><button class="inst-props-bar-pm" data-target="instPropsAlpha" data-dir="-1">−</button><input id="instPropsAlpha" type="number" min="0" max="100" style="width:28px"><button class="inst-props-bar-pm" data-target="instPropsAlpha" data-dir="1">+</button></div>
+                    </div>
                 </div>
             </div>
             <div class="zoom-controls" id="zoomControls">
@@ -13742,6 +13800,18 @@
                         if (e.key === 'Enter') { input.blur(); applyProp(); }
                     });
                 }
+                
+                // +/− stepper buttons
+                document.querySelectorAll('.inst-props-bar-pm').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const target = document.getElementById(btn.dataset.target);
+                        if (!target) return;
+                        const dir = parseInt(btn.dataset.dir);
+                        target.value = Math.round((parseFloat(target.value) || 0) + dir);
+                        applyProp();
+                    });
+                });
             }
             
             // Start an instance transform drag
@@ -14112,9 +14182,21 @@
                     
                     pop.innerHTML = ''
                         + '<div class="lrp-dims">'
-                        +   '<div class="lrp-field"><label>Width</label><input type="number" class="lrp-w" min="1" value="' + currentSym.width + '"></div>'
+                        +   '<div class="lrp-field"><label>Width</label>'
+                        +     '<div class="lrp-input-wrap">'
+                        +       '<button class="lrp-pm lrp-w-minus">\u2212</button>'
+                        +       '<input type="number" class="lrp-w" min="1" value="' + currentSym.width + '">'
+                        +       '<button class="lrp-pm lrp-w-plus">+</button>'
+                        +     '</div>'
+                        +   '</div>'
                         +   '<div class="lrp-lock"><button class="lrp-lock-btn" title="Lock aspect ratio">' + lockSvgUnlocked + '</button></div>'
-                        +   '<div class="lrp-field"><label>Height</label><input type="number" class="lrp-h" min="1" value="' + currentSym.height + '"></div>'
+                        +   '<div class="lrp-field"><label>Height</label>'
+                        +     '<div class="lrp-input-wrap">'
+                        +       '<button class="lrp-pm lrp-h-minus">\u2212</button>'
+                        +       '<input type="number" class="lrp-h" min="1" value="' + currentSym.height + '">'
+                        +       '<button class="lrp-pm lrp-h-plus">+</button>'
+                        +     '</div>'
+                        +   '</div>'
                         + '</div>'
                         + '<div class="lrp-divider"></div>'
                         + '<div class="lrp-actions">'
@@ -14153,6 +14235,16 @@
                             wInput.value = Math.max(1, Math.round(h * aspectRatio));
                         }
                     });
+                    
+                    // +/- stepper buttons
+                    const stepVal = (input, dir) => {
+                        input.value = Math.max(1, (parseInt(input.value) || 1) + dir);
+                        input.dispatchEvent(new Event('input'));
+                    };
+                    pop.querySelector('.lrp-w-minus').addEventListener('click', (e) => { e.stopPropagation(); stepVal(wInput, -1); });
+                    pop.querySelector('.lrp-w-plus').addEventListener('click', (e) => { e.stopPropagation(); stepVal(wInput, 1); });
+                    pop.querySelector('.lrp-h-minus').addEventListener('click', (e) => { e.stopPropagation(); stepVal(hInput, -1); });
+                    pop.querySelector('.lrp-h-plus').addEventListener('click', (e) => { e.stopPropagation(); stepVal(hInput, 1); });
                     
                     sizeBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
