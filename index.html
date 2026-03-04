@@ -12547,6 +12547,47 @@
                 this.onionCtx.globalAlpha = 1;
             }
             
+            // Draw a full layer at a given frame index onto the onion canvas,
+            // including both pixel content AND loop/symbol instances
+            drawOnionLayerAtFrame(layer, frameIdx, tintColor, opacity) {
+                const frame = layer.frames[frameIdx];
+                const localIdx = frameIdx;
+                const instances = this.getInstancesAtFrame(layer, localIdx);
+                
+                // Draw pixel frame content (if any)
+                if (frame) {
+                    this.drawOnionFrame(frame, tintColor, opacity);
+                }
+                
+                // Draw loop instances (if any)
+                if (instances.length > 0) {
+                    // Render instances into a temp canvas at display size, then tint
+                    const w = this.canvas.width;
+                    const h = this.canvas.height;
+                    const tempCanvas = document.createElement('canvas');
+                    tempCanvas.width = w;
+                    tempCanvas.height = h;
+                    const tempCtx = tempCanvas.getContext('2d');
+                    
+                    for (const inst of instances) {
+                        this.compositeSymbolInstance(tempCtx, inst, localIdx, 0);
+                    }
+                    
+                    // Tint the composited instances
+                    tempCtx.globalCompositeOperation = 'source-atop';
+                    tempCtx.globalAlpha = 0.5;
+                    tempCtx.fillStyle = tintColor;
+                    tempCtx.fillRect(0, 0, w, h);
+                    tempCtx.globalAlpha = 1;
+                    tempCtx.globalCompositeOperation = 'source-over';
+                    
+                    // Draw onto onion canvas
+                    this.onionCtx.globalAlpha = opacity;
+                    this.onionCtx.drawImage(tempCanvas, 0, 0);
+                    this.onionCtx.globalAlpha = 1;
+                }
+            }
+            
             addLayer() {
                 this.commitSelection();
                 this.saveFullState();
@@ -18544,12 +18585,13 @@
                     // Draw previous frames (tinted with prevColor)
                     for (let offset = 1; offset <= this.onionFramesBefore; offset++) {
                         const frameIdx = this.currentFrameIndex - offset;
-                        if (frameIdx >= 0) {
-                            const prevFrame = layer.frames[frameIdx];
-                            if (prevFrame && layer.visible) {
+                        if (frameIdx >= 0 && layer.visible) {
+                            const hasFrame = layer.frames[frameIdx];
+                            const hasInstances = this.getInstancesAtFrame(layer, frameIdx).length > 0;
+                            if (hasFrame || hasInstances) {
                                 // Fade opacity for frames further away
                                 const fadeOpacity = this.onionSkinOpacity * (1 - (offset - 1) / Math.max(this.onionFramesBefore, 1));
-                                this.drawOnionFrame(prevFrame, this.onionPrevColor, fadeOpacity);
+                                this.drawOnionLayerAtFrame(layer, frameIdx, this.onionPrevColor, fadeOpacity);
                             }
                         }
                     }
@@ -18557,12 +18599,13 @@
                     // Draw next frames (tinted with nextColor)
                     for (let offset = 1; offset <= this.onionFramesAfter; offset++) {
                         const frameIdx = this.currentFrameIndex + offset;
-                        if (frameIdx < layer.frames.length) {
-                            const nextFrame = layer.frames[frameIdx];
-                            if (nextFrame && layer.visible) {
+                        if (frameIdx < layer.frames.length && layer.visible) {
+                            const hasFrame = layer.frames[frameIdx];
+                            const hasInstances = this.getInstancesAtFrame(layer, frameIdx).length > 0;
+                            if (hasFrame || hasInstances) {
                                 // Fade opacity for frames further away
                                 const fadeOpacity = this.onionSkinOpacity * (1 - (offset - 1) / Math.max(this.onionFramesAfter, 1));
-                                this.drawOnionFrame(nextFrame, this.onionNextColor, fadeOpacity);
+                                this.drawOnionLayerAtFrame(layer, frameIdx, this.onionNextColor, fadeOpacity);
                             }
                         }
                     }
@@ -18750,16 +18793,24 @@
                     const curLayer = this.getCurrentLayer();
                     for (let offset = 1; offset <= this.onionFramesBefore; offset++) {
                         const frameIdx = this.currentFrameIndex - offset;
-                        if (frameIdx >= 0 && curLayer.frames[frameIdx] && curLayer.visible) {
-                            const fadeOpacity = this.onionSkinOpacity * (1 - (offset - 1) / Math.max(this.onionFramesBefore, 1));
-                            this.drawOnionFrame(curLayer.frames[frameIdx], this.onionPrevColor, fadeOpacity);
+                        if (frameIdx >= 0 && curLayer.visible) {
+                            const hasFrame = curLayer.frames[frameIdx];
+                            const hasInstances = this.getInstancesAtFrame(curLayer, frameIdx).length > 0;
+                            if (hasFrame || hasInstances) {
+                                const fadeOpacity = this.onionSkinOpacity * (1 - (offset - 1) / Math.max(this.onionFramesBefore, 1));
+                                this.drawOnionLayerAtFrame(curLayer, frameIdx, this.onionPrevColor, fadeOpacity);
+                            }
                         }
                     }
                     for (let offset = 1; offset <= this.onionFramesAfter; offset++) {
                         const frameIdx = this.currentFrameIndex + offset;
-                        if (frameIdx < curLayer.frames.length && curLayer.frames[frameIdx] && curLayer.visible) {
-                            const fadeOpacity = this.onionSkinOpacity * (1 - (offset - 1) / Math.max(this.onionFramesAfter, 1));
-                            this.drawOnionFrame(curLayer.frames[frameIdx], this.onionNextColor, fadeOpacity);
+                        if (frameIdx < curLayer.frames.length && curLayer.visible) {
+                            const hasFrame = curLayer.frames[frameIdx];
+                            const hasInstances = this.getInstancesAtFrame(curLayer, frameIdx).length > 0;
+                            if (hasFrame || hasInstances) {
+                                const fadeOpacity = this.onionSkinOpacity * (1 - (offset - 1) / Math.max(this.onionFramesAfter, 1));
+                                this.drawOnionLayerAtFrame(curLayer, frameIdx, this.onionNextColor, fadeOpacity);
+                            }
                         }
                     }
                 } else if (!this.isPlaying) {
