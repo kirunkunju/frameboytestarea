@@ -3565,6 +3565,51 @@
         }
         .lrp-apply-btn:hover { background: rgba(72, 160, 80, 1); }
         
+        /* ── Align Popover ── */
+        .align-pop {
+            position: fixed;
+            background: #222326;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 10px;
+            padding: 10px;
+            z-index: 99999;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,0,0,0.3);
+            display: none;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        .align-pop.show { display: block; }
+        .align-pop-title {
+            font-size: 9px; color: #666; text-transform: uppercase; letter-spacing: 0.6px;
+            font-weight: 600; margin-bottom: 8px; text-align: center;
+        }
+        .align-pop-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4px;
+        }
+        .align-pop-btn {
+            width: 34px; height: 30px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 5px;
+            color: #888;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            transition: background 0.12s, color 0.12s, border-color 0.12s;
+            padding: 0;
+            box-shadow: none;
+        }
+        .align-pop-btn:hover {
+            background: rgba(91,141,239,0.12);
+            border-color: rgba(91,141,239,0.25);
+            color: #ccc;
+        }
+        .align-pop-btn:active {
+            background: rgba(91,141,239,0.2);
+            color: #fff;
+        }
+        .align-pop-btn svg { pointer-events: none; }
+        
         .frame-select-banner {
             display: none;
             background: rgba(91,141,239,0.1);
@@ -4987,6 +5032,7 @@
                         <button class="dropdown-item" data-xformtool="distort"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M4 1.5L13 3l1 11.5L2 13z"/><circle cx="4" cy="1.5" r="1" fill="currentColor" stroke="none"/><circle cx="13" cy="3" r="1" fill="currentColor" stroke="none"/><circle cx="3" cy="13" r="1" fill="currentColor" stroke="none"/><circle cx="14" cy="14.5" r="1" fill="currentColor" stroke="none"/></svg> Distort</button>
                     </div>
                 </div>
+                <button id="alignBtn" title="Align to Canvas"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="1.5" x2="2" y2="14.5" stroke-opacity="0.5"/><rect x="4" y="4" width="7" height="4" rx="0.8" fill="currentColor" fill-opacity="0.15" stroke-opacity="0.7"/><rect x="4" y="10" width="10" height="3" rx="0.8" fill="currentColor" fill-opacity="0.15" stroke-opacity="0.7"/><path d="M3.2 6L4 6" stroke-opacity="0.4" stroke-width="1"/><path d="M3.2 11.5L4 11.5" stroke-opacity="0.4" stroke-width="1"/></svg></button>
                 <div class="dropdown-container">
                     <button id="navTool" title="Magnifier (Z)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="7" r="5"/><path d="M7 5v4M5 7h4"/><path d="M11 11l3.5 3.5"/></svg> <span class="btn-label">Magnifier ▼</span></button>
                     <div class="dropdown-menu" id="navToolDropdown">
@@ -8737,6 +8783,12 @@
                 });
                 document.getElementById('pasteInPlaceBtn').addEventListener('click', () => {
                     this._smartPaste(true);
+                });
+                
+                // Align button
+                document.getElementById('alignBtn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this._toggleAlignPopover();
                 });
                 
                 // Undo/Redo controls
@@ -14154,6 +14206,201 @@
                     el.classList.remove('show');
                     setTimeout(() => el.remove(), 250);
                 }, 1200);
+            }
+            
+            // ═══════════════════════════════════════
+            // Align Tools
+            // ═══════════════════════════════════════
+            
+            _toggleAlignPopover() {
+                let pop = document.querySelector('.align-pop');
+                if (pop && pop.classList.contains('show')) {
+                    pop.classList.remove('show');
+                    return;
+                }
+                
+                if (!pop) {
+                    pop = document.createElement('div');
+                    pop.className = 'align-pop';
+                    
+                    const title = document.createElement('div');
+                    title.className = 'align-pop-title';
+                    title.textContent = 'Align to Canvas';
+                    pop.appendChild(title);
+                    
+                    const grid = document.createElement('div');
+                    grid.className = 'align-pop-grid';
+                    
+                    const buttons = [
+                        { dir: 'left',    label: 'Align Left',    svg: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="2" y1="1" x2="2" y2="15"/><rect x="4.5" y="4" width="8" height="3" rx="0.5" fill="currentColor" fill-opacity="0.2"/><rect x="4.5" y="9" width="5" height="3" rx="0.5" fill="currentColor" fill-opacity="0.2"/></svg>' },
+                        { dir: 'centerH', label: 'Center Horizontal', svg: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="8" y1="1" x2="8" y2="15" stroke-dasharray="1.5 1.5" stroke-opacity="0.5"/><rect x="3" y="4" width="10" height="3" rx="0.5" fill="currentColor" fill-opacity="0.2"/><rect x="4.5" y="9" width="7" height="3" rx="0.5" fill="currentColor" fill-opacity="0.2"/></svg>' },
+                        { dir: 'right',   label: 'Align Right',   svg: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="14" y1="1" x2="14" y2="15"/><rect x="3.5" y="4" width="8" height="3" rx="0.5" fill="currentColor" fill-opacity="0.2"/><rect x="6.5" y="9" width="5" height="3" rx="0.5" fill="currentColor" fill-opacity="0.2"/></svg>' },
+                        { dir: 'top',     label: 'Align Top',     svg: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="1" y1="2" x2="15" y2="2"/><rect x="4" y="4.5" width="3" height="8" rx="0.5" fill="currentColor" fill-opacity="0.2"/><rect x="9" y="4.5" width="3" height="5" rx="0.5" fill="currentColor" fill-opacity="0.2"/></svg>' },
+                        { dir: 'centerV', label: 'Center Vertical', svg: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="1" y1="8" x2="15" y2="8" stroke-dasharray="1.5 1.5" stroke-opacity="0.5"/><rect x="4" y="3" width="3" height="10" rx="0.5" fill="currentColor" fill-opacity="0.2"/><rect x="9" y="4.5" width="3" height="7" rx="0.5" fill="currentColor" fill-opacity="0.2"/></svg>' },
+                        { dir: 'bottom',  label: 'Align Bottom',  svg: '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"><line x1="1" y1="14" x2="15" y2="14"/><rect x="4" y="3.5" width="3" height="8" rx="0.5" fill="currentColor" fill-opacity="0.2"/><rect x="9" y="6.5" width="3" height="5" rx="0.5" fill="currentColor" fill-opacity="0.2"/></svg>' },
+                    ];
+                    
+                    for (const b of buttons) {
+                        const btn = document.createElement('button');
+                        btn.className = 'align-pop-btn';
+                        btn.title = b.label;
+                        btn.innerHTML = b.svg;
+                        btn.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            this._alignObject(b.dir);
+                        });
+                        grid.appendChild(btn);
+                    }
+                    
+                    pop.appendChild(grid);
+                    document.body.appendChild(pop);
+                    
+                    // Close on outside click
+                    document.addEventListener('pointerdown', (e) => {
+                        if (!pop.contains(e.target) && e.target.id !== 'alignBtn' && !e.target.closest('#alignBtn')) {
+                            pop.classList.remove('show');
+                        }
+                    });
+                }
+                
+                // Position below the align button
+                const btn = document.getElementById('alignBtn');
+                const rect = btn.getBoundingClientRect();
+                pop.style.left = rect.left + 'px';
+                pop.style.top = (rect.bottom + 6) + 'px';
+                pop.classList.add('show');
+            }
+            
+            _alignObject(direction) {
+                const pw = this.projectWidth;
+                const ph = this.projectHeight;
+                
+                // Priority 1: Floating selection
+                if (this.selection) {
+                    this.saveFullState();
+                    const b = this.selection.bounds;
+                    const layer = this.getCurrentLayer();
+                    const frame = layer.frames[this.currentFrameIndex];
+                    const ox = frame ? (frame._originX || 0) : 0;
+                    const oy = frame ? (frame._originY || 0) : 0;
+                    // Project bounds in frame-local coords
+                    const projLeft = -ox;
+                    const projTop = -oy;
+                    
+                    switch (direction) {
+                        case 'left':    b.x = projLeft; break;
+                        case 'centerH': b.x = projLeft + (pw - b.width) / 2; break;
+                        case 'right':   b.x = projLeft + pw - b.width; break;
+                        case 'top':     b.y = projTop; break;
+                        case 'centerV': b.y = projTop + (ph - b.height) / 2; break;
+                        case 'bottom':  b.y = projTop + ph - b.height; break;
+                    }
+                    this.selection.anchorX = b.x + b.width / 2;
+                    this.selection.anchorY = b.y + b.height / 2;
+                    this.showTransformHandles();
+                    this.render();
+                    return;
+                }
+                
+                // Priority 2: Active loop instance
+                if (this._activeInstance) {
+                    this.saveFullState();
+                    const inst = this._activeInstance;
+                    const sym = this.getSymbol(inst.symbolId);
+                    if (!sym) return;
+                    const iw = sym.width * inst.scaleX;
+                    const ih = sym.height * inst.scaleY;
+                    
+                    switch (direction) {
+                        case 'left':    inst.x = 0; break;
+                        case 'centerH': inst.x = (pw - iw) / 2; break;
+                        case 'right':   inst.x = pw - iw; break;
+                        case 'top':     inst.y = 0; break;
+                        case 'centerV': inst.y = (ph - ih) / 2; break;
+                        case 'bottom':  inst.y = ph - ih; break;
+                    }
+                    this._invalidateCompositeCache();
+                    this.updateInstPropsBar();
+                    this.render();
+                    return;
+                }
+                
+                // Priority 3: All pixel content on the current frame
+                const layer = this.getCurrentLayer();
+                const frame = layer.frames[this.currentFrameIndex];
+                if (!frame) return;
+                
+                const frameCtx = frame.getContext('2d');
+                const imgData = frameCtx.getImageData(0, 0, frame.width, frame.height);
+                const d = imgData.data;
+                
+                // Find tight bounding box in frame-local coords
+                let minX = frame.width, minY = frame.height, maxX = -1, maxY = -1;
+                for (let y = 0; y < frame.height; y++) {
+                    for (let x = 0; x < frame.width; x++) {
+                        if (d[(y * frame.width + x) * 4 + 3] > 0) {
+                            if (x < minX) minX = x;
+                            if (x > maxX) maxX = x;
+                            if (y < minY) minY = y;
+                            if (y > maxY) maxY = y;
+                        }
+                    }
+                }
+                
+                if (maxX < 0) return; // No content
+                
+                const contentW = maxX - minX + 1;
+                const contentH = maxY - minY + 1;
+                const ox = frame._originX || 0;
+                const oy = frame._originY || 0;
+                // Project area in frame-local: (-ox, -oy) to (pw - ox, ph - oy)
+                const projLeft = -ox;
+                const projTop = -oy;
+                
+                let targetX = minX, targetY = minY;
+                switch (direction) {
+                    case 'left':    targetX = projLeft; break;
+                    case 'centerH': targetX = Math.round(projLeft + (pw - contentW) / 2); break;
+                    case 'right':   targetX = projLeft + pw - contentW; break;
+                    case 'top':     targetY = projTop; break;
+                    case 'centerV': targetY = Math.round(projTop + (ph - contentH) / 2); break;
+                    case 'bottom':  targetY = projTop + ph - contentH; break;
+                }
+                
+                const dx = targetX - minX;
+                const dy = targetY - minY;
+                if (dx === 0 && dy === 0) return;
+                
+                this.saveFullState();
+                
+                // Snapshot content pixels
+                const contentSnap = document.createElement('canvas');
+                contentSnap.width = contentW;
+                contentSnap.height = contentH;
+                contentSnap.getContext('2d').drawImage(frame, minX, minY, contentW, contentH, 0, 0, contentW, contentH);
+                
+                // Ensure frame covers the target area (may expand frame)
+                const worldTargetX = targetX + ox;
+                const worldTargetY = targetY + oy;
+                this.ensureFrameCovers(frame, worldTargetX, worldTargetY);
+                this.ensureFrameCovers(frame, worldTargetX + contentW - 1, worldTargetY + contentH - 1);
+                
+                // Frame origin may have shifted from expansion
+                const newOx = frame._originX || 0;
+                const newOy = frame._originY || 0;
+                const expDx = newOx - ox;
+                const expDy = newOy - oy;
+                
+                // Clear old content position (adjusted for expansion shift)
+                const ctx2 = frame.getContext('2d');
+                ctx2.clearRect(minX + expDx, minY + expDy, contentW, contentH);
+                
+                // Draw at new position (also adjusted for expansion shift)
+                ctx2.drawImage(contentSnap, targetX + expDx, targetY + expDy);
+                
+                this._dirtyThumb(frame);
+                this._invalidateCompositeCache();
+                this.render();
             }
             
             renderBreadcrumb() {
