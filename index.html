@@ -5705,6 +5705,17 @@
                 this._compositeCacheDirty = true;
                 this._compositeCacheKey = null; // tracks what state the cache was built for
                 this._compositeCacheVer = 0; // bumped on any non-active-layer change
+                
+                // Reusable temp canvas pool for compositeSymbolInstance (one per recursion depth)
+                this._symTempPool = [];
+                for (let i = 0; i <= 8; i++) {
+                    const c = document.createElement('canvas');
+                    this._symTempPool.push({ canvas: c, ctx: c.getContext('2d') });
+                }
+                
+                // Reusable temp canvas for onion skin loop instance tinting
+                this._onionInstCanvas = document.createElement('canvas');
+                this._onionInstCtx = this._onionInstCanvas.getContext('2d');
                 this._curveEditorProp = 'x';
                 this._curveEditorLayerId = null;
                 this._ceDragHandle = null; // null | 'cp1' | 'cp2'
@@ -11339,6 +11350,13 @@
                                 this._lastStrokeEnd.x += growth.dx;
                                 this._lastStrokeEnd.y += growth.dy;
                             }
+                            // Shift collected stroke points for post-stroke smoothing
+                            if (this._strokePoints) {
+                                for (const pt of this._strokePoints) {
+                                    pt.x += growth.dx;
+                                    pt.y += growth.dy;
+                                }
+                            }
                         }
                     }
                     const local = this.worldToLocal(worldX, worldY, frame);
@@ -11941,6 +11959,15 @@
                 // Apply Chaikin smoothing to decimated points
                 let smoothed = this._chaikinSmooth(decimated, passes);
                 
+                // Points are in the EXPANDED frame's local coords.
+                // Convert to world coords BEFORE restoring the frame, using the current (expanded) origin.
+                const expOx = frame._originX || 0;
+                const expOy = frame._originY || 0;
+                for (const pt of smoothed) {
+                    pt.x += expOx;
+                    pt.y += expOy;
+                }
+                
                 // Restore frame to pre-stroke state
                 if (frame.width !== preData.width || frame.height !== preData.height) {
                     frame.width = preData.width;
@@ -11952,17 +11979,17 @@
                 ctx.clearRect(0, 0, frame.width, frame.height);
                 ctx.putImageData(preData.imageData, 0, 0);
                 
-                // Ensure frame covers all smoothed points (may need to re-expand)
+                // Ensure frame covers all smoothed points (world coords — no origin conversion needed)
                 for (const pt of smoothed) {
-                    const worldX = pt.x + (frame._originX || 0);
-                    const worldY = pt.y + (frame._originY || 0);
-                    const growth = this.ensureFrameCovers(frame, worldX, worldY);
-                    if (growth.dx !== 0 || growth.dy !== 0) {
-                        for (const p of smoothed) {
-                            p.x += growth.dx;
-                            p.y += growth.dy;
-                        }
-                    }
+                    this.ensureFrameCovers(frame, pt.x, pt.y);
+                }
+                
+                // Convert all points from world back to the (possibly re-expanded) frame-local
+                const newOx = frame._originX || 0;
+                const newOy = frame._originY || 0;
+                for (const pt of smoothed) {
+                    pt.x -= newOx;
+                    pt.y -= newOy;
                 }
                 
                 // Redraw the smoothed path
@@ -12613,13 +12640,16 @@
                 
                 // Draw loop instances (if any)
                 if (instances.length > 0) {
-                    // Render instances into a temp canvas at display size, then tint
                     const w = this.canvas.width;
                     const h = this.canvas.height;
-                    const tempCanvas = document.createElement('canvas');
-                    tempCanvas.width = w;
-                    tempCanvas.height = h;
-                    const tempCtx = tempCanvas.getContext('2d');
+                    
+                    // Reuse pooled canvas — grow only, never shrink
+                    if (this._onionInstCanvas.width < w || this._onionInstCanvas.height < h) {
+                        this._onionInstCanvas.width = Math.max(this._onionInstCanvas.width, w);
+                        this._onionInstCanvas.height = Math.max(this._onionInstCanvas.height, h);
+                    }
+                    const tempCtx = this._onionInstCtx;
+                    tempCtx.clearRect(0, 0, w, h);
                     
                     for (const inst of instances) {
                         this.compositeSymbolInstance(tempCtx, inst, localIdx, 0);
@@ -12633,9 +12663,9 @@
                     tempCtx.globalAlpha = 1;
                     tempCtx.globalCompositeOperation = 'source-over';
                     
-                    // Draw onto onion canvas
+                    // Draw onto onion canvas (source-rect to avoid stale pixels from oversized canvas)
                     this.onionCtx.globalAlpha = opacity;
-                    this.onionCtx.drawImage(tempCanvas, 0, 0);
+                    this.onionCtx.drawImage(this._onionInstCanvas, 0, 0, w, h, 0, 0, w, h);
                     this.onionCtx.globalAlpha = 1;
                 }
             }
@@ -13609,13 +13639,17 @@
                 
                 if (framesToDraw.length === 0) return;
                 
-                // Create temp canvas spanning full content extents
+                // Reuse pooled temp canvas for this recursion depth (avoids allocation per call)
                 const tempW = Math.ceil(maxX - minX);
                 const tempH = Math.ceil(maxY - minY);
-                const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = tempW;
-                tempCanvas.height = tempH;
-                const tempCtx = tempCanvas.getContext('2d');
+                const poolEntry = this._symTempPool[depth];
+                if (poolEntry.canvas.width < tempW || poolEntry.canvas.height < tempH) {
+                    // Grow only — never shrink (avoids thrashing)
+                    poolEntry.canvas.width = Math.max(poolEntry.canvas.width, tempW);
+                    poolEntry.canvas.height = Math.max(poolEntry.canvas.height, tempH);
+                }
+                const tempCtx = poolEntry.ctx;
+                tempCtx.clearRect(0, 0, tempW, tempH);
                 
                 for (const { frame, symLayer, layerLocalIdx } of framesToDraw) {
                     tempCtx.globalAlpha = symLayer.opacity != null ? symLayer.opacity : 1;
@@ -13649,8 +13683,8 @@
                     ctx.scale(instance.scaleX, instance.scaleY);
                 }
                 
-                // Draw temp canvas so symbol origin (0,0) aligns correctly
-                ctx.drawImage(tempCanvas, -sym.width / 2 + minX, -sym.height / 2 + minY);
+                // Draw from pooled canvas so symbol origin (0,0) aligns correctly
+                ctx.drawImage(poolEntry.canvas, 0, 0, tempW, tempH, -sym.width / 2 + minX, -sym.height / 2 + minY, tempW, tempH);
                 ctx.restore();
             }
             
