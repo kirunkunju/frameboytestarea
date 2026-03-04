@@ -7294,9 +7294,13 @@
                     snapCanvas.width = selImg.width;
                     snapCanvas.height = selImg.height;
                     snapCanvas.getContext('2d').drawImage(selImg, 0, 0);
+                    // Capture frame origin so we can convert frame-local bounds → world coords
+                    const curFrame = this.getCurrentLayer().frames[this.currentFrameIndex];
                     this._loopSelectionSnapshot = {
                         imageData: snapCanvas,
-                        bounds: { ...this.selection.bounds }
+                        bounds: { ...this.selection.bounds },
+                        frameOriginX: curFrame ? (curFrame._originX || 0) : 0,
+                        frameOriginY: curFrame ? (curFrame._originY || 0) : 0
                     };
                     this._loopFromSelection = true;
                     includeField.style.display = 'none';
@@ -7393,8 +7397,12 @@
                     symLayer.frames.push(c);
                     
                     if (replaceOriginal) {
-                        const instX = sizeMode === 'fit' ? selBounds.x : 0;
-                        const instY = sizeMode === 'fit' ? selBounds.y : 0;
+                        // selBounds are frame-local pixel coords; instance position
+                        // needs world coords, so add the frame's origin offset
+                        const originX = this._loopSelectionSnapshot.frameOriginX || 0;
+                        const originY = this._loopSelectionSnapshot.frameOriginY || 0;
+                        const instX = sizeMode === 'fit' ? originX + selBounds.x : originX;
+                        const instY = sizeMode === 'fit' ? originY + selBounds.y : originY;
                         
                         // Check if remaining content exists on layer
                         let hasRemainingContent = false;
@@ -7531,7 +7539,7 @@
                     }
                     
                     if (hasContent) {
-                        // Convert to world coords
+                        // Frame-local bounds offset by origin (used internally for content layout)
                         minX = Math.min(minX, fMinX - ox);
                         minY = Math.min(minY, fMinY - oy);
                         maxX = Math.max(maxX, fMaxX - ox);
@@ -8691,32 +8699,29 @@
                 // Copy/Paste buttons
                 document.getElementById('copyBtn').addEventListener('click', () => {
                     if (this._activeInstance) {
-                        // Canvas clipboard ← instance
-                        const inst = this._activeInstance;
-                        this._copiedInstance = {
-                            symbolId: inst.symbolId, startFrame: inst.startFrame, duration: inst.duration,
-                            x: inst.x, y: inst.y, scaleX: inst.scaleX, scaleY: inst.scaleY,
-                            rotation: inst.rotation || 0, opacity: inst.opacity != null ? inst.opacity : 1,
-                            firstFrame: inst.firstFrame || 0, loopMode: inst.loopMode || 'loop'
-                        };
-                        this.copiedSelection = null;
-                        const sym = this.getSymbol(inst.symbolId);
-                        this._clipboardToast('Copied loop' + (sym ? ' "' + sym.name + '"' : ''));
+                        // Canvas clipboard ← instance selected on canvas
+                        this._copyInstanceToClipboard(this._activeInstance);
                     } else if (this.selection) {
                         // Canvas clipboard ← selection
                         this.copySelection();
                         this._copiedInstance = null;
                         this._clipboardToast('Selection copied');
                     } else {
-                        // Timeline clipboard ← frames (never touches canvas clipboard)
-                        const count = this.selectedFrames.size > 1 ? this.selectedFrames.size : 1;
-                        this.copyFrame();
-                        this._clipboardToast(count > 1 ? count + ' frames copied' : 'Frame copied');
-                        if (this.frameSelectMode) {
-                            this.frameSelectMode = false;
-                            document.getElementById('frameSelectBanner').classList.remove('show');
-                            this._timelineDirty = true;
-                            this.renderTimeline();
+                        // Check if a loop span is selected on the timeline
+                        const tlInst = this._getTimelineSelectedInstance();
+                        if (tlInst) {
+                            this._copyInstanceToClipboard(tlInst);
+                        } else {
+                            // Timeline clipboard ← frames (never touches canvas clipboard)
+                            const count = this.selectedFrames.size > 1 ? this.selectedFrames.size : 1;
+                            this.copyFrame();
+                            this._clipboardToast(count > 1 ? count + ' frames copied' : 'Frame copied');
+                            if (this.frameSelectMode) {
+                                this.frameSelectMode = false;
+                                document.getElementById('frameSelectBanner').classList.remove('show');
+                                this._timelineDirty = true;
+                                this.renderTimeline();
+                            }
                         }
                     }
                 });
@@ -8800,37 +8805,29 @@
                     } else if ((e.ctrlKey || e.metaKey) && e.key === 'c') {
                         e.preventDefault();
                         if (this._activeInstance) {
-                            // Canvas clipboard ← instance (clears canvas selection, NOT timeline)
-                            const inst = this._activeInstance;
-                            this._copiedInstance = {
-                                symbolId: inst.symbolId,
-                                startFrame: inst.startFrame,
-                                duration: inst.duration,
-                                x: inst.x, y: inst.y,
-                                scaleX: inst.scaleX, scaleY: inst.scaleY,
-                                rotation: inst.rotation || 0,
-                                opacity: inst.opacity != null ? inst.opacity : 1,
-                                firstFrame: inst.firstFrame || 0,
-                                loopMode: inst.loopMode || 'loop'
-                            };
-                            this.copiedSelection = null; // within canvas clipboard only
-                            const sym = this.getSymbol(inst.symbolId);
-                            this._clipboardToast('Copied loop' + (sym ? ' "' + sym.name + '"' : ''));
+                            // Canvas clipboard ← instance selected on canvas
+                            this._copyInstanceToClipboard(this._activeInstance);
                         } else if (this.selection) {
                             // Canvas clipboard ← pixel selection (clears canvas instance, NOT timeline)
                             this.copySelection();
                             this._copiedInstance = null; // within canvas clipboard only
                             this._clipboardToast('Selection copied');
                         } else {
-                            // Timeline clipboard ← frames (never touches canvas clipboard)
-                            const count = this.selectedFrames.size > 1 ? this.selectedFrames.size : 1;
-                            this.copyFrame();
-                            this._clipboardToast(count > 1 ? count + ' frames copied' : 'Frame copied');
-                            if (this.frameSelectMode) {
-                                this.frameSelectMode = false;
-                                document.getElementById('frameSelectBanner').classList.remove('show');
-                                this._timelineDirty = true;
-                                this.renderTimeline();
+                            // Check if a loop span is selected on the timeline
+                            const tlInst = this._getTimelineSelectedInstance();
+                            if (tlInst) {
+                                this._copyInstanceToClipboard(tlInst);
+                            } else {
+                                // Timeline clipboard ← frames (never touches canvas clipboard)
+                                const count = this.selectedFrames.size > 1 ? this.selectedFrames.size : 1;
+                                this.copyFrame();
+                                this._clipboardToast(count > 1 ? count + ' frames copied' : 'Frame copied');
+                                if (this.frameSelectMode) {
+                                    this.frameSelectMode = false;
+                                    document.getElementById('frameSelectBanner').classList.remove('show');
+                                    this._timelineDirty = true;
+                                    this.renderTimeline();
+                                }
                             }
                         }
                     } else if ((e.ctrlKey || e.metaKey) && e.key === 'x') {
@@ -8841,18 +8838,7 @@
                             const inst = this._activeInstance;
                             const layer = this._activeInstanceLayer;
                             const sym = this.getSymbol(inst.symbolId);
-                            this._copiedInstance = {
-                                symbolId: inst.symbolId,
-                                startFrame: inst.startFrame,
-                                duration: inst.duration,
-                                x: inst.x, y: inst.y,
-                                scaleX: inst.scaleX, scaleY: inst.scaleY,
-                                rotation: inst.rotation || 0,
-                                opacity: inst.opacity != null ? inst.opacity : 1,
-                                firstFrame: inst.firstFrame || 0,
-                                loopMode: inst.loopMode || 'loop'
-                            };
-                            this.copiedSelection = null; // within canvas clipboard only
+                            this._copyInstanceToClipboard(inst);
                             if (layer && layer.symbolInstances) {
                                 layer.symbolInstances = layer.symbolInstances.filter(i => i.id !== inst.id);
                             }
@@ -8861,6 +8847,27 @@
                             this._invalidateCompositeCache();
                             this.render();
                             this._clipboardToast('Cut loop' + (sym ? ' "' + sym.name + '"' : ''));
+                        } else if (!this.selection) {
+                            // Check timeline-selected instance before falling through to frames
+                            const tlInst = this._getTimelineSelectedInstance();
+                            if (tlInst) {
+                                this.saveFullState();
+                                const sym = this.getSymbol(tlInst.symbolId);
+                                this._copyInstanceToClipboard(tlInst);
+                                // Remove from source layer
+                                const srcLayer = this.layers.find(l => l.id === this._selectedInstanceLayerId);
+                                if (srcLayer && srcLayer.symbolInstances) {
+                                    srcLayer.symbolInstances = srcLayer.symbolInstances.filter(i => i.id !== tlInst.id);
+                                }
+                                this._selectedInstanceId = null;
+                                this._timelineDirty = true;
+                                this._invalidateCompositeCache();
+                                this.render();
+                                this._clipboardToast('Cut loop' + (sym ? ' "' + sym.name + '"' : ''));
+                            } else {
+                                // Cut frames → timeline clipboard (doesn't touch canvas)
+                                this.cutFrame();
+                            }
                         } else if (this.selection) {
                             // Cut pixel selection → canvas clipboard (doesn't touch timeline)
                             // Manually copy selection to clipboard WITHOUT applying back to frame
@@ -16006,6 +16013,37 @@
                 return !!(this.copiedFrame || this.copiedFrames.length > 0);
             }
             
+            // Resolve the timeline-selected instance (from clicking a span)
+            _getTimelineSelectedInstance() {
+                if (!this._selectedInstanceId) return null;
+                const layerId = this._selectedInstanceLayerId;
+                for (const layer of this.layers) {
+                    if (layerId && layer.id !== layerId) continue;
+                    if (!layer.symbolInstances) continue;
+                    const inst = layer.symbolInstances.find(i => i.id === this._selectedInstanceId);
+                    if (inst) return inst;
+                }
+                return null;
+            }
+            
+            // Copy any instance object to the canvas clipboard
+            _copyInstanceToClipboard(inst) {
+                this._copiedInstance = {
+                    symbolId: inst.symbolId,
+                    startFrame: inst.startFrame,
+                    duration: inst.duration,
+                    x: inst.x, y: inst.y,
+                    scaleX: inst.scaleX, scaleY: inst.scaleY,
+                    rotation: inst.rotation || 0,
+                    opacity: inst.opacity != null ? inst.opacity : 1,
+                    firstFrame: inst.firstFrame || 0,
+                    loopMode: inst.loopMode || 'loop'
+                };
+                this.copiedSelection = null;
+                const sym = this.getSymbol(inst.symbolId);
+                this._clipboardToast('Copied loop' + (sym ? ' "' + sym.name + '"' : ''));
+            }
+            
             // Smart paste: routes to the right clipboard based on context
             _smartPaste(inPlace) {
                 const hasCanvas = this._hasCanvasClipboard();
@@ -16042,12 +16080,12 @@
                 const layer = this.getCurrentLayer();
                 if (!layer.symbolInstances) layer.symbolInstances = [];
                 
-                // Determine duration — match existing timeline or use copied duration
-                const hasExisting = layer.symbolInstances.length > 0;
-                const duration = hasExisting ? Math.max(ci.duration, this.getEffectiveLayerLength(layer)) : ci.duration;
+                // Place at current playhead position, keep original duration
+                const startFrame = this.currentFrameIndex;
+                const duration = ci.duration;
                 
                 const offset = withOffset ? 20 : 0;
-                const newInst = this.createSymbolInstance(ci.symbolId, ci.startFrame, duration, ci.x + offset, ci.y + offset);
+                const newInst = this.createSymbolInstance(ci.symbolId, startFrame, duration, ci.x + offset, ci.y + offset);
                 newInst.scaleX = ci.scaleX;
                 newInst.scaleY = ci.scaleY;
                 newInst.rotation = ci.rotation;
@@ -16055,12 +16093,17 @@
                 newInst.firstFrame = ci.firstFrame;
                 newInst.loopMode = ci.loopMode;
                 
+                // Ensure layer has enough frames to cover the instance span
+                const instEnd = startFrame + duration;
+                while (layer.frames.length < instEnd) {
+                    layer.frames.push(this._createSpacerFrame());
+                }
+                
                 layer.symbolInstances.push(newInst);
                 
                 // Auto-expand loop range
-                const instEnd = newInst.startFrame + newInst.duration - 1;
-                if (instEnd > this.loopRange.outPoint) {
-                    this.loopRange.outPoint = instEnd;
+                if (instEnd - 1 > this.loopRange.outPoint) {
+                    this.loopRange.outPoint = instEnd - 1;
                     this._updateLoopRangeBadge();
                 }
                 
