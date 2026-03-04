@@ -14353,50 +14353,48 @@
                 const contentH = maxY - minY + 1;
                 const ox = frame._originX || 0;
                 const oy = frame._originY || 0;
-                // Project area in frame-local: (-ox, -oy) to (pw - ox, ph - oy)
-                const projLeft = -ox;
-                const projTop = -oy;
                 
-                let targetX = minX, targetY = minY;
+                // Convert content bounds to world coords for target calculation
+                const worldMinX = minX + ox;
+                const worldMinY = minY + oy;
+                
+                // Calculate target position in world coords (project area is 0,0 → pw,ph)
+                let worldTargetX = worldMinX, worldTargetY = worldMinY;
                 switch (direction) {
-                    case 'left':    targetX = projLeft; break;
-                    case 'centerH': targetX = Math.round(projLeft + (pw - contentW) / 2); break;
-                    case 'right':   targetX = projLeft + pw - contentW; break;
-                    case 'top':     targetY = projTop; break;
-                    case 'centerV': targetY = Math.round(projTop + (ph - contentH) / 2); break;
-                    case 'bottom':  targetY = projTop + ph - contentH; break;
+                    case 'left':    worldTargetX = 0; break;
+                    case 'centerH': worldTargetX = Math.round((pw - contentW) / 2); break;
+                    case 'right':   worldTargetX = pw - contentW; break;
+                    case 'top':     worldTargetY = 0; break;
+                    case 'centerV': worldTargetY = Math.round((ph - contentH) / 2); break;
+                    case 'bottom':  worldTargetY = ph - contentH; break;
                 }
                 
-                const dx = targetX - minX;
-                const dy = targetY - minY;
-                if (dx === 0 && dy === 0) return;
+                if (worldTargetX === worldMinX && worldTargetY === worldMinY) return;
                 
                 this.saveFullState();
                 
-                // Snapshot content pixels
+                // Snapshot content pixels (before any frame expansion)
                 const contentSnap = document.createElement('canvas');
                 contentSnap.width = contentW;
                 contentSnap.height = contentH;
                 contentSnap.getContext('2d').drawImage(frame, minX, minY, contentW, contentH, 0, 0, contentW, contentH);
                 
-                // Ensure frame covers the target area (may expand frame)
-                const worldTargetX = targetX + ox;
-                const worldTargetY = targetY + oy;
+                // Ensure frame covers the target area (may expand frame, shifting origin)
                 this.ensureFrameCovers(frame, worldTargetX, worldTargetY);
                 this.ensureFrameCovers(frame, worldTargetX + contentW - 1, worldTargetY + contentH - 1);
                 
-                // Frame origin may have shifted from expansion
+                // Recalculate ALL positions in the (possibly new) frame-local system
                 const newOx = frame._originX || 0;
                 const newOy = frame._originY || 0;
-                const expDx = newOx - ox;
-                const expDy = newOy - oy;
+                const oldLocalX = worldMinX - newOx;
+                const oldLocalY = worldMinY - newOy;
+                const newLocalX = worldTargetX - newOx;
+                const newLocalY = worldTargetY - newOy;
                 
-                // Clear old content position (adjusted for expansion shift)
+                // Clear old content, draw at new position
                 const ctx2 = frame.getContext('2d');
-                ctx2.clearRect(minX + expDx, minY + expDy, contentW, contentH);
-                
-                // Draw at new position (also adjusted for expansion shift)
-                ctx2.drawImage(contentSnap, targetX + expDx, targetY + expDy);
+                ctx2.clearRect(oldLocalX, oldLocalY, contentW, contentH);
+                ctx2.drawImage(contentSnap, newLocalX, newLocalY);
                 
                 this._dirtyThumb(frame);
                 this._invalidateCompositeCache();
