@@ -8167,14 +8167,17 @@
                             // Determine duration: match existing timeline if loops exist, else use symbol length
                             const symLength = this.getSymbolFrameCount(sym);
                             const hasExistingInstances = layer.symbolInstances.length > 0;
-                            const duration = hasExistingInstances ? this.getEffectiveLayerLength(layer) : symLength;
+                            const duration = hasExistingInstances ? Math.max(symLength, this.getEffectiveLayerLength(layer) - this.currentFrameIndex) : symLength;
                             const instance = this.createSymbolInstance(
-                                sym.id, 0, duration, instX, instY
+                                sym.id, this.currentFrameIndex, duration, instX, instY
                             );
                             layer.symbolInstances.push(instance);
                             
-                            // Auto-expand loop range
-                            const instEnd = duration - 1;
+                            // Ensure layer has enough frames to cover the instance
+                            const instEnd = this.currentFrameIndex + duration - 1;
+                            while (layer.frames.length <= instEnd) {
+                                layer.frames.push(this._createSpacerFrame());
+                            }
                             if (instEnd > this.loopRange.outPoint) {
                                 this.loopRange.outPoint = instEnd;
                                 this._updateLoopRangeBadge();
@@ -19014,6 +19017,7 @@
                 // Preserve scroll position across DOM rebuild
                 const framesSection = document.getElementById('timelineFramesSection');
                 const savedScrollLeft = framesSection ? framesSection.scrollLeft : 0;
+                const savedScrollTop = framesSection ? framesSection.scrollTop : 0;
                 
                 container.innerHTML = '';
                 layersList.innerHTML = '';
@@ -19785,6 +19789,11 @@
                 // Restore scroll position preserved before rebuild
                 if (framesSection && savedScrollLeft > 0) {
                     framesSection.scrollLeft = savedScrollLeft;
+                }
+                if (framesSection && savedScrollTop > 0) {
+                    framesSection.scrollTop = savedScrollTop;
+                    // Sync layers list vertical scroll
+                    layersList.scrollTop = savedScrollTop;
                 }
                 
                 // Re-populate all virtualized blocks with correct scroll position
