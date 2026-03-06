@@ -1755,6 +1755,52 @@
             font-size: 10px;
             color: #777;
         }
+        
+        /* Clear frame button group — mirrors play-btn-group pattern */
+        .clear-btn-group {
+            display: flex;
+            position: relative;
+            gap: 0;
+        }
+        .clear-btn-group #clearFrame {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+            border-right: none;
+            margin-right: 0;
+        }
+        .clear-mode-arrow {
+            width: 18px;
+            min-width: 18px;
+            padding: 0;
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+            border-left: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: transparent;
+            border: none;
+            border-left: 1px solid rgba(255,255,255,0.1);
+            color: #999;
+            cursor: pointer;
+            border-radius: 0 4px 4px 0;
+        }
+        .clear-mode-arrow:hover { color: #fff; }
+        .clear-mode-menu {
+            display: none;
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            margin-bottom: 3px;
+            background: #2b2d31;
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 10px;
+            padding: 3px;
+            z-index: 1000;
+            min-width: 160px;
+            box-shadow: 6px 6px 16px rgba(0,0,0,0.5), -3px -3px 10px rgba(255,255,255,0.03);
+        }
+        .clear-mode-menu.show { display: block; }
 
         .fps-control {
             display: flex;
@@ -2983,7 +3029,7 @@
             display: flex;
             padding: 6px 10px;
             gap: 0;
-            border-bottom: 1px solid #333;
+            border-bottom: 1px solid rgba(0,0,0,0.15);
             align-items: center;
             min-height: calc(var(--frame-w, 80px) + 24px);
         }
@@ -3192,16 +3238,18 @@
         }
 
         .frame.active .frame-thumb {
-            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.3), inset -1px -1px 3px rgba(255,255,255,0.03), 0 0 0 2px rgba(91,141,239,0.5);
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.3), inset -1px -1px 3px rgba(255,255,255,0.03), 0 0 0 2px rgba(91,141,239,0.85);
+            background: rgba(91,141,239,0.08);
         }
         
         .frame.selected .frame-thumb {
             background: rgba(91,141,239,0.08);
-            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.3), inset -1px -1px 3px rgba(255,255,255,0.03), 0 0 0 2px rgba(91,141,239,0.3);
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.3), inset -1px -1px 3px rgba(255,255,255,0.03), 0 0 0 2px rgba(91,141,239,0.5);
         }
         
         .frame.active.selected .frame-thumb {
-            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.3), inset -1px -1px 3px rgba(255,255,255,0.03), 0 0 0 2px rgba(91,141,239,0.5);
+            box-shadow: inset 2px 2px 4px rgba(0,0,0,0.3), inset -1px -1px 3px rgba(255,255,255,0.03), 0 0 0 2px rgba(91,141,239,0.85);
+            background: rgba(91,141,239,0.08);
         }
         
         .hold-block.selected {
@@ -3217,7 +3265,7 @@
         /* ── Loop Span (hexagon) on timeline ── */
         .lg-span {
             position: absolute;
-            cursor: pointer;
+            cursor: grab;
             user-select: none;
             -webkit-user-select: none;
             touch-action: none;
@@ -4059,6 +4107,30 @@
             -webkit-user-select: none;
         }
         .smoothing-mode-toggle .smt-btn.active { color: #eee; }
+        
+        /* Drawing mode icon toggle */
+        .draw-mode-toggle {
+            display: flex;
+            background: rgba(0,0,0,0.25);
+            border-radius: 7px;
+            padding: 2px;
+            gap: 1px;
+        }
+        .draw-mode-toggle .dm-btn {
+            width: 28px;
+            height: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 5px;
+            transition: background 0.12s;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .draw-mode-toggle .dm-btn:hover { background: rgba(255,255,255,0.06); }
+        .draw-mode-toggle .dm-btn.active { background: rgba(255,255,255,0.12); }
+        .draw-mode-toggle .dm-btn svg { width: 14px; height: 14px; display: block; }
 
         /* Onion skin dropdown panel */
         .onion-skin-dropdown {
@@ -4959,6 +5031,14 @@
                                 <div class="smt-btn" data-mode="smooth">Smooth</div>
                             </div>
                         </div>
+                        <div class="brush-setting-row">
+                            <label>Draw:</label>
+                            <div class="draw-mode-toggle" id="drawingModeToggle">
+                                <div class="dm-btn active" data-mode="normal" title="Normal — paint on top"><svg viewBox="0 0 48 48" fill="none"><circle cx="18" cy="26" r="12" stroke="#999" stroke-width="3" fill="none"/><circle cx="30" cy="22" r="12" fill="#6ecf72"/></svg></div>
+                                <div class="dm-btn" data-mode="behind" title="Behind — paint behind existing ink"><svg viewBox="0 0 48 48" fill="none"><circle cx="30" cy="22" r="12" fill="#6ecf72"/><circle cx="18" cy="26" r="12" fill="#444" stroke="#999" stroke-width="3"/></svg></div>
+                                <div class="dm-btn" data-mode="paintFill" title="Paint Fill — paint only inside filled areas"><svg viewBox="0 0 48 48" fill="none"><circle cx="18" cy="26" r="12" fill="#445" stroke="#778" stroke-width="2.5"/><clipPath id="dm-pf-clip"><circle cx="18" cy="26" r="12"/></clipPath><circle cx="30" cy="22" r="12" fill="#6ecf72" clip-path="url(#dm-pf-clip)"/></svg></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="dropdown-container">
@@ -4995,6 +5075,14 @@
                             <input type="range" id="eraserSmoothing" min="0" max="100" value="0">
                             <span class="brush-setting-value" id="eraserSmoothingValue">0%</span>
                         </div>
+                        <div class="brush-setting-row">
+                            <label>Erase:</label>
+                            <div class="draw-mode-toggle" id="eraserModeToggle">
+                                <div class="dm-btn active" data-mode="ink" title="Erase Lines — erase ink only"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="13" stroke="#aaa" stroke-width="3" fill="none"/><line x1="13" y1="35" x2="35" y2="13" stroke="#e06060" stroke-width="3" stroke-linecap="round"/></svg></div>
+                                <div class="dm-btn" data-mode="fill" title="Erase Fill — erase paint fill only"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="13" fill="#445" stroke="none"/><line x1="13" y1="35" x2="35" y2="13" stroke="#e06060" stroke-width="3" stroke-linecap="round"/></svg></div>
+                                <div class="dm-btn" data-mode="both" title="Erase Both — erase lines and fill"><svg viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="13" fill="#445" stroke="#aaa" stroke-width="2.5"/><line x1="13" y1="35" x2="35" y2="13" stroke="#e06060" stroke-width="3" stroke-linecap="round"/></svg></div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="dropdown-container">
@@ -5011,6 +5099,7 @@
                     <button id="fillTool" title="Paint Bucket (K / F)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2C8 2 3 7.5 3 10.5a5 5 0 0010 0C13 7.5 8 2 8 2z" fill="currentColor"/></svg> <span class="btn-label">Fill ▼</span><span class="gradient-badge"></span></button>
                     <div class="dropdown-menu" id="fillToolDropdown">
                         <button class="dropdown-item" data-filltool="fill"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M8 2C8 2 3 7.5 3 10.5a5 5 0 0010 0C13 7.5 8 2 8 2z" fill="currentColor"/></svg> Paint Bucket<span class="shortcut">F</span></button>
+                        <button class="dropdown-item" data-filltool="inkbottle"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M6.5 2h3v3.5l1.5 2v5a1.5 1.5 0 01-1.5 1.5h-3A1.5 1.5 0 015 12.5v-5l1.5-2z"/><path d="M6.5 2h3" stroke-width="2"/><path d="M5.5 7.5h5"/></svg> Ink Bottle<span class="shortcut">J</span></button>
                         <button class="dropdown-item" data-filltool="gradient"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="2" y="2" width="12" height="12" rx="1.5"/><line x1="5" y1="14" x2="14" y2="5" stroke-opacity="0.4"/><line x1="2" y1="14" x2="14" y2="2" stroke-opacity="0.6"/><line x1="2" y1="11" x2="11" y2="2" stroke-opacity="0.4"/></svg> Gradient Fill<span class="shortcut">G</span></button>
                         <button class="dropdown-item" data-filltool="eyedropper"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M13.5 2.5a1.4 1.4 0 00-2 0L10 4l-1-.5-5 5-.5 3.5 3.5-.5 5-5L11.5 6l1.5-1.5a1.4 1.4 0 000-2z"/><path d="M3.5 12l.5.5"/></svg> Eyedropper<span class="shortcut">I</span></button>
                     </div>
@@ -5229,7 +5318,15 @@
                         <button id="insertFrame" title="Insert Frame (F7)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v10M3 8h10"/></svg> <span class="btn-label">Insert</span></button>
                         <button id="holdFrame" title="Hold Frame (F5)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="5" height="5" rx="0.5"/><rect x="10" y="4" width="5" height="5" rx="0.5"/><path d="M6 6.5h4"/></svg> <span class="btn-label">Hold</span></button>
                         <button id="duplicateFrame" title="Duplicate Frame (⌘D / F6)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="4" width="8" height="8" rx="1"/><rect x="5.5" y="1" width="8" height="8" rx="1"/></svg> <span class="btn-label">Duplicate</span></button>
-                        <button id="clearFrame" title="Clear Frame (Backspace)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M5.5 5.5l5 5M10.5 5.5l-5 5"/></svg> <span class="btn-label">Clear</span></button>
+                        <div class="clear-btn-group">
+                            <button id="clearFrame" title="Clear Frame (Backspace)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M5.5 5.5l5 5M10.5 5.5l-5 5"/></svg> <span class="btn-label">Clear</span></button>
+                            <button id="clearModeBtn" class="clear-mode-arrow" title="Clear mode"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 6" width="8" height="6"><path d="M0 0l4 5 4-5z" fill="currentColor"/></svg></button>
+                            <div class="clear-mode-menu" id="clearModeMenu">
+                                <button class="play-mode-item active" data-clearmode="all"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="7" r="5"/><path d="M4.5 4.5l5 5M9.5 4.5l-5 5"/></svg> Clear All<span class="shortcut">⌫</span></button>
+                                <button class="play-mode-item" data-clearmode="ink"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="7" r="5" fill="none"/><path d="M4.5 9.5l5-5"/></svg> Clear Lines</button>
+                                <button class="play-mode-item" data-clearmode="fill"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 14 14" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="7" cy="7" r="5" fill="#445" stroke="none"/><path d="M4.5 9.5l5-5" stroke="#e06060"/></svg> Clear Fills</button>
+                            </div>
+                        </div>
                         <button id="deleteFrame" title="Delete Frame (⇧F5)"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 4h12M6 4V2.5h4V4M5 4v9h6V4"/><path d="M7 7v3M9 7v3"/></svg> <span class="btn-label">Delete</span></button>
                     </div>
                     <div class="loop-range-badge" id="loopRangeBadge" title="Range Area — click to reset (3)">
@@ -5489,6 +5586,9 @@
                 this.eraserShape = 'round';
                 this.brushSmoothing = 80;      // 0-100
                 this.smoothingMode = 'standard'; // 'standard' (EMA) or 'smooth' (post-stroke Chaikin)
+                this.drawingMode = 'normal'; // 'normal' | 'behind' | 'paintFill'
+                this.clearMode = 'all'; // 'all' | 'ink' | 'fill'
+                this.eraserMode = 'ink'; // 'ink' | 'fill' | 'both'
                 this.eraserSmoothing = 0;
                 this.smoothPoints = [];       // Buffer for smoothing
                 this.isDrawing = false;
@@ -6273,6 +6373,121 @@
                 return frameCanvas;
             }
             
+            // === Paint Sublayer System ===
+            // Each frame can have an optional _paintCanvas that stores fill data.
+            // Paint renders BEHIND ink (brush strokes). Lazy-allocated on first fill.
+            
+            _getPaintCanvas(frame, create) {
+                if (frame._paintCanvas) return frame._paintCanvas;
+                if (!create) return null;
+                const pc = document.createElement('canvas');
+                pc.width = frame.width;
+                pc.height = frame.height;
+                frame._paintCanvas = pc;
+                return pc;
+            }
+            
+            // Copy paint sublayer from source frame to destination frame
+            _copyPaintCanvas(src, dst) {
+                if (!src._paintCanvas) return;
+                const pc = document.createElement('canvas');
+                pc.width = src._paintCanvas.width;
+                pc.height = src._paintCanvas.height;
+                pc.getContext('2d').drawImage(src._paintCanvas, 0, 0);
+                dst._paintCanvas = pc;
+            }
+            
+            // Keep paint canvas in sync when frame expands (called from ensureFrameCovers)
+            _syncPaintCanvasGrowth(frame, growLeft, growTop, newWidth, newHeight) {
+                const pc = frame._paintCanvas;
+                if (!pc) return;
+                const temp = document.createElement('canvas');
+                temp.width = newWidth;
+                temp.height = newHeight;
+                temp.getContext('2d').drawImage(pc, growLeft, growTop);
+                pc.width = newWidth;
+                pc.height = newHeight;
+                pc.getContext('2d').drawImage(temp, 0, 0);
+            }
+            
+            // Build a composite of paint (behind) + ink (on top) for fill boundary detection
+            _getCompositeForFill(frame) {
+                const w = frame.width, h = frame.height;
+                const comp = document.createElement('canvas');
+                comp.width = w;
+                comp.height = h;
+                const ctx = comp.getContext('2d');
+                if (frame._paintCanvas) {
+                    ctx.drawImage(frame._paintCanvas, 0, 0);
+                }
+                ctx.drawImage(frame, 0, 0);
+                return { canvas: comp, ctx, data: ctx.getImageData(0, 0, w, h) };
+            }
+            
+            // Lift paint sublayer content for the current selection.
+            // Call AFTER this.selection is set. Uses selection bounds to extract from paint canvas.
+            // mode: 'rect' (clear rect), 'mask' (use selection imageData as alpha mask)
+            _liftPaintForSelection(frame, mode) {
+                if (!this.selection || !frame._paintCanvas) return;
+                const b = this.selection.bounds;
+                const pc = frame._paintCanvas;
+                const pcCtx = pc.getContext('2d');
+                
+                // Extract paint content from selection bounds
+                const paintSel = document.createElement('canvas');
+                paintSel.width = b.width;
+                paintSel.height = b.height;
+                const pctx = paintSel.getContext('2d');
+                pctx.drawImage(pc, b.x, b.y, b.width, b.height, 0, 0, b.width, b.height);
+                
+                this.selection._paintImageData = paintSel;
+                
+                // Erase from paint canvas
+                if (mode === 'rect') {
+                    pcCtx.clearRect(b.x, b.y, b.width, b.height);
+                } else {
+                    // 'all' mode: clear entire canvas (used by selectAll)
+                    pcCtx.clearRect(0, 0, pc.width, pc.height);
+                }
+            }
+            
+            // Apply paint sublayer data back from selection with the same transform
+            _applyPaintFromSelection(frame) {
+                if (!this.selection || !this.selection._paintImageData) return;
+                const b = this.selection.bounds;
+                const rotation = this.selection.rotation || 0;
+                const anchorX = this.selection.anchorX || (b.x + b.width / 2);
+                const anchorY = this.selection.anchorY || (b.y + b.height / 2);
+                const skewX = this.selection.skewX || 0;
+                const skewY = this.selection.skewY || 0;
+                
+                const pc = this._getPaintCanvas(frame, true);
+                const ox = frame._originX || 0;
+                const oy = frame._originY || 0;
+                
+                // Must match the same coordinate adjustment as applySelection
+                // (handled there via ensureFrameCovers shift)
+                const pcCtx = pc.getContext('2d');
+                
+                if (this.selection.corners && this.tool === 'distort') {
+                    // Distort: use quad mapping
+                    this._drawImageToQuad(pcCtx, this.selection._paintImageData, this.selection.corners);
+                } else {
+                    pcCtx.save();
+                    pcCtx.translate(anchorX, anchorY);
+                    pcCtx.rotate(rotation);
+                    if (skewX || skewY) {
+                        pcCtx.transform(1, skewY, skewX, 1, 0, 0);
+                    }
+                    pcCtx.translate(-anchorX, -anchorY);
+                    pcCtx.drawImage(
+                        this.selection._paintImageData,
+                        b.x, b.y, b.width, b.height
+                    );
+                    pcCtx.restore();
+                }
+            }
+            
             _createSpacerFrame() {
                 const f = this.createEmptyFrame();
                 f._isSpacer = true;
@@ -6350,6 +6565,9 @@
                 frame.width = newWidth;
                 frame.height = newHeight;
                 frame.getContext('2d').drawImage(temp, 0, 0);
+                
+                // Sync paint sublayer if it exists
+                this._syncPaintCanvasGrowth(frame, growLeft, growTop, newWidth, newHeight);
                 
                 // Shift origin
                 frame._originX = ox - growLeft;
@@ -6513,6 +6731,24 @@
                             ctx.drawImage(oldFrame, ox, oy);
                         } else {
                             ctx.drawImage(oldFrame, 0, 0);
+                        }
+                        
+                        // Resize paint sublayer if present
+                        if (oldFrame._paintCanvas) {
+                            const pc = document.createElement('canvas');
+                            pc.width = newW;
+                            pc.height = newH;
+                            const pctx = pc.getContext('2d');
+                            if (mode === 'scale') {
+                                pctx.drawImage(oldFrame._paintCanvas, 0, 0, newW, newH);
+                            } else if (mode === 'crop-center') {
+                                const ox = Math.round((newW - oldW) / 2);
+                                const oy = Math.round((newH - oldH) / 2);
+                                pctx.drawImage(oldFrame._paintCanvas, ox, oy);
+                            } else {
+                                pctx.drawImage(oldFrame._paintCanvas, 0, 0);
+                            }
+                            newFrame._paintCanvas = pc;
                         }
                         
                         resizedMap.set(oldFrame, newFrame);
@@ -7193,6 +7429,9 @@
                     const frame = layer.frames[0];
                     if (!frame) continue;
                     tempCtx.globalAlpha = layer.opacity != null ? layer.opacity : 1;
+                    if (frame._paintCanvas) {
+                        tempCtx.drawImage(frame._paintCanvas, -(frame._originX || 0), -(frame._originY || 0));
+                    }
                     tempCtx.drawImage(frame, -(frame._originX || 0), -(frame._originY || 0));
                     tempCtx.globalAlpha = 1;
                 }
@@ -7351,10 +7590,19 @@
                     snapCanvas.width = selImg.width;
                     snapCanvas.height = selImg.height;
                     snapCanvas.getContext('2d').drawImage(selImg, 0, 0);
+                    // Deep copy paint sublayer data too
+                    let snapPaint = null;
+                    if (this.selection._paintImageData) {
+                        snapPaint = document.createElement('canvas');
+                        snapPaint.width = this.selection._paintImageData.width;
+                        snapPaint.height = this.selection._paintImageData.height;
+                        snapPaint.getContext('2d').drawImage(this.selection._paintImageData, 0, 0);
+                    }
                     // Capture frame origin so we can convert frame-local bounds → world coords
                     const curFrame = this.getCurrentLayer().frames[this.currentFrameIndex];
                     this._loopSelectionSnapshot = {
                         imageData: snapCanvas,
+                        paintImageData: snapPaint,
                         bounds: { ...this.selection.bounds },
                         frameOriginX: curFrame ? (curFrame._originX || 0) : 0,
                         frameOriginY: curFrame ? (curFrame._originY || 0) : 0
@@ -7451,6 +7699,20 @@
                     } else {
                         cCtx.drawImage(selImg, selBounds.x, selBounds.y);
                     }
+                    // Copy paint sublayer into symbol frame
+                    const selPaint = this._loopSelectionSnapshot.paintImageData;
+                    if (selPaint) {
+                        const pc = document.createElement('canvas');
+                        pc.width = symW;
+                        pc.height = symH;
+                        const pcCtx = pc.getContext('2d');
+                        if (sizeMode === 'fit') {
+                            pcCtx.drawImage(selPaint, 0, 0);
+                        } else {
+                            pcCtx.drawImage(selPaint, selBounds.x, selBounds.y);
+                        }
+                        c._paintCanvas = pc;
+                    }
                     symLayer.frames.push(c);
                     
                     if (replaceOriginal) {
@@ -7487,21 +7749,20 @@
                         }
                         
                         let selTargetLayer = layer;
+                        const origSelFrameIdx = this.currentFrameIndex;
                         if (hasRemainingContent) {
+                            const timelinePos = (layer.startFrame || 0) + this.currentFrameIndex;
                             selTargetLayer = {
                                 id: this.nextLayerId++,
                                 name: name,
                                 visible: true,
                                 opacity: 1.0,
-                                frames: [],
+                                frames: [this.createEmptyFrame()],
                                 transformKeyframes: [],
-                                startFrame: 0,
+                                startFrame: timelinePos,
                                 parentId: null,
                                 symbolInstances: []
                             };
-                            for (let fi = 0; fi < layer.frames.length; fi++) {
-                                selTargetLayer.frames.push(this.createEmptyFrame());
-                            }
                             const currentIdx = this.layers.findIndex(l => l.id === this.currentLayerId);
                             if (currentIdx >= 0) {
                                 this.layers.splice(currentIdx + 1, 0, selTargetLayer);
@@ -7509,17 +7770,21 @@
                                 this.layers.push(selTargetLayer);
                             }
                             this.currentLayerId = selTargetLayer.id;
+                            this.currentFrameIndex = 0; // local frame 0 = timeline position
                         }
                         
-                        const duration = Math.max(1, layer.frames.length);
+                        const duration = Math.max(1, (hasRemainingContent ? 1 : layer.frames.length));
                         const instance = this.createSymbolInstance(sym.id, 0, duration, instX, instY);
                         selTargetLayer.symbolInstances.push(instance);
                         
                         // Erase the selected region from the original frame
                         // (selection may have been committed back while dialog was open)
-                        const origFrame = layer.frames[this.currentFrameIndex];
+                        const origFrame = layer.frames[origSelFrameIdx];
                         if (origFrame) {
                             origFrame.getContext('2d').clearRect(selBounds.x, selBounds.y, selBounds.width, selBounds.height);
+                            if (origFrame._paintCanvas) {
+                                origFrame._paintCanvas.getContext('2d').clearRect(selBounds.x, selBounds.y, selBounds.width, selBounds.height);
+                            }
                         }
                     }
                     
@@ -7574,9 +7839,9 @@
                         continue;
                     }
                     
-                    const ctx = frame.getContext('2d');
-                    const imgData = ctx.getImageData(0, 0, frame.width, frame.height);
-                    const d = imgData.data;
+                    // Scan composite (ink + paint) for bounding box
+                    const comp = this._getCompositeForFill(frame);
+                    const d = comp.data.data;
                     const ox = frame._originX || 0;
                     const oy = frame._originY || 0;
                     
@@ -7669,6 +7934,20 @@
                         cCtx.drawImage(srcFrame, -ox, -(srcFrame._originY || 0));
                     }
                     
+                    // Copy paint sublayer into symbol frame
+                    if (srcFrame._paintCanvas) {
+                        const pc = document.createElement('canvas');
+                        pc.width = symW;
+                        pc.height = symH;
+                        const pcCtx = pc.getContext('2d');
+                        if (sizeMode === 'fit') {
+                            pcCtx.drawImage(srcFrame._paintCanvas, -ox - minX, -(srcFrame._originY || 0) - minY);
+                        } else {
+                            pcCtx.drawImage(srcFrame._paintCanvas, -ox, -(srcFrame._originY || 0));
+                        }
+                        c._paintCanvas = pc;
+                    }
+                    
                     holdMap.set(srcFrame, c);
                     symLayer.frames.push(c);
                 }
@@ -7689,9 +7968,17 @@
                         if (sourceSet.has(fi)) continue;
                         const f = layer.frames[fi];
                         if (!f) continue;
+                        // Check ink
                         const fd = f.getContext('2d').getImageData(0, 0, f.width, f.height).data;
                         for (let i = 3; i < fd.length; i += 4) {
                             if (fd[i] > 0) { hasRemainingContent = true; break; }
+                        }
+                        // Check paint
+                        if (!hasRemainingContent && f._paintCanvas) {
+                            const pd = f._paintCanvas.getContext('2d').getImageData(0, 0, f._paintCanvas.width, f._paintCanvas.height).data;
+                            for (let i = 3; i < pd.length; i += 4) {
+                                if (pd[i] > 0) { hasRemainingContent = true; break; }
+                            }
                         }
                         if (hasRemainingContent) break;
                     }
@@ -7704,20 +7991,18 @@
                     let targetLayer = layer;
                     if (hasRemainingContent) {
                         // Other content exists — create a new layer for the loop
+                        const timelinePos = (layer.startFrame || 0) + startFrame;
                         targetLayer = {
                             id: this.nextLayerId++,
                             name: name,
                             visible: true,
                             opacity: 1.0,
-                            frames: [],
+                            frames: [this.createEmptyFrame()],
                             transformKeyframes: [],
-                            startFrame: 0,
+                            startFrame: timelinePos,
                             parentId: null,
                             symbolInstances: []
                         };
-                        for (let fi = 0; fi < layer.frames.length; fi++) {
-                            targetLayer.frames.push(this.createEmptyFrame());
-                        }
                         const currentIdx = this.layers.findIndex(l => l.id === this.currentLayerId);
                         if (currentIdx >= 0) {
                             this.layers.splice(currentIdx + 1, 0, targetLayer);
@@ -7725,14 +8010,19 @@
                             this.layers.push(targetLayer);
                         }
                         this.currentLayerId = targetLayer.id;
+                        this.currentFrameIndex = 0; // local frame 0 = timeline position
                     }
                     
-                    const instance = this.createSymbolInstance(sym.id, startFrame, duration, instX, instY);
+                    // Instance starts at 0 relative to the new layer (layer offset handles timeline position)
+                    const instStart = hasRemainingContent ? 0 : startFrame;
+                    const instance = this.createSymbolInstance(sym.id, instStart, duration, instX, instY);
                     targetLayer.symbolInstances.push(instance);
                     
                     // Clear source frames on original layer (pixels now in the symbol)
+                    // Use saved index since currentFrameIndex may have changed for new layer
+                    const origFrameIdx = sourceFrameIndices.includes(this.currentFrameIndex) ? this.currentFrameIndex : sourceFrameIndices[0];
                     if (includeMode === 'current') {
-                        layer.frames[this.currentFrameIndex] = this.createEmptyFrame();
+                        layer.frames[origFrameIdx] = this.createEmptyFrame();
                     } else {
                         for (const fi of sourceFrameIndices) {
                             layer.frames[fi] = this.createEmptyFrame();
@@ -8351,7 +8641,7 @@
                 
                 // Central helper to close every dropdown/panel
                 const _closeAllDropdowns = (except) => {
-                    const ids = ['shapeDropdown', 'onionSkinDropdown', 'brushDropdown', 'eraserDropdown', 'fileMenuDropdown', 'navToolDropdown', 'transformToolDropdown', 'fillToolDropdown', 'lassoToolDropdown', 'playModeMenu', 'fpsPopover'];
+                    const ids = ['shapeDropdown', 'onionSkinDropdown', 'brushDropdown', 'eraserDropdown', 'fileMenuDropdown', 'navToolDropdown', 'transformToolDropdown', 'fillToolDropdown', 'lassoToolDropdown', 'playModeMenu', 'clearModeMenu', 'fpsPopover'];
                     for (const id of ids) {
                         if (id === except) continue;
                         const el = document.getElementById(id);
@@ -8371,6 +8661,9 @@
                         document.getElementById('smoothingModeToggle').querySelectorAll('.smt-btn').forEach(b => {
                             b.classList.toggle('active', b.dataset.mode === this.smoothingMode);
                         });
+                        document.getElementById('drawingModeToggle').querySelectorAll('.dm-btn').forEach(b => {
+                            b.classList.toggle('active', b.dataset.mode === this.drawingMode);
+                        });
                     }
                 });
                 
@@ -8379,6 +8672,23 @@
                     this.selectTool('eraser');
                     _closeAllDropdowns('eraserDropdown');
                     eraserDropdown.classList.toggle('show');
+                    // Sync eraser mode toggle
+                    if (eraserDropdown.classList.contains('show')) {
+                        document.getElementById('eraserModeToggle').querySelectorAll('.dm-btn').forEach(b => {
+                            b.classList.toggle('active', b.dataset.mode === this.eraserMode);
+                        });
+                    }
+                });
+                
+                // Eraser mode toggle (Ink / Fill / Both)
+                document.getElementById('eraserModeToggle').querySelectorAll('.dm-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.eraserMode = btn.dataset.mode;
+                        document.getElementById('eraserModeToggle').querySelectorAll('.dm-btn').forEach(b => {
+                            b.classList.toggle('active', b === btn);
+                        });
+                    });
                 });
                 
                 // Prevent dropdown clicks from propagating
@@ -8413,6 +8723,17 @@
                         e.stopPropagation();
                         this.smoothingMode = btn.dataset.mode;
                         document.getElementById('smoothingModeToggle').querySelectorAll('.smt-btn').forEach(b => {
+                            b.classList.toggle('active', b === btn);
+                        });
+                    });
+                });
+                
+                // Drawing mode toggle (Normal / Behind / Fill)
+                document.getElementById('drawingModeToggle').querySelectorAll('.dm-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.drawingMode = btn.dataset.mode;
+                        document.getElementById('drawingModeToggle').querySelectorAll('.dm-btn').forEach(b => {
                             b.classList.toggle('active', b === btn);
                         });
                     });
@@ -8459,7 +8780,7 @@
                 this._activeFillTool = 'fill';
                 document.getElementById('fillTool').addEventListener('click', (e) => {
                     e.stopPropagation();
-                    if (this.tool === 'fill' || this.tool === 'gradient' || this.tool === 'eyedropper') {
+                    if (this.tool === 'fill' || this.tool === 'inkbottle' || this.tool === 'gradient' || this.tool === 'eyedropper') {
                         // Already on a fill sub-tool — toggle dropdown to switch
                         _closeAllDropdowns('fillToolDropdown');
                         document.getElementById('fillToolDropdown').classList.toggle('show');
@@ -8475,10 +8796,11 @@
                 const fillButton = document.getElementById('fillTool');
                 const fillIcons = {
                     'fill': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M8 2C8 2 3 7.5 3 10.5a5 5 0 0010 0C13 7.5 8 2 8 2z" fill="currentColor"/></svg>',
+                    'inkbottle': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M6.5 2h3v3.5l1.5 2v5a1.5 1.5 0 01-1.5 1.5h-3A1.5 1.5 0 015 12.5v-5l1.5-2z"/><path d="M6.5 2h3" stroke-width="2"/><path d="M5.5 7.5h5"/></svg>',
                     'gradient': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="2" y="2" width="12" height="12" rx="1.5"/><line x1="5" y1="14" x2="14" y2="5" stroke-opacity="0.4"/><line x1="2" y1="14" x2="14" y2="2" stroke-opacity="0.6"/><line x1="2" y1="11" x2="11" y2="2" stroke-opacity="0.4"/></svg>',
                     'eyedropper': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M13.5 2.5a1.4 1.4 0 00-2 0L10 4l-1-.5-5 5-.5 3.5 3.5-.5 5-5L11.5 6l1.5-1.5a1.4 1.4 0 000-2z"/><path d="M3.5 12l.5.5"/></svg>'
                 };
-                const fillNames = { 'fill': 'Fill', 'gradient': 'Gradient', 'eyedropper': 'Eyedropper' };
+                const fillNames = { 'fill': 'Fill', 'inkbottle': 'Ink Bottle', 'gradient': 'Gradient', 'eyedropper': 'Eyedropper' };
                 fillDropdown.querySelectorAll('.dropdown-item').forEach(item => {
                     item.addEventListener('click', (e) => {
                         e.stopPropagation();
@@ -8588,7 +8910,7 @@
                 document.addEventListener('pointerdown', (e) => {
                     if (!e.target || !e.target.closest) return;
                     // Don't close if interacting with dropdown content or toolbar/playback controls
-                    if (e.target.closest('.dropdown-menu, .dropdown-submenu, .brush-dropdown, .onion-skin-dropdown, .play-mode-menu, .fps-popover, .fps-control, .toolbar, .playback-controls')) return;
+                    if (e.target.closest('.dropdown-menu, .dropdown-submenu, .brush-dropdown, .onion-skin-dropdown, .play-mode-menu, .clear-mode-menu, .fps-popover, .fps-control, .toolbar, .playback-controls')) return;
                     _closeAllDropdowns();
                 });
                 
@@ -8680,6 +9002,32 @@
                 
                 // Frame controls
                 document.getElementById('clearFrame').addEventListener('click', () => this.clearCurrentFrame());
+                
+                // Clear mode dropdown
+                const clearModeBtn = document.getElementById('clearModeBtn');
+                const clearModeMenu = document.getElementById('clearModeMenu');
+                clearModeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    _closeAllDropdowns('clearModeMenu');
+                    clearModeMenu.classList.toggle('show');
+                });
+                clearModeMenu.querySelectorAll('.play-mode-item').forEach(item => {
+                    item.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.clearMode = item.dataset.clearmode;
+                        clearModeMenu.querySelectorAll('.play-mode-item').forEach(el => el.classList.remove('active'));
+                        item.classList.add('active');
+                        clearModeMenu.classList.remove('show');
+                        // Update clear button tooltip
+                        const titles = { all: 'Clear Frame (Backspace)', ink: 'Clear Lines (Backspace)', fill: 'Clear Fills (Backspace)' };
+                        document.getElementById('clearFrame').title = titles[this.clearMode] || titles.all;
+                    });
+                });
+                document.addEventListener('pointerdown', (e) => {
+                    if (!clearModeMenu.contains(e.target) && e.target !== clearModeBtn) {
+                        clearModeMenu.classList.remove('show');
+                    }
+                });
                 
                 // Onion skin dropdown
                 const onionBtn = document.getElementById('onionSkinToggle');
@@ -9138,6 +9486,11 @@
                             case 'g':
                                 e.preventDefault();
                                 this.selectTool('gradient');
+                                break;
+                            case 'j':
+                                e.preventDefault();
+                                this._activeFillTool = 'inkbottle';
+                                this.selectTool('inkbottle');
                                 break;
                             case 'G':
                                 e.preventDefault();
@@ -9963,15 +10316,16 @@
                 }
                 
                 // For fill sub-tools, highlight the fillTool dropdown button
-                if (tool === 'fill' || tool === 'gradient' || tool === 'eyedropper') {
+                if (tool === 'fill' || tool === 'inkbottle' || tool === 'gradient' || tool === 'eyedropper') {
                     document.getElementById('fillTool').classList.add('active');
                     // Update button icon to match selected sub-tool
                     const _fillIcons = {
                         'fill': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M8 2C8 2 3 7.5 3 10.5a5 5 0 0010 0C13 7.5 8 2 8 2z" fill="currentColor"/></svg>',
+                        'inkbottle': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M6.5 2h3v3.5l1.5 2v5a1.5 1.5 0 01-1.5 1.5h-3A1.5 1.5 0 015 12.5v-5l1.5-2z"/><path d="M6.5 2h3" stroke-width="2"/><path d="M5.5 7.5h5"/></svg>',
                         'gradient': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><rect x="2" y="2" width="12" height="12" rx="1.5"/><line x1="5" y1="14" x2="14" y2="5" stroke-opacity="0.4"/><line x1="2" y1="14" x2="14" y2="2" stroke-opacity="0.6"/><line x1="2" y1="11" x2="11" y2="2" stroke-opacity="0.4"/></svg>',
                         'eyedropper': '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M13.5 2.5a1.4 1.4 0 00-2 0L10 4l-1-.5-5 5-.5 3.5 3.5-.5 5-5L11.5 6l1.5-1.5a1.4 1.4 0 000-2z"/><path d="M3.5 12l.5.5"/></svg>'
                     };
-                    const _fillNames = { 'fill': 'Fill', 'gradient': 'Gradient', 'eyedropper': 'Eyedropper' };
+                    const _fillNames = { 'fill': 'Fill', 'inkbottle': 'Ink Bottle', 'gradient': 'Gradient', 'eyedropper': 'Eyedropper' };
                     const _fb = document.getElementById('fillTool');
                     _fb.innerHTML = `${_fillIcons[tool]} <span class="btn-label">${_fillNames[tool]} ▼</span><span class="gradient-badge"></span>`;
                 }
@@ -10016,7 +10370,7 @@
                     this.selectionCanvas.style.cursor = 'none';
                     this.canvasContainer.style.cursor = 'none';
                     this.canvasWrapper.style.cursor = 'none';
-                } else if (tool === 'fill' || tool === 'gradient' || tool === 'lasso') {
+                } else if (tool === 'fill' || tool === 'inkbottle' || tool === 'gradient' || tool === 'lasso') {
                     this.canvas.style.cursor = 'crosshair';
                     this.selectionCanvas.style.cursor = 'crosshair';
                     this.canvasContainer.style.cursor = '';
@@ -10158,16 +10512,16 @@
                 const frame = layer.frames[this.currentFrameIndex];
                 if (!frame) return;
                 
-                const frameCtx = frame.getContext('2d');
-                const pixelData = frameCtx.getImageData(0, 0, frame.width, frame.height);
-                const pixels = pixelData.data;
+                // Scan composite (ink + paint) for tight bounding box
+                const comp = this._getCompositeForFill(frame);
+                const pixels = comp.data.data;
+                const fw = frame.width, fh = frame.height;
                 
-                // Find tight bounding box of non-transparent pixels
-                let minX = frame.width, minY = frame.height, maxX = -1, maxY = -1;
+                let minX = fw, minY = fh, maxX = -1, maxY = -1;
                 
-                for (let py = 0; py < frame.height; py++) {
-                    for (let px = 0; px < frame.width; px++) {
-                        const alpha = pixels[(py * frame.width + px) * 4 + 3];
+                for (let py = 0; py < fh; py++) {
+                    for (let px = 0; px < fw; px++) {
+                        const alpha = pixels[(py * fw + px) * 4 + 3];
                         if (alpha > 0) {
                             if (px < minX) minX = px;
                             if (px > maxX) maxX = px;
@@ -10186,7 +10540,7 @@
                 const width = maxX - minX + 1;
                 const height = maxY - minY + 1;
                 
-                // Create selection canvas with the content
+                // Create selection canvas with the INK content
                 const selectedCanvas = document.createElement('canvas');
                 selectedCanvas.width = width;
                 selectedCanvas.height = height;
@@ -10200,9 +10554,12 @@
                     originalBounds: { x: minX, y: minY, width, height }
                 };
                 
-                // Erase content from original frame
+                // Lift paint sublayer for selection
+                this._liftPaintForSelection(frame, 'all');
+                
+                // Erase content from original ink frame
                 this.saveState();
-                frameCtx.clearRect(0, 0, frame.width, frame.height);
+                frame.getContext('2d').clearRect(0, 0, frame.width, frame.height);
                 
                 this.showTransformHandles();
                 this.render();
@@ -10213,7 +10570,7 @@
             // saveFullState() → slow, all frames   (add/delete layer/frame, resize, import)
             
             snapshotFrame() {
-                // Fast: only copy current frame on current layer (1 getImageData call)
+                // Fast: only copy current frame on current layer (1-2 getImageData calls)
                 const layer = this.getCurrentLayer();
                 const frame = layer.frames[this.currentFrameIndex];
                 let frameData = null;
@@ -10225,6 +10582,12 @@
                         originY: frame._originY || 0,
                         imageData: frame.getContext('2d').getImageData(0, 0, frame.width, frame.height)
                     };
+                    // Capture paint sublayer if present
+                    if (frame._paintCanvas) {
+                        frameData.paintData = frame._paintCanvas.getContext('2d').getImageData(0, 0, frame._paintCanvas.width, frame._paintCanvas.height);
+                        frameData.paintWidth = frame._paintCanvas.width;
+                        frameData.paintHeight = frame._paintCanvas.height;
+                    }
                 }
                 return {
                     type: 'frame',
@@ -10258,7 +10621,10 @@
                                     height: frame.height,
                                     originX: frame._originX || 0,
                                     originY: frame._originY || 0,
-                                    imageData: frame.getContext('2d').getImageData(0, 0, frame.width, frame.height)
+                                    imageData: frame.getContext('2d').getImageData(0, 0, frame.width, frame.height),
+                                    paintData: frame._paintCanvas ? frame._paintCanvas.getContext('2d').getImageData(0, 0, frame._paintCanvas.width, frame._paintCanvas.height) : null,
+                                    paintWidth: frame._paintCanvas ? frame._paintCanvas.width : 0,
+                                    paintHeight: frame._paintCanvas ? frame._paintCanvas.height : 0
                                 };
                             }),
                             transformKeyframes: (layer.transformKeyframes || []).map(kf => ({...kf})),
@@ -10418,6 +10784,20 @@
                         const ctx = frame.getContext('2d');
                         ctx.clearRect(0, 0, frame.width, frame.height);
                         ctx.putImageData(state.frameData.imageData, 0, 0);
+                        // Restore paint sublayer
+                        if (state.frameData.paintData) {
+                            const pc = this._getPaintCanvas(frame, true);
+                            if (pc.width !== state.frameData.paintWidth || pc.height !== state.frameData.paintHeight) {
+                                pc.width = state.frameData.paintWidth;
+                                pc.height = state.frameData.paintHeight;
+                            }
+                            const pctx = pc.getContext('2d');
+                            pctx.clearRect(0, 0, pc.width, pc.height);
+                            pctx.putImageData(state.frameData.paintData, 0, 0);
+                        } else {
+                            // Snapshot had no paint data — remove paint canvas
+                            frame._paintCanvas = null;
+                        }
                         this._dirtyThumb(frame);
                     }
                     this.render();
@@ -10448,6 +10828,14 @@
                             c._originX = snapshot.originX || 0;
                             c._originY = snapshot.originY || 0;
                             c.getContext('2d').putImageData(snapshot.imageData, 0, 0);
+                            // Restore paint sublayer
+                            if (snapshot.paintData) {
+                                const pc = document.createElement('canvas');
+                                pc.width = snapshot.paintWidth || snapshot.width;
+                                pc.height = snapshot.paintHeight || snapshot.height;
+                                pc.getContext('2d').putImageData(snapshot.paintData, 0, 0);
+                                c._paintCanvas = pc;
+                            }
                             canvasMap.set(fi, c);
                             return c;
                         });
@@ -10606,6 +10994,25 @@
                         } else {
                             this.floodFill(lx, ly);
                         }
+                    }
+                    return;
+                }
+                
+                // Handle ink bottle tool
+                if (this.tool === 'inkbottle') {
+                    const canvas = e.target === this.selectionCanvas ? this.selectionCanvas : this.canvas;
+                    const rect = canvas.getBoundingClientRect();
+                    const scaleX = canvas.width / rect.width;
+                    const scaleY = canvas.height / rect.height;
+                    const canvasX = (e.clientX - rect.left) * scaleX;
+                    const canvasY = (e.clientY - rect.top) * scaleY;
+                    const worldX = canvasX + this.viewportX;
+                    const worldY = canvasY + this.viewportY;
+                    const layer = this.getCurrentLayer();
+                    const frame = layer.frames[this.currentFrameIndex];
+                    if (frame) {
+                        const local = this.worldToLocal(worldX, worldY, frame);
+                        this.inkBottleFill(Math.floor(local.x), Math.floor(local.y));
                     }
                     return;
                 }
@@ -10911,9 +11318,32 @@
                     // Cache per-stroke values to avoid method calls on every pointermove
                     this._strokeShape = this.getCurrentBrushShape();
                     this._strokeSmoothing = this.getSmoothing();
-                    this._strokeCompositeOp = this.tool === 'eraser' ? 'destination-out' : 'source-over';
                     this._strokeColor = this.color;
                     this._strokeMode = this.smoothingMode; // 'standard' or 'smooth'
+                    
+                    // Drawing mode determines target canvas and composite operation
+                    if (this.tool === 'eraser') {
+                        this._strokeCompositeOp = 'destination-out';
+                        if (this.eraserMode === 'fill') {
+                            this._strokeDrawMode = 'eraseFill';
+                            if (frame) this._getPaintCanvas(frame, true);
+                        } else if (this.eraserMode === 'both') {
+                            this._strokeDrawMode = 'eraseBoth';
+                        } else {
+                            this._strokeDrawMode = 'normal'; // ink only
+                        }
+                    } else if (this.drawingMode === 'behind') {
+                        this._strokeCompositeOp = 'destination-over';
+                        this._strokeDrawMode = 'behind';
+                    } else if (this.drawingMode === 'paintFill') {
+                        this._strokeCompositeOp = 'source-atop';
+                        this._strokeDrawMode = 'paintFill';
+                        // Ensure paint canvas exists before drawing
+                        if (frame) this._getPaintCanvas(frame, true);
+                    } else {
+                        this._strokeCompositeOp = 'source-over';
+                        this._strokeDrawMode = 'normal';
+                    }
                     // Initialize post-stroke smoothing: collect raw points during drawing
                     this._strokePoints = (this._strokeMode === 'smooth') ? [] : null;
                     if (frame) {
@@ -11416,6 +11846,17 @@
                             this._strokePoints.push({ x: tx, y: ty, pressure: this.currentPressure });
                         }
                     }
+                    
+                    // eraseFill/behind mode: no real-time display preview (composite op would be wrong),
+                    // so throttle a full recomposite for visual feedback (~30fps)
+                    if (this._strokeDrawMode === 'eraseFill' || this._strokeDrawMode === 'behind') {
+                        const now = performance.now();
+                        if (!this._lastEraseFillRender || now - this._lastEraseFillRender > 33) {
+                            this._lastEraseFillRender = now;
+                            this._invalidateCompositeCache();
+                            this.renderCanvasOnly();
+                        }
+                    }
                 } else if (this.shapeStart) {
                     // Preview shape (line, rect, circle, triangle)
                     this.drawShape(this.shapeStart.x, this.shapeStart.y, x, y, true, e.shiftKey, e.altKey);
@@ -11771,9 +12212,19 @@
                 this._strokePoints = null;
                 this._preStrokeData = null;
                 this._skipPostSmooth = false;
+                const _strokeDrawModeSave = this._strokeDrawMode;
+                this._strokeDrawMode = undefined;
+                this._lastEraseFillRender = undefined;
                 // Invalidate thumbnail cache so timeline indicators update
                 const _layer = this.getCurrentLayer();
-                if (_layer) this._dirtyThumb(_layer.frames[this.currentFrameIndex]);
+                if (_layer) {
+                    const _frame = _layer.frames[this.currentFrameIndex];
+                    this._dirtyThumb(_frame);
+                    // Also dirty paint canvas thumbnail cache for paintFill/erase strokes
+                    if ((_strokeDrawModeSave === 'paintFill' || _strokeDrawModeSave === 'eraseFill' || _strokeDrawModeSave === 'eraseBoth') && _frame && _frame._paintCanvas) {
+                        _frame._paintCanvas._thumbVer = (_frame._paintCanvas._thumbVer || 0) + 1;
+                    }
+                }
                 // Also dirty the frame we were actually drawing on (may differ during playback)
                 if (_layer && _drawingFrame !== undefined && _drawingFrame !== this.currentFrameIndex) {
                     this._dirtyThumb(_layer.frames[_drawingFrame]);
@@ -11784,66 +12235,81 @@
             drawPoint(x, y) {
                 const layer = this.getCurrentLayer();
                 const frame = layer.frames[this.currentFrameIndex];
-                const frameCtx = frame.getContext('2d');
                 const shape = this._strokeShape || this.getCurrentBrushShape();
                 const size = this.getPressureBrushSize();
                 const radius = size / 2;
                 const compositeOp = this._strokeCompositeOp || (this.tool === 'eraser' ? 'destination-out' : 'source-over');
                 const color = this._strokeColor || this.color;
+                const drawMode = this._strokeDrawMode || 'normal';
                 
-                frameCtx.globalCompositeOperation = compositeOp;
-                frameCtx.fillStyle = color;
-                if (shape === 'square') {
-                    frameCtx.fillRect(x - radius, y - radius, size, size);
-                } else if (shape === 'oval-h') {
-                    frameCtx.beginPath();
-                    frameCtx.ellipse(x, y, radius, radius * 0.4, 0, 0, Math.PI * 2);
-                    frameCtx.fill();
-                } else if (shape === 'oval-v') {
-                    frameCtx.beginPath();
-                    frameCtx.ellipse(x, y, radius * 0.4, radius, 0, 0, Math.PI * 2);
-                    frameCtx.fill();
+                // Choose target canvas based on mode
+                let targetCanvas;
+                if (drawMode === 'paintFill' || drawMode === 'eraseFill') {
+                    targetCanvas = frame._paintCanvas || frame;
                 } else {
-                    frameCtx.beginPath();
-                    frameCtx.arc(x, y, radius, 0, Math.PI * 2);
-                    frameCtx.fill();
+                    targetCanvas = frame;
                 }
-                frameCtx.globalCompositeOperation = 'source-over';
+                const targetCtx = targetCanvas.getContext('2d');
+                
+                // Draw the mark on the target canvas
+                const _drawMark = (ctx, op) => {
+                    ctx.globalCompositeOperation = op;
+                    ctx.fillStyle = color;
+                    if (shape === 'square') {
+                        ctx.fillRect(x - radius, y - radius, size, size);
+                    } else if (shape === 'oval-h') {
+                        ctx.beginPath();
+                        ctx.ellipse(x, y, radius, radius * 0.4, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else if (shape === 'oval-v') {
+                        ctx.beginPath();
+                        ctx.ellipse(x, y, radius * 0.4, radius, 0, 0, Math.PI * 2);
+                        ctx.fill();
+                    } else {
+                        ctx.beginPath();
+                        ctx.arc(x, y, radius, 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+                    ctx.globalCompositeOperation = 'source-over';
+                };
+                
+                _drawMark(targetCtx, compositeOp);
+                
+                // Erase Both: also erase from paint canvas
+                if (drawMode === 'eraseBoth' && frame._paintCanvas) {
+                    _drawMark(frame._paintCanvas.getContext('2d'), compositeOp);
+                }
                 
                 // Draw on display canvas with viewport offset
-                const off = this.frameToDisplayOffset(frame);
-                this.ctx.save();
-                this.ctx.translate(off.x, off.y);
-                this.ctx.globalCompositeOperation = compositeOp;
-                this.ctx.fillStyle = color;
-                if (shape === 'square') {
-                    this.ctx.fillRect(x - radius, y - radius, size, size);
-                } else if (shape === 'oval-h') {
-                    this.ctx.beginPath();
-                    this.ctx.ellipse(x, y, radius, radius * 0.4, 0, 0, Math.PI * 2);
-                    this.ctx.fill();
-                } else if (shape === 'oval-v') {
-                    this.ctx.beginPath();
-                    this.ctx.ellipse(x, y, radius * 0.4, radius, 0, 0, Math.PI * 2);
-                    this.ctx.fill();
-                } else {
-                    this.ctx.beginPath();
-                    this.ctx.arc(x, y, radius, 0, Math.PI * 2);
-                    this.ctx.fill();
+                // Skip for eraseFill — destination-out would visually erase ink too;
+                // the correct composite shows on the next render() call
+                if (drawMode !== 'eraseFill' && drawMode !== 'behind') {
+                    const off = this.frameToDisplayOffset(frame);
+                    this.ctx.save();
+                    this.ctx.translate(off.x, off.y);
+                    _drawMark(this.ctx, compositeOp);
+                    this.ctx.restore();
                 }
-                this.ctx.globalCompositeOperation = 'source-over';
-                this.ctx.restore();
             }
             
             drawLine(x1, y1, x2, y2) {
                 const layer = this.getCurrentLayer();
                 const frame = layer.frames[this.currentFrameIndex];
-                const frameCtx = frame.getContext('2d');
                 const shape = this._strokeShape || this.getCurrentBrushShape();
                 const size = this.getPressureBrushSize();
                 const off = this.frameToDisplayOffset(frame);
                 const compositeOp = this._strokeCompositeOp || (this.tool === 'eraser' ? 'destination-out' : 'source-over');
                 const color = this._strokeColor || this.color;
+                const drawMode = this._strokeDrawMode || 'normal';
+                
+                // Choose target canvas based on mode
+                let targetCanvas;
+                if (drawMode === 'paintFill' || drawMode === 'eraseFill') {
+                    targetCanvas = frame._paintCanvas || frame;
+                } else {
+                    targetCanvas = frame;
+                }
+                const targetCtx = targetCanvas.getContext('2d');
                 
                 if (shape === 'oval-h' || shape === 'oval-v') {
                     const rx = shape === 'oval-h' ? size / 2 : size * 0.2;
@@ -11852,64 +12318,59 @@
                     const step = Math.max(1, Math.min(rx, ry) * 0.3);
                     const steps = Math.max(1, Math.ceil(dist / step));
                     
-                    // Draw to frame canvas (frame-local coords)
-                    frameCtx.globalCompositeOperation = compositeOp;
-                    frameCtx.fillStyle = color;
-                    for (let i = 0; i <= steps; i++) {
-                        const t = i / steps;
-                        const px = x1 + (x2 - x1) * t;
-                        const py = y1 + (y2 - y1) * t;
-                        frameCtx.beginPath();
-                        frameCtx.ellipse(px, py, rx, ry, 0, 0, Math.PI * 2);
-                        frameCtx.fill();
-                    }
-                    frameCtx.globalCompositeOperation = 'source-over';
+                    const _drawOvals = (ctx, op) => {
+                        ctx.globalCompositeOperation = op;
+                        ctx.fillStyle = color;
+                        for (let i = 0; i <= steps; i++) {
+                            const t = i / steps;
+                            const px = x1 + (x2 - x1) * t;
+                            const py = y1 + (y2 - y1) * t;
+                            ctx.beginPath();
+                            ctx.ellipse(px, py, rx, ry, 0, 0, Math.PI * 2);
+                            ctx.fill();
+                        }
+                        ctx.globalCompositeOperation = 'source-over';
+                    };
                     
-                    // Draw to display canvas (with viewport offset)
-                    this.ctx.save();
-                    this.ctx.translate(off.x, off.y);
-                    this.ctx.globalCompositeOperation = compositeOp;
-                    this.ctx.fillStyle = color;
-                    for (let i = 0; i <= steps; i++) {
-                        const t = i / steps;
-                        const px = x1 + (x2 - x1) * t;
-                        const py = y1 + (y2 - y1) * t;
-                        this.ctx.beginPath();
-                        this.ctx.ellipse(px, py, rx, ry, 0, 0, Math.PI * 2);
-                        this.ctx.fill();
+                    _drawOvals(targetCtx, compositeOp);
+                    if (drawMode === 'eraseBoth' && frame._paintCanvas) {
+                        _drawOvals(frame._paintCanvas.getContext('2d'), compositeOp);
                     }
-                    this.ctx.globalCompositeOperation = 'source-over';
-                    this.ctx.restore();
+                    
+                    if (drawMode !== 'eraseFill' && drawMode !== 'behind') {
+                        this.ctx.save();
+                        this.ctx.translate(off.x, off.y);
+                        _drawOvals(this.ctx, compositeOp);
+                        this.ctx.restore();
+                    }
                 } else {
                     const cap = shape === 'square' ? 'square' : 'round';
                     const join = shape === 'square' ? 'miter' : 'round';
                     
-                    // Draw to frame canvas
-                    frameCtx.globalCompositeOperation = compositeOp;
-                    frameCtx.strokeStyle = color;
-                    frameCtx.lineWidth = size;
-                    frameCtx.lineCap = cap;
-                    frameCtx.lineJoin = join;
-                    frameCtx.beginPath();
-                    frameCtx.moveTo(x1, y1);
-                    frameCtx.lineTo(x2, y2);
-                    frameCtx.stroke();
-                    frameCtx.globalCompositeOperation = 'source-over';
+                    const _drawStroke = (ctx, op) => {
+                        ctx.globalCompositeOperation = op;
+                        ctx.strokeStyle = color;
+                        ctx.lineWidth = size;
+                        ctx.lineCap = cap;
+                        ctx.lineJoin = join;
+                        ctx.beginPath();
+                        ctx.moveTo(x1, y1);
+                        ctx.lineTo(x2, y2);
+                        ctx.stroke();
+                        ctx.globalCompositeOperation = 'source-over';
+                    };
                     
-                    // Draw to display canvas with viewport offset
-                    this.ctx.save();
-                    this.ctx.translate(off.x, off.y);
-                    this.ctx.globalCompositeOperation = compositeOp;
-                    this.ctx.strokeStyle = color;
-                    this.ctx.lineWidth = size;
-                    this.ctx.lineCap = cap;
-                    this.ctx.lineJoin = join;
-                    this.ctx.beginPath();
-                    this.ctx.moveTo(x1, y1);
-                    this.ctx.lineTo(x2, y2);
-                    this.ctx.stroke();
-                    this.ctx.globalCompositeOperation = 'source-over';
-                    this.ctx.restore();
+                    _drawStroke(targetCtx, compositeOp);
+                    if (drawMode === 'eraseBoth' && frame._paintCanvas) {
+                        _drawStroke(frame._paintCanvas.getContext('2d'), compositeOp);
+                    }
+                    
+                    if (drawMode !== 'eraseFill' && drawMode !== 'behind') {
+                        this.ctx.save();
+                        this.ctx.translate(off.x, off.y);
+                        _drawStroke(this.ctx, compositeOp);
+                        this.ctx.restore();
+                    }
                 }
             }
             
@@ -11978,6 +12439,18 @@
                 const ctx = frame.getContext('2d');
                 ctx.clearRect(0, 0, frame.width, frame.height);
                 ctx.putImageData(preData.imageData, 0, 0);
+                
+                // Restore paint canvas for paintFill/eraseFill mode
+                if ((this._strokeDrawMode === 'paintFill' || this._strokeDrawMode === 'eraseFill' || this._strokeDrawMode === 'eraseBoth') && preData.paintData) {
+                    const pc = this._getPaintCanvas(frame, true);
+                    if (pc.width !== preData.paintWidth || pc.height !== preData.paintHeight) {
+                        pc.width = preData.paintWidth;
+                        pc.height = preData.paintHeight;
+                    }
+                    const pctx = pc.getContext('2d');
+                    pctx.clearRect(0, 0, pc.width, pc.height);
+                    pctx.putImageData(preData.paintData, 0, 0);
+                }
                 
                 // Ensure frame covers all smoothed points (world coords — no origin conversion needed)
                 for (const pt of smoothed) {
@@ -12555,14 +13028,39 @@
             
             clearCurrentFrame() {
                 const layer = this.getCurrentLayer();
+                const mode = this.clearMode || 'all';
+                
+                // Helper: clear a single frame based on mode
+                const clearFrame = (frame) => {
+                    if (!frame) return frame;
+                    if (mode === 'all') {
+                        // Replace with empty frame (wipes both ink and paint)
+                        const nf = this.createEmptyFrame();
+                        this._dirtyThumb(nf);
+                        return nf;
+                    } else if (mode === 'ink') {
+                        // Clear ink canvas only, preserve paint
+                        frame.getContext('2d').clearRect(0, 0, frame.width, frame.height);
+                        this._dirtyThumb(frame);
+                        return frame;
+                    } else if (mode === 'fill') {
+                        // Clear paint sublayer only, preserve ink
+                        if (frame._paintCanvas) {
+                            frame._paintCanvas.getContext('2d').clearRect(0, 0, frame._paintCanvas.width, frame._paintCanvas.height);
+                            frame._paintCanvas._thumbVer = (frame._paintCanvas._thumbVer || 0) + 1;
+                        }
+                        this._dirtyThumb(frame);
+                        return frame;
+                    }
+                    return frame;
+                };
                 
                 // If multiple frames are selected, clear all of them
                 if (this.selectedFrames.size > 1) {
                     this.saveFullState(); // full state since multiple frames change
                     for (const fi of this.selectedFrames) {
                         if (fi >= 0 && fi < layer.frames.length) {
-                            layer.frames[fi] = this.createEmptyFrame();
-                            this._dirtyThumb(layer.frames[fi]);
+                            layer.frames[fi] = clearFrame(layer.frames[fi]);
                         }
                     }
                     this.selectedFrames.clear();
@@ -12571,21 +13069,22 @@
                         document.getElementById('frameSelectBanner').classList.remove('show');
                     }
                     this._timelineDirty = true;
+                    this._invalidateCompositeCache();
                     this.initializeFrame();
                     this.render();
                     return;
                 }
                 
                 // Single frame clear
-                // If this is a hold frame, clearing breaks the link — need full state save
-                if (this.isHoldFrame(layer, this.currentFrameIndex)) {
+                // If this is a hold frame AND we're replacing the whole frame, clearing breaks the link
+                if (mode === 'all' && this.isHoldFrame(layer, this.currentFrameIndex)) {
                     this.saveFullState(); // marks dirty
                 } else {
                     this.saveState();
-                    this._timelineDirty = true; // new canvas replaces old
+                    if (mode === 'all') this._timelineDirty = true; // new canvas replaces old
                 }
-                layer.frames[this.currentFrameIndex] = this.createEmptyFrame();
-                this._dirtyThumb(layer.frames[this.currentFrameIndex]);
+                layer.frames[this.currentFrameIndex] = clearFrame(layer.frames[this.currentFrameIndex]);
+                this._invalidateCompositeCache();
                 this.initializeFrame();
                 this.render();
             }
@@ -12598,7 +13097,9 @@
                 // Viewport offset is applied at draw time, so panning doesn't invalidate.
                 if (!frame._onionCaches) frame._onionCaches = {};
                 const ver = frame._thumbVer || 0;
-                let cached = frame._onionCaches[tintColor];
+                const paintVer = frame._paintCanvas ? (frame._paintCanvas._thumbVer || 0) : -1;
+                const cacheKey = `${tintColor}_p${paintVer}`;
+                let cached = frame._onionCaches[cacheKey];
                 
                 if (!cached || cached._ver !== ver) {
                     // Build tinted canvas at frame's native size
@@ -12606,6 +13107,10 @@
                     tinted.width = frame.width;
                     tinted.height = frame.height;
                     const tctx = tinted.getContext('2d');
+                    // Paint sublayer behind ink
+                    if (frame._paintCanvas) {
+                        tctx.drawImage(frame._paintCanvas, 0, 0);
+                    }
                     tctx.drawImage(frame, 0, 0);
                     tctx.globalCompositeOperation = 'source-atop';
                     tctx.globalAlpha = 0.5;
@@ -12614,7 +13119,7 @@
                     tctx.globalAlpha = 1;
                     tctx.globalCompositeOperation = 'source-over';
                     tinted._ver = ver;
-                    frame._onionCaches[tintColor] = tinted;
+                    frame._onionCaches[cacheKey] = tinted;
                     cached = tinted;
                 }
                 
@@ -12721,6 +13226,7 @@
                         copy._originX = frame._originX || 0;
                         copy._originY = frame._originY || 0;
                         copy.getContext('2d').drawImage(frame, 0, 0);
+                        this._copyPaintCanvas(frame, copy);
                         canvasMap.set(frame, copy);
                         return copy;
                     }),
@@ -12910,6 +13416,8 @@
                 }
                 
                 layer.frames.splice(insertIdx, 0, newFrame);
+                // Shift loop instances that start after the insertion point
+                this._shiftInstances(layer, insertIdx - 1, 1);
                 this.currentFrameIndex = insertIdx;
                 this.render();
                 this._scrollTimelineToFrame(this.currentFrameIndex);
@@ -13077,6 +13585,18 @@
             }
             
             // Drag right edge of hold block to extend/shorten hold duration
+            // Shift loop instance startFrames when frames are inserted or removed
+            // afterIdx: frames at indices > afterIdx are affected
+            // delta: positive = frames inserted (shift right), negative = frames removed (shift left)
+            _shiftInstances(layer, afterIdx, delta) {
+                if (!layer.symbolInstances || delta === 0) return;
+                for (const inst of layer.symbolInstances) {
+                    if (inst.startFrame > afterIdx) {
+                        inst.startFrame = Math.max(0, inst.startFrame + delta);
+                    }
+                }
+            }
+            
             _startHoldResize(handle, e) {
                 const layerId = parseInt(handle.dataset.layerId, 10);
                 const holdStart = parseInt(handle.dataset.holdStart, 10);
@@ -13089,20 +13609,16 @@
                 const draggedCanvas = layer.frames[holdStart];
                 
                 // Collect all selected hold blocks (plus the dragged one)
-                // Each entry: { canvas, startIndex, originalLength }
                 const { segments: holdSegs } = this.getHoldSegments(layer);
                 const selectedBlocks = [];
                 const addedCanvases = new Set();
                 
-                // Add dragged block first
                 addedCanvases.add(draggedCanvas);
                 selectedBlocks.push({ canvas: draggedCanvas, originalLength: holdLength });
                 
-                // Find other selected hold blocks
                 if (this.selectedFrames.size > 0) {
                     for (const seg of holdSegs) {
                         if (addedCanvases.has(seg.canvas)) continue;
-                        // Check if any frame in this segment is selected
                         for (let fi = seg.startIndex; fi < seg.startIndex + seg.length; fi++) {
                             if (this.selectedFrames.has(fi)) {
                                 addedCanvases.add(seg.canvas);
@@ -13115,13 +13631,13 @@
                 
                 let undoSaved = false;
                 let snapshotFrames = null;
+                let snapshotInstances = null;
                 let appliedDelta = 0;
                 
                 const onMove = (ev) => {
                     const dx = ev.clientX - startX;
                     const rawDelta = Math.round(dx / cellW);
                     
-                    // Clamp so no block goes below length 1
                     let newDelta = rawDelta;
                     for (const blk of selectedBlocks) {
                         newDelta = Math.max(newDelta, 1 - blk.originalLength);
@@ -13131,15 +13647,20 @@
                     if (!undoSaved) {
                         this.saveFullState();
                         undoSaved = true;
-                        // Clean snapshot: trim trailing empty frames first
                         this._trimTrailingEmptyFrames(layer);
                         snapshotFrames = [...layer.frames];
+                        // Snapshot instance positions
+                        snapshotInstances = (layer.symbolInstances || []).map(inst => ({ id: inst.id, startFrame: inst.startFrame }));
                     }
                     
-                    // Reset to snapshot
+                    // Reset frames and instance positions to snapshot
                     layer.frames = [...snapshotFrames];
+                    for (const snap of snapshotInstances) {
+                        const inst = (layer.symbolInstances || []).find(i => i.id === snap.id);
+                        if (inst) inst.startFrame = snap.startFrame;
+                    }
                     
-                    // Apply delta to each block from right to left (so splices don't shift earlier blocks)
+                    // Apply delta to each block from right to left
                     const blockInfos = selectedBlocks.map(blk => {
                         let start = -1;
                         for (let fi = 0; fi < layer.frames.length; fi++) {
@@ -13156,9 +13677,11 @@
                             const insertAt = blk.start + blk.originalLength;
                             const holdFrames = new Array(delta).fill(blk.canvas);
                             layer.frames.splice(insertAt, 0, ...holdFrames);
+                            this._shiftInstances(layer, insertAt - 1, delta);
                         } else if (delta < 0) {
                             const removeAt = blk.start + targetLen;
                             layer.frames.splice(removeAt, -delta);
+                            this._shiftInstances(layer, removeAt - 1, delta);
                         }
                     }
                     
@@ -13201,6 +13724,7 @@
                 const { cellW } = this.getTimelineMetrics();
                 let undoSaved = false;
                 let currentExtension = 0;
+                let snapshotInstances = null;
                 
                 const onMove = (ev) => {
                     const dx = ev.clientX - startX;
@@ -13211,8 +13735,15 @@
                     if (!undoSaved) {
                         this.saveFullState();
                         undoSaved = true;
-                        // Clean any trailing empty frames upfront
                         this._trimTrailingEmptyFrames(layer);
+                        // Snapshot instance positions for reset-and-reapply
+                        snapshotInstances = (layer.symbolInstances || []).map(inst => ({ id: inst.id, startFrame: inst.startFrame }));
+                    }
+                    
+                    // Restore instance positions before reapplying
+                    for (const snap of snapshotInstances) {
+                        const inst = (layer.symbolInstances || []).find(i => i.id === snap.id);
+                        if (inst) inst.startFrame = snap.startFrame;
                     }
                     
                     // Remove previously inserted hold frames
@@ -13225,6 +13756,8 @@
                     if (currentExtension > 0) {
                         const holdFrames = new Array(currentExtension).fill(canvas);
                         layer.frames.splice(frameIdx + 1, 0, ...holdFrames);
+                        // Shift loop instances that start after the insertion point
+                        this._shiftInstances(layer, frameIdx, currentExtension);
                     }
                     
                     // Trim trailing empty frames
@@ -13263,6 +13796,9 @@
                 // Extract the hold frames
                 const holdFrames = layer.frames.splice(holdStart, holdLength);
                 
+                // Shift instances that were after the removed block back
+                this._shiftInstances(layer, holdStart - 1, -holdLength);
+                
                 // Adjust insert index if it was after the removed block
                 let adjustedIdx = insertIdx;
                 if (insertIdx > holdStart) {
@@ -13272,6 +13808,9 @@
                 
                 // Insert at new position
                 layer.frames.splice(adjustedIdx, 0, ...holdFrames);
+                
+                // Shift instances that are after the insertion point forward
+                this._shiftInstances(layer, adjustedIdx - 1, holdLength);
                 
                 // Move playhead to the start of the moved block
                 this.currentFrameIndex = adjustedIdx;
@@ -13297,6 +13836,17 @@
                     layer.frames.splice(sorted[i], 1);
                 }
                 
+                // Adjust instance positions for removed frames
+                if (layer.symbolInstances) {
+                    for (const inst of layer.symbolInstances) {
+                        let shift = 0;
+                        for (const idx of sorted) {
+                            if (idx < inst.startFrame) shift++;
+                        }
+                        inst.startFrame -= shift;
+                    }
+                }
+                
                 // Adjust insert index for removed frames that were before it
                 let adj = insertIdx;
                 for (const idx of sorted) {
@@ -13306,6 +13856,9 @@
                 
                 // Insert all frames at target
                 layer.frames.splice(adj, 0, ...frames);
+                
+                // Shift instances after insertion point forward
+                this._shiftInstances(layer, adj - 1, frames.length);
                 
                 // Update playhead and selection to new positions
                 this.currentFrameIndex = adj;
@@ -13322,19 +13875,27 @@
             _frameHasContent(frame) {
                 if (!frame || frame.width === 0 || frame.height === 0) return false;
                 const ver = frame._thumbVer || 0;
-                if (frame._hasContentVer === ver && frame._hasContentCached !== undefined) {
+                const paintVer = frame._paintCanvas ? (frame._paintCanvas._thumbVer || 0) : -1;
+                const combinedVer = `${ver}_${paintVer}`;
+                if (frame._hasContentVer === combinedVer && frame._hasContentCached !== undefined) {
                     return frame._hasContentCached;
                 }
-                // Full scan with early exit — only runs once per content mutation
-                // (cached until _dirtyThumb increments _thumbVer)
+                // Check ink canvas
                 const ctx = frame.getContext('2d');
                 const data = ctx.getImageData(0, 0, frame.width, frame.height).data;
                 let result = false;
                 for (let j = 3, len = data.length; j < len; j += 4) {
                     if (data[j] > 0) { result = true; break; }
                 }
+                // Check paint sublayer if ink was empty
+                if (!result && frame._paintCanvas) {
+                    const pdata = frame._paintCanvas.getContext('2d').getImageData(0, 0, frame._paintCanvas.width, frame._paintCanvas.height).data;
+                    for (let j = 3, len = pdata.length; j < len; j += 4) {
+                        if (pdata[j] > 0) { result = true; break; }
+                    }
+                }
                 frame._hasContentCached = result;
-                frame._hasContentVer = ver;
+                frame._hasContentVer = combinedVer;
                 return result;
             }
             
@@ -13409,7 +13970,7 @@
             getLayerTransformAtFrame(layer, frameIndex) {
                 const kfs = layer.transformKeyframes;
                 const baseOp = layer.opacity != null ? layer.opacity : 1.0;
-                const defaults = { x: 0, y: 0, anchorX: 0, anchorY: 0, scaleX: 1, scaleY: 1, rotation: 0, opacity: baseOp };
+                const defaults = { x: 0, y: 0, anchorX: 0, anchorY: 0, scaleX: 1, scaleY: 1, rotation: 0, opacity: baseOp, blur: 0, innerShadow: { on: false, color: '#000000', opacity: 0.5, size: 5, choke: 0 } };
                 if (!kfs || kfs.length === 0) return defaults;
                 
                 // Find surrounding keyframes
@@ -13422,14 +13983,27 @@
                 const kfOp = (kf) => kf.opacity != null ? kf.opacity : baseOp;
                 const kfAx = (kf) => kf.anchorX || 0;
                 const kfAy = (kf) => kf.anchorY || 0;
+                const kfBlur = (kf) => kf.blur || 0;
+                const kfIS = (kf) => ({
+                    on: kf.innerShadowOn || false,
+                    color: kf.innerShadowColor || '#000000',
+                    opacity: kf.innerShadowOpacity != null ? kf.innerShadowOpacity : 0.5,
+                    size: kf.innerShadowSize || 5,
+                    choke: kf.innerShadowChoke || 0
+                });
                 
-                if (!before && after) return { x: after.x, y: after.y, anchorX: kfAx(after), anchorY: kfAy(after), scaleX: after.scaleX, scaleY: after.scaleY, rotation: after.rotation, opacity: kfOp(after) };
-                if (before && !after) return { x: before.x, y: before.y, anchorX: kfAx(before), anchorY: kfAy(before), scaleX: before.scaleX, scaleY: before.scaleY, rotation: before.rotation, opacity: kfOp(before) };
-                if (before === after || before.frame === after.frame) return { x: before.x, y: before.y, anchorX: kfAx(before), anchorY: kfAy(before), scaleX: before.scaleX, scaleY: before.scaleY, rotation: before.rotation, opacity: kfOp(before) };
+                const buildResult = (kf) => ({ x: kf.x, y: kf.y, anchorX: kfAx(kf), anchorY: kfAy(kf), scaleX: kf.scaleX, scaleY: kf.scaleY, rotation: kf.rotation, opacity: kfOp(kf), blur: kfBlur(kf), innerShadow: kfIS(kf) });
+                
+                if (!before && after) return buildResult(after);
+                if (before && !after) return buildResult(before);
+                if (before === after || before.frame === after.frame) return buildResult(before);
                 
                 // Bezier easing: use the "before" keyframe's easing for this segment
                 const linearT = (frameIndex - before.frame) / (after.frame - before.frame);
                 const t = this.easedT(linearT, before);
+                
+                const isA = kfIS(before);
+                const isB = kfIS(after);
                 
                 return {
                     x: before.x + (after.x - before.x) * t,
@@ -13439,7 +14013,15 @@
                     scaleX: before.scaleX + (after.scaleX - before.scaleX) * t,
                     scaleY: before.scaleY + (after.scaleY - before.scaleY) * t,
                     rotation: before.rotation + (after.rotation - before.rotation) * t,
-                    opacity: kfOp(before) + (kfOp(after) - kfOp(before)) * t
+                    opacity: kfOp(before) + (kfOp(after) - kfOp(before)) * t,
+                    blur: kfBlur(before) + (kfBlur(after) - kfBlur(before)) * t,
+                    innerShadow: {
+                        on: isA.on, // boolean: use "before" keyframe
+                        color: isA.color, // color: use "before" keyframe
+                        opacity: isA.opacity + (isB.opacity - isA.opacity) * t,
+                        size: isA.size + (isB.size - isA.size) * t,
+                        choke: isA.choke + (isB.choke - isA.choke) * t
+                    }
                 };
             }
             
@@ -13549,6 +14131,71 @@
                 ctx.translate(-ax, -ay);
             }
             
+            // Apply inner shadow effect to a canvas in-place
+            // is = { on, color, opacity, size, choke }
+            _applyInnerShadow(canvas, is) {
+                if (!is || !is.on || is.size < 0.1 || is.opacity < 0.01) return;
+                
+                const w = canvas.width, h = canvas.height;
+                const ctx = canvas.getContext('2d');
+                
+                // Reuse temp canvases for performance
+                if (!this._isShadowTemp) {
+                    this._isShadowTemp = document.createElement('canvas');
+                    this._isShadowTempCtx = this._isShadowTemp.getContext('2d');
+                    this._isMaskTemp = document.createElement('canvas');
+                    this._isMaskTempCtx = this._isMaskTemp.getContext('2d');
+                }
+                const shadowC = this._isShadowTemp;
+                const shadowCtx = this._isShadowTempCtx;
+                const maskC = this._isMaskTemp;
+                const maskCtx = this._isMaskTempCtx;
+                
+                if (shadowC.width !== w || shadowC.height !== h) {
+                    shadowC.width = w; shadowC.height = h;
+                    maskC.width = w; maskC.height = h;
+                }
+                
+                // 1. Create shadow canvas: fill with shadow color everywhere
+                shadowCtx.clearRect(0, 0, w, h);
+                shadowCtx.globalAlpha = is.opacity;
+                shadowCtx.fillStyle = is.color;
+                shadowCtx.fillRect(0, 0, w, h);
+                shadowCtx.globalAlpha = 1;
+                
+                // 2. Create cutout mask (optionally dilated by choke)
+                const chokePixels = Math.round((is.choke / 100) * is.size);
+                
+                if (chokePixels > 0) {
+                    // Dilate content alpha: blur then re-solidify to expand the shape
+                    maskCtx.clearRect(0, 0, w, h);
+                    maskCtx.filter = `blur(${chokePixels}px)`;
+                    maskCtx.drawImage(canvas, 0, 0);
+                    maskCtx.filter = 'none';
+                    // Re-solidify: draw on top of itself to boost alpha toward 1
+                    for (let pass = 0; pass < 5; pass++) {
+                        maskCtx.drawImage(maskC, 0, 0);
+                    }
+                    // Cut out the dilated shape from shadow
+                    shadowCtx.globalCompositeOperation = 'destination-out';
+                    shadowCtx.drawImage(maskC, 0, 0);
+                } else {
+                    // Cut out original content shape from shadow
+                    shadowCtx.globalCompositeOperation = 'destination-out';
+                    shadowCtx.drawImage(canvas, 0, 0);
+                }
+                shadowCtx.globalCompositeOperation = 'source-over';
+                
+                // 3. Composite blurred shadow inside content
+                ctx.save();
+                ctx.globalCompositeOperation = 'source-atop';
+                ctx.filter = `blur(${is.size}px)`;
+                ctx.drawImage(shadowC, 0, 0);
+                ctx.filter = 'none';
+                ctx.globalCompositeOperation = 'source-over';
+                ctx.restore();
+            }
+            
             drawLayerWithTransform(ctx, layer, timelinePos) {
                 const frame = this.getFrameAtPosition(layer, timelinePos);
                 if (!layer.visible) return;
@@ -13556,6 +14203,8 @@
                 const localIdx = timelinePos - (layer.startFrame || 0);
                 const tf = this.getLayerTransformAtFrame(layer, localIdx);
                 const hasOwnTransform = tf.x !== 0 || tf.y !== 0 || tf.anchorX !== 0 || tf.anchorY !== 0 || tf.scaleX !== 1 || tf.scaleY !== 1 || tf.rotation !== 0;
+                const blurAmount = tf.blur || 0;
+                const hasInnerShadow = tf.innerShadow && tf.innerShadow.on && tf.innerShadow.size > 0.1;
                 
                 // Get parent chain transforms
                 const parentChain = this._getParentChain(layer);
@@ -13565,10 +14214,67 @@
                 const instances = this.getInstancesAtFrame(layer, localIdx);
                 if (!frame && instances.length === 0) return;
                 
+                // Offscreen path: needed for blur or inner shadow (effects applied to composited content)
+                if (blurAmount > 0.1 || hasInnerShadow) {
+                    const w = ctx.canvas.width;
+                    const h = ctx.canvas.height;
+                    if (!this._blurTempCanvas) {
+                        this._blurTempCanvas = document.createElement('canvas');
+                        this._blurTempCtx = this._blurTempCanvas.getContext('2d');
+                    }
+                    if (this._blurTempCanvas.width !== w || this._blurTempCanvas.height !== h) {
+                        this._blurTempCanvas.width = w;
+                        this._blurTempCanvas.height = h;
+                    }
+                    const bctx = this._blurTempCtx;
+                    bctx.clearRect(0, 0, w, h);
+                    
+                    bctx.save();
+                    if (hasParents) {
+                        for (const parent of parentChain) {
+                            const pLocalIdx = timelinePos - (parent.startFrame || 0);
+                            const ptf = this.getLayerTransformAtFrame(parent, pLocalIdx);
+                            this._applyLayerTransform(bctx, ptf);
+                        }
+                    }
+                    if (hasOwnTransform) {
+                        this._applyLayerTransform(bctx, tf);
+                    }
+                    
+                    if (frame) {
+                        const offX = (frame._originX || 0) - this.viewportX;
+                        const offY = (frame._originY || 0) - this.viewportY;
+                        if (frame._paintCanvas) bctx.drawImage(frame._paintCanvas, offX, offY);
+                        bctx.drawImage(frame, offX, offY);
+                    }
+                    if (instances.length > 0) {
+                        for (const inst of instances) {
+                            this.compositeSymbolInstance(bctx, inst, localIdx, 0);
+                        }
+                    }
+                    bctx.restore();
+                    
+                    // Apply inner shadow to the offscreen content
+                    if (hasInnerShadow) {
+                        this._applyInnerShadow(this._blurTempCanvas, tf.innerShadow);
+                    }
+                    
+                    // Composite to main canvas with blur + opacity
+                    ctx.save();
+                    ctx.globalAlpha = tf.opacity;
+                    if (blurAmount > 0.1) {
+                        ctx.filter = `blur(${blurAmount}px)`;
+                    }
+                    ctx.drawImage(this._blurTempCanvas, 0, 0);
+                    ctx.filter = 'none';
+                    ctx.restore();
+                    return;
+                }
+                
+                // No blur, no inner shadow — direct render (fast path)
                 ctx.save();
                 ctx.globalAlpha = tf.opacity;
                 
-                // Apply parent transforms in order (root ancestor → direct parent)
                 if (hasParents) {
                     for (const parent of parentChain) {
                         const pLocalIdx = timelinePos - (parent.startFrame || 0);
@@ -13577,19 +14283,19 @@
                     }
                 }
                 
-                // Apply this layer's own transform
                 if (hasOwnTransform) {
                     this._applyLayerTransform(ctx, tf);
                 }
                 
-                // Draw frame pixel content
                 if (frame) {
                     const offX = (frame._originX || 0) - this.viewportX;
                     const offY = (frame._originY || 0) - this.viewportY;
+                    if (frame._paintCanvas) {
+                        ctx.drawImage(frame._paintCanvas, offX, offY);
+                    }
                     ctx.drawImage(frame, offX, offY);
                 }
                 
-                // Draw symbol instances on this layer at this frame
                 if (instances.length > 0) {
                     for (const inst of instances) {
                         this.compositeSymbolInstance(ctx, inst, localIdx, 0);
@@ -13652,14 +14358,70 @@
                 tempCtx.clearRect(0, 0, tempW, tempH);
                 
                 for (const { frame, symLayer, layerLocalIdx } of framesToDraw) {
-                    tempCtx.globalAlpha = symLayer.opacity != null ? symLayer.opacity : 1;
-                    tempCtx.drawImage(frame, (frame._originX || 0) - minX, (frame._originY || 0) - minY);
-                    tempCtx.globalAlpha = 1;
+                    // Read keyframed transform for this symbol layer at this frame
+                    const symTf = this.getLayerTransformAtFrame(symLayer, layerLocalIdx);
+                    const layerOp = symTf.opacity != null ? symTf.opacity : (symLayer.opacity != null ? symLayer.opacity : 1);
+                    const symBlur = symTf.blur || 0;
+                    const symIS = symTf.innerShadow;
+                    const hasEffects = symBlur > 0.1 || (symIS && symIS.on && symIS.size > 0.1);
+                    const hasTransform = symTf.x !== 0 || symTf.y !== 0 || symTf.anchorX !== 0 || symTf.anchorY !== 0 || symTf.scaleX !== 1 || symTf.scaleY !== 1 || symTf.rotation !== 0;
                     
-                    // Render nested instances inside this symbol layer
-                    const nestedInstances = this.getInstancesAtFrame(symLayer, layerLocalIdx);
-                    for (const nestedInst of nestedInstances) {
-                        this.compositeSymbolInstance(tempCtx, nestedInst, layerLocalIdx, depth + 1);
+                    // Helper: apply symbol-local transform (uses symbol center, not project center)
+                    const applySymTransform = (c) => {
+                        const ax = sym.width / 2 - minX + symTf.anchorX;
+                        const ay = sym.height / 2 - minY + symTf.anchorY;
+                        c.translate(ax + symTf.x, ay + symTf.y);
+                        c.rotate(symTf.rotation * Math.PI / 180);
+                        c.scale(symTf.scaleX, symTf.scaleY);
+                        c.translate(-ax, -ay);
+                    };
+                    
+                    // Helper: draw frame content (paint + ink + nested instances)
+                    const drawContent = (c) => {
+                        if (frame._paintCanvas) {
+                            c.drawImage(frame._paintCanvas, (frame._originX || 0) - minX, (frame._originY || 0) - minY);
+                        }
+                        c.drawImage(frame, (frame._originX || 0) - minX, (frame._originY || 0) - minY);
+                        const nestedInstances = this.getInstancesAtFrame(symLayer, layerLocalIdx);
+                        for (const nestedInst of nestedInstances) {
+                            this.compositeSymbolInstance(c, nestedInst, layerLocalIdx, depth + 1);
+                        }
+                    };
+                    
+                    if (hasEffects) {
+                        // Render to separate offscreen canvas, apply effects
+                        if (!this._symEffectTemp) {
+                            this._symEffectTemp = document.createElement('canvas');
+                            this._symEffectTempCtx = this._symEffectTemp.getContext('2d');
+                        }
+                        if (this._symEffectTemp.width < tempW || this._symEffectTemp.height < tempH) {
+                            this._symEffectTemp.width = Math.max(this._symEffectTemp.width, tempW);
+                            this._symEffectTemp.height = Math.max(this._symEffectTemp.height, tempH);
+                        }
+                        const ectx = this._symEffectTempCtx;
+                        ectx.clearRect(0, 0, tempW, tempH);
+                        
+                        ectx.save();
+                        if (hasTransform) applySymTransform(ectx);
+                        drawContent(ectx);
+                        ectx.restore();
+                        
+                        if (symIS && symIS.on && symIS.size > 0.1) {
+                            this._applyInnerShadow(this._symEffectTemp, symIS);
+                        }
+                        
+                        tempCtx.globalAlpha = layerOp;
+                        if (symBlur > 0.1) tempCtx.filter = `blur(${symBlur}px)`;
+                        tempCtx.drawImage(this._symEffectTemp, 0, 0, tempW, tempH, 0, 0, tempW, tempH);
+                        tempCtx.filter = 'none';
+                        tempCtx.globalAlpha = 1;
+                    } else {
+                        // No effects — draw with transform + opacity directly
+                        tempCtx.save();
+                        tempCtx.globalAlpha = layerOp;
+                        if (hasTransform) applySymTransform(tempCtx);
+                        drawContent(tempCtx);
+                        tempCtx.restore();
                     }
                 }
                 
@@ -14364,9 +15126,9 @@
                 const frame = layer.frames[this.currentFrameIndex];
                 if (!frame) return;
                 
-                const frameCtx = frame.getContext('2d');
-                const imgData = frameCtx.getImageData(0, 0, frame.width, frame.height);
-                const d = imgData.data;
+                // Composite ink+paint for content detection
+                const comp = this._getCompositeForFill(frame);
+                const d = comp.data.data;
                 
                 // Find tight bounding box in frame-local coords
                 let minX = frame.width, minY = frame.height, maxX = -1, maxY = -1;
@@ -14429,6 +15191,18 @@
                 const ctx2 = frame.getContext('2d');
                 ctx2.clearRect(oldLocalX, oldLocalY, contentW, contentH);
                 ctx2.drawImage(contentSnap, newLocalX, newLocalY);
+                
+                // Move paint sublayer content in sync
+                if (frame._paintCanvas) {
+                    const pc = frame._paintCanvas;
+                    const paintSnap = document.createElement('canvas');
+                    paintSnap.width = contentW;
+                    paintSnap.height = contentH;
+                    paintSnap.getContext('2d').drawImage(pc, minX, minY, contentW, contentH, 0, 0, contentW, contentH);
+                    const pctx = pc.getContext('2d');
+                    pctx.clearRect(oldLocalX, oldLocalY, contentW, contentH);
+                    pctx.drawImage(paintSnap, newLocalX, newLocalY);
+                }
                 
                 this._dirtyThumb(frame);
                 this._invalidateCompositeCache();
@@ -14639,25 +15413,28 @@
             
             _getSymbolContentBounds(sym) {
                 let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+                const scanCanvas = (canvas, ox, oy) => {
+                    const d = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+                    for (let y = 0; y < canvas.height; y++) {
+                        for (let x = 0; x < canvas.width; x++) {
+                            if (d[(y * canvas.width + x) * 4 + 3] > 0) {
+                                const wx = x + ox;
+                                const wy = y + oy;
+                                if (wx < minX) minX = wx;
+                                if (wx > maxX) maxX = wx;
+                                if (wy < minY) minY = wy;
+                                if (wy > maxY) maxY = wy;
+                            }
+                        }
+                    }
+                };
                 for (const layer of sym.layers) {
                     for (const frame of layer.frames) {
                         if (!frame) continue;
-                        const ctx = frame.getContext('2d');
-                        const d = ctx.getImageData(0, 0, frame.width, frame.height).data;
                         const ox = frame._originX || 0;
                         const oy = frame._originY || 0;
-                        for (let y = 0; y < frame.height; y++) {
-                            for (let x = 0; x < frame.width; x++) {
-                                if (d[(y * frame.width + x) * 4 + 3] > 0) {
-                                    const wx = x + ox;
-                                    const wy = y + oy;
-                                    if (wx < minX) minX = wx;
-                                    if (wx > maxX) maxX = wx;
-                                    if (wy < minY) minY = wy;
-                                    if (wy > maxY) maxY = wy;
-                                }
-                            }
-                        }
+                        scanCanvas(frame, ox, oy);
+                        if (frame._paintCanvas) scanCanvas(frame._paintCanvas, ox, oy);
                     }
                 }
                 if (minX === Infinity) return { x: 0, y: 0, width: sym.width, height: sym.height };
@@ -14677,9 +15454,11 @@
                 if (isFit) {
                     // Fit to content — shift origins so content starts at (0,0)
                     if (bounds.x !== 0 || bounds.y !== 0) {
+                        const shifted = new Set();
                         for (const layer of sym.layers) {
                             for (const frame of layer.frames) {
-                                if (!frame) continue;
+                                if (!frame || shifted.has(frame)) continue;
+                                shifted.add(frame);
                                 frame._originX = (frame._originX || 0) - bounds.x;
                                 frame._originY = (frame._originY || 0) - bounds.y;
                             }
@@ -14691,9 +15470,11 @@
                     const dx = (newW - oldW) / 2;
                     const dy = (newH - oldH) / 2;
                     if (dx !== 0 || dy !== 0) {
+                        const shifted = new Set();
                         for (const layer of sym.layers) {
                             for (const frame of layer.frames) {
-                                if (!frame) continue;
+                                if (!frame || shifted.has(frame)) continue;
+                                shifted.add(frame);
                                 frame._originX = (frame._originX || 0) + dx;
                                 frame._originY = (frame._originY || 0) + dy;
                             }
@@ -14874,7 +15655,13 @@
                     scaleX: g('scaleX', 100) / 100,
                     scaleY: g('scaleY', 100) / 100,
                     rotation: g('rotation', 0),
-                    opacity: Math.max(0, Math.min(1, g('opacity', 100) / 100))
+                    opacity: Math.max(0, Math.min(1, g('opacity', 100) / 100)),
+                    blur: Math.max(0, g('blur', 0)),
+                    innerShadowOn: inputs._innerShadowOn || false,
+                    innerShadowColor: inputs._innerShadowColor || '#000000',
+                    innerShadowOpacity: Math.max(0, Math.min(1, g('isOpacity', 50) / 100)),
+                    innerShadowSize: Math.max(0, g('isSize', 5)),
+                    innerShadowChoke: Math.max(0, Math.min(100, g('isChoke', 0)))
                 };
             }
             
@@ -15329,6 +16116,28 @@
                     
                     this.saveFullState();
                     
+                    const sortedAsc = [...this.selectedFrames].sort((a, b) => a - b);
+                    
+                    // Adjust loop instances before removing frames
+                    if (layer.symbolInstances) {
+                        for (let si = layer.symbolInstances.length - 1; si >= 0; si--) {
+                            const inst = layer.symbolInstances[si];
+                            const instEnd = inst.startFrame + inst.duration;
+                            // Count how many deleted frames fall before, inside, and after this instance
+                            let beforeCount = 0;
+                            let insideCount = 0;
+                            for (const idx of sortedAsc) {
+                                if (idx < inst.startFrame) beforeCount++;
+                                else if (idx < instEnd) insideCount++;
+                            }
+                            inst.startFrame -= beforeCount;
+                            inst.duration -= insideCount;
+                            if (inst.duration <= 0) {
+                                layer.symbolInstances.splice(si, 1);
+                            }
+                        }
+                    }
+                    
                     // Delete from highest index to lowest so indices stay valid
                     const sortedDesc = [...this.selectedFrames].sort((a, b) => b - a);
                     for (const idx of sortedDesc) {
@@ -15338,7 +16147,7 @@
                     }
                     
                     // Navigate to frame before the first deleted, or 0
-                    const minDeleted = Math.min(...this.selectedFrames);
+                    const minDeleted = sortedAsc[0];
                     this.currentFrameIndex = Math.min(minDeleted, layer.frames.length - 1);
                     if (this.currentFrameIndex < 0) this.currentFrameIndex = 0;
                     this.selectedFrames.clear();
@@ -15358,7 +16167,24 @@
                 
                 this.saveFullState();
                 
-                layer.frames.splice(this.currentFrameIndex, 1);
+                const deletedIdx = this.currentFrameIndex;
+                layer.frames.splice(deletedIdx, 1);
+                
+                // Shift all loop instances that start after the deleted frame
+                if (layer.symbolInstances) {
+                    for (let si = layer.symbolInstances.length - 1; si >= 0; si--) {
+                        const inst = layer.symbolInstances[si];
+                        if (inst.startFrame > deletedIdx) {
+                            inst.startFrame--;
+                        } else if (deletedIdx >= inst.startFrame && deletedIdx < inst.startFrame + inst.duration) {
+                            // Deleted frame was inside this instance — shrink it
+                            inst.duration--;
+                            if (inst.duration <= 0) {
+                                layer.symbolInstances.splice(si, 1);
+                            }
+                        }
+                    }
+                }
                 
                 if (this.currentFrameIndex >= layer.frames.length) {
                     this.currentFrameIndex = layer.frames.length - 1;
@@ -15450,22 +16276,25 @@
                 maskCtx.closePath();
                 maskCtx.fill();
                 
-                // Create masked selection at lasso bounds size
-                const maskedCanvas = document.createElement('canvas');
-                maskedCanvas.width = lassoWidth;
-                maskedCanvas.height = lassoHeight;
-                const maskedCtx = maskedCanvas.getContext('2d');
+                // Create masked COMPOSITE (paint + ink) at lasso bounds for tight bbox detection
+                const maskedComp = document.createElement('canvas');
+                maskedComp.width = lassoWidth;
+                maskedComp.height = lassoHeight;
+                const maskedCompCtx = maskedComp.getContext('2d');
                 
-                // Copy frame content within lasso bounds
-                maskedCtx.drawImage(frame, lassoMinX, lassoMinY, lassoWidth, lassoHeight, 0, 0, lassoWidth, lassoHeight);
+                // Draw paint behind ink (composite view)
+                if (frame._paintCanvas) {
+                    maskedCompCtx.drawImage(frame._paintCanvas, lassoMinX, lassoMinY, lassoWidth, lassoHeight, 0, 0, lassoWidth, lassoHeight);
+                }
+                maskedCompCtx.drawImage(frame, lassoMinX, lassoMinY, lassoWidth, lassoHeight, 0, 0, lassoWidth, lassoHeight);
                 
                 // Apply lasso mask
-                maskedCtx.globalCompositeOperation = 'destination-in';
-                maskedCtx.drawImage(maskCanvas, lassoMinX, lassoMinY, lassoWidth, lassoHeight, 0, 0, lassoWidth, lassoHeight);
-                maskedCtx.globalCompositeOperation = 'source-over';
+                maskedCompCtx.globalCompositeOperation = 'destination-in';
+                maskedCompCtx.drawImage(maskCanvas, lassoMinX, lassoMinY, lassoWidth, lassoHeight, 0, 0, lassoWidth, lassoHeight);
+                maskedCompCtx.globalCompositeOperation = 'source-over';
                 
-                // Scan pixel data to find tight bounding box of actual content
-                const pixelData = maskedCtx.getImageData(0, 0, lassoWidth, lassoHeight);
+                // Scan composite pixel data to find tight bounding box
+                const pixelData = maskedCompCtx.getImageData(0, 0, lassoWidth, lassoHeight);
                 const pixels = pixelData.data;
                 
                 let tightMinX = lassoWidth, tightMinY = lassoHeight, tightMaxX = -1, tightMaxY = -1;
@@ -15495,14 +16324,20 @@
                 const finalX = lassoMinX + tightMinX;
                 const finalY = lassoMinY + tightMinY;
                 
-                // Create final trimmed selection canvas
+                // Extract INK content: masked by lasso, trimmed to tight bounds
+                const maskedInk = document.createElement('canvas');
+                maskedInk.width = lassoWidth;
+                maskedInk.height = lassoHeight;
+                const maskedInkCtx = maskedInk.getContext('2d');
+                maskedInkCtx.drawImage(frame, lassoMinX, lassoMinY, lassoWidth, lassoHeight, 0, 0, lassoWidth, lassoHeight);
+                maskedInkCtx.globalCompositeOperation = 'destination-in';
+                maskedInkCtx.drawImage(maskCanvas, lassoMinX, lassoMinY, lassoWidth, lassoHeight, 0, 0, lassoWidth, lassoHeight);
+                maskedInkCtx.globalCompositeOperation = 'source-over';
+                
                 const selectedCanvas = document.createElement('canvas');
                 selectedCanvas.width = tightWidth;
                 selectedCanvas.height = tightHeight;
-                const selectedCtx = selectedCanvas.getContext('2d');
-                
-                // Copy only the tight region from the masked canvas
-                selectedCtx.drawImage(maskedCanvas, tightMinX, tightMinY, tightWidth, tightHeight, 0, 0, tightWidth, tightHeight);
+                selectedCanvas.getContext('2d').drawImage(maskedInk, tightMinX, tightMinY, tightWidth, tightHeight, 0, 0, tightWidth, tightHeight);
                 
                 // Store selection with tight bounds (frame-local coords)
                 this.selection = {
@@ -15522,6 +16357,40 @@
                 frameCtx.closePath();
                 frameCtx.fill();
                 frameCtx.restore();
+                
+                // Lift paint sublayer content from same lasso region
+                if (frame._paintCanvas) {
+                    const pc = frame._paintCanvas;
+                    const b = this.selection.bounds;
+                    // Extract paint from lasso bounds, mask with lasso, trim to tight bounds
+                    const maskedPaint = document.createElement('canvas');
+                    maskedPaint.width = lassoWidth;
+                    maskedPaint.height = lassoHeight;
+                    const mpctx = maskedPaint.getContext('2d');
+                    mpctx.drawImage(pc, lassoMinX, lassoMinY, lassoWidth, lassoHeight, 0, 0, lassoWidth, lassoHeight);
+                    mpctx.globalCompositeOperation = 'destination-in';
+                    mpctx.drawImage(maskCanvas, lassoMinX, lassoMinY, lassoWidth, lassoHeight, 0, 0, lassoWidth, lassoHeight);
+                    mpctx.globalCompositeOperation = 'source-over';
+                    
+                    const paintSel = document.createElement('canvas');
+                    paintSel.width = tightWidth;
+                    paintSel.height = tightHeight;
+                    paintSel.getContext('2d').drawImage(maskedPaint, tightMinX, tightMinY, tightWidth, tightHeight, 0, 0, tightWidth, tightHeight);
+                    this.selection._paintImageData = paintSel;
+                    
+                    // Erase from paint canvas using lasso path
+                    const pcCtx = pc.getContext('2d');
+                    pcCtx.save();
+                    pcCtx.globalCompositeOperation = 'destination-out';
+                    pcCtx.beginPath();
+                    pcCtx.moveTo(localPath[0].x, localPath[0].y);
+                    for (let i = 1; i < localPath.length; i++) {
+                        pcCtx.lineTo(localPath[i].x, localPath[i].y);
+                    }
+                    pcCtx.closePath();
+                    pcCtx.fill();
+                    pcCtx.restore();
+                }
                 
                 // Clear lasso path
                 this.lassoPath = [];
@@ -15595,15 +16464,25 @@
                     return;
                 }
                 
-                // Extract selection content
+                // Extract INK selection content
                 const selectedCanvas = document.createElement('canvas');
                 selectedCanvas.width = selW;
                 selectedCanvas.height = selH;
                 const selectedCtx = selectedCanvas.getContext('2d');
                 selectedCtx.drawImage(frame, clampX, clampY, selW, selH, 0, 0, selW, selH);
                 
-                // Scan for tight bounding box of actual content
-                const pixelData = selectedCtx.getImageData(0, 0, selW, selH);
+                // Build composite (paint + ink) for tight bounding box scan
+                const compCanvas = document.createElement('canvas');
+                compCanvas.width = selW;
+                compCanvas.height = selH;
+                const compCtx = compCanvas.getContext('2d');
+                if (frame._paintCanvas) {
+                    compCtx.drawImage(frame._paintCanvas, clampX, clampY, selW, selH, 0, 0, selW, selH);
+                }
+                compCtx.drawImage(frame, clampX, clampY, selW, selH, 0, 0, selW, selH);
+                
+                // Scan for tight bounding box of actual content (ink + paint)
+                const pixelData = compCtx.getImageData(0, 0, selW, selH);
                 const pixels = pixelData.data;
                 let tightMinX = selW, tightMinY = selH, tightMaxX = -1, tightMaxY = -1;
                 for (let py = 0; py < selH; py++) {
@@ -15641,6 +16520,17 @@
                 
                 // Erase selected area from frame
                 frameCtx.clearRect(clampX, clampY, selW, selH);
+                
+                // Lift paint sublayer content from same bounds
+                if (frame._paintCanvas) {
+                    const pc = frame._paintCanvas;
+                    const paintSel = document.createElement('canvas');
+                    paintSel.width = tightW;
+                    paintSel.height = tightH;
+                    paintSel.getContext('2d').drawImage(pc, finalX, finalY, tightW, tightH, 0, 0, tightW, tightH);
+                    this.selection._paintImageData = paintSel;
+                    pc.getContext('2d').clearRect(clampX, clampY, selW, selH);
+                }
                 
                 this.selectTool('transform');
                 this.render();
@@ -15712,7 +16602,7 @@
             }
             
             showTransformHandles() {
-                if (!this.selection) return;
+                if (!this.selection || this.isPlaying) return;
                 
                 const b = this.selection.bounds;
                 
@@ -15823,7 +16713,7 @@
             drawTransformHandles() {
                 this.selectionCtx.clearRect(0, 0, this.selectionCanvas.width, this.selectionCanvas.height);
                 
-                if (!this.selection) return;
+                if (!this.selection || this.isPlaying) return;
                 
                 const b = this.selection.bounds;
                 const rotation = this.selection.rotation || 0;
@@ -16102,6 +16992,9 @@
                     const displayCorners = this.selection.corners.map(c => ({
                         x: c.x + off.x, y: c.y + off.y
                     }));
+                    if (this.selection._paintImageData) {
+                        this._drawImageToQuad(ctx, this.selection._paintImageData, displayCorners);
+                    }
                     this._drawImageToQuad(ctx, this.selection.imageData, displayCorners);
                     return;
                 }
@@ -16117,6 +17010,10 @@
                     ctx.transform(1, skewY, skewX, 1, 0, 0);
                 }
                 ctx.translate(-anchorX, -anchorY);
+                // Paint behind ink
+                if (this.selection._paintImageData) {
+                    ctx.drawImage(this.selection._paintImageData, b.x + off.x, b.y + off.y, b.width, b.height);
+                }
                 ctx.drawImage(this.selection.imageData, b.x + off.x, b.y + off.y, b.width, b.height);
                 ctx.restore();
             }
@@ -16159,6 +17056,11 @@
                         x: c.x - shiftX, y: c.y - shiftY
                     }));
                     this._drawImageToQuad(frameCtx, this.selection.imageData, localCorners);
+                    // Apply paint distort
+                    if (this.selection._paintImageData) {
+                        const pc = this._getPaintCanvas(frame, true);
+                        this._drawImageToQuad(pc.getContext('2d'), this.selection._paintImageData, localCorners);
+                    }
                 } else {
                     frameCtx.save();
                     frameCtx.translate(drawAnchorX, drawAnchorY);
@@ -16172,10 +17074,29 @@
                         drawX, drawY, b.width, b.height
                     );
                     frameCtx.restore();
+                    
+                    // Apply paint with same transform
+                    if (this.selection._paintImageData) {
+                        const pc = this._getPaintCanvas(frame, true);
+                        const pcCtx = pc.getContext('2d');
+                        pcCtx.save();
+                        pcCtx.translate(drawAnchorX, drawAnchorY);
+                        pcCtx.rotate(rotation);
+                        if (skewX || skewY) {
+                            pcCtx.transform(1, skewY, skewX, 1, 0, 0);
+                        }
+                        pcCtx.translate(-drawAnchorX, -drawAnchorY);
+                        pcCtx.drawImage(
+                            this.selection._paintImageData,
+                            drawX, drawY, b.width, b.height
+                        );
+                        pcCtx.restore();
+                    }
                 }
                 
                 // Update timeline indicator — frame now has content
                 this._dirtyThumb(frame);
+                this._invalidateCompositeCache();
                 this._timelineDirty = true;
                 this.renderTimeline();
             }
@@ -16577,6 +17498,7 @@
                         c._originX = src._originX || 0;
                         c._originY = src._originY || 0;
                         c.getContext('2d').drawImage(src, 0, 0);
+                        this._copyPaintCanvas(src, c);
                         srcToCopy.set(src, c);
                         return c;
                     }).filter(Boolean);
@@ -16595,6 +17517,7 @@
                 copyCanvas._originX = sourceFrame._originX || 0;
                 copyCanvas._originY = sourceFrame._originY || 0;
                 copyCanvas.getContext('2d').drawImage(sourceFrame, 0, 0);
+                this._copyPaintCanvas(sourceFrame, copyCanvas);
                 
                 this.copiedFrame = copyCanvas;
                 this.copiedFrames = [copyCanvas];
@@ -16762,6 +17685,7 @@
                         nf._originX = src._originX || 0;
                         nf._originY = src._originY || 0;
                         nf.getContext('2d').drawImage(src, 0, 0);
+                        this._copyPaintCanvas(src, nf);
                         srcToDup.set(src, nf);
                         return nf;
                     }).filter(Boolean);
@@ -16797,6 +17721,7 @@
                 newFrame._originX = sourceFrame._originX || 0;
                 newFrame._originY = sourceFrame._originY || 0;
                 newFrame.getContext('2d').drawImage(sourceFrame, 0, 0);
+                this._copyPaintCanvas(sourceFrame, newFrame);
                 
                 layer.frames.splice(idx + 1, 0, newFrame);
                 this.currentFrameIndex = idx + 1;
@@ -17286,16 +18211,23 @@
                 
                 const layer = this.getCurrentLayer();
                 const frame = layer.frames[this.currentFrameIndex];
-                const frameCtx = frame.getContext('2d');
                 const width = frame.width;
                 const height = frame.height;
                 
-                const imageData = frameCtx.getImageData(0, 0, width, height);
-                const data = imageData.data;
+                // Read ink layer separately — ink pixels are hard walls
+                const inkData = frame.getContext('2d').getImageData(0, 0, width, height).data;
+                
+                // Build composite (paint behind + ink on top) for color matching
+                const comp = this._getCompositeForFill(frame);
+                const data = comp.data.data;
                 
                 if (startX < 0 || startX >= width || startY < 0 || startY >= height) return;
                 
                 const startPos = (startY * width + startX) * 4;
+                
+                // Don't start from an ink pixel
+                if (inkData[startPos + 3] > 30) return;
+                
                 const targetR = data[startPos];
                 const targetG = data[startPos + 1];
                 const targetB = data[startPos + 2];
@@ -17306,8 +18238,7 @@
                 const stepTolerance = 32; // per-neighbor step tolerance (captures smooth gradients)
                 
                 // === PASS 1: Neighbor-walk flood fill → build region mask ===
-                // Unlike solid fill, we compare each pixel to its NEIGHBOR, not the start pixel.
-                // This naturally follows gradients since each step is a small color change.
+                // Ink pixels act as hard walls; neighbor-walk uses composite for paint regions
                 const visited = new Uint8Array(width * height);
                 
                 const startIdx = startX + startY * width;
@@ -17331,6 +18262,10 @@
                     for (const nIdx of neighbors) {
                         if (visited[nIdx]) continue;
                         const nPos = nIdx * 4;
+                        
+                        // Ink pixel = wall
+                        if (inkData[nPos + 3] > 30) continue;
+                        
                         const nA = data[nPos + 3];
                         
                         // Both transparent — include (interior transparent)
@@ -17375,22 +18310,21 @@
                     }
                 }
                 
-                // === PASS 3a: Strip old fill from the region ===
-                // Pixels inside the neighbor-walk region are fill — clear them.
-                // Pixels in the expanded fringe but NOT visited are edge-bleed —
-                // preserve anything that looks like linework (high contrast from its neighbors).
+                // === PASS 3a: Strip old fill from the paint sublayer ===
+                const paintCanvas = this._getPaintCanvas(frame, true);
+                const paintCtx = paintCanvas.getContext('2d');
+                const paintImgData = paintCtx.getImageData(0, 0, width, height);
+                const pd = paintImgData.data;
+                
                 for (let i = 0; i < width * height; i++) {
                     if (!expanded[i]) continue;
                     const pos = i * 4;
-                    const a = data[pos + 3];
+                    const a = pd[pos + 3];
                     if (a === 0) continue;
                     
                     if (visited[i]) {
-                        // Inside the walked region → clear it for new gradient
-                        data[pos + 3] = 0;
+                        pd[pos + 3] = 0;
                     } else {
-                        // Edge fringe — check if this pixel is close to a visited neighbor
-                        // If so, it's fill bleed → strip. If not, it's linework → keep.
                         const px = i % width;
                         const py = (i - px) / width;
                         let nearestVisitedDiff = 999;
@@ -17403,25 +18337,23 @@
                         for (const ni of offsets) {
                             if (ni < 0 || !visited[ni]) continue;
                             const np = ni * 4;
-                            if (data[np + 3] === 0) continue; // already cleared
+                            if (pd[np + 3] === 0) continue;
                             const d = Math.max(
-                                Math.abs(data[pos] - data[np]),
-                                Math.abs(data[pos + 1] - data[np + 1]),
-                                Math.abs(data[pos + 2] - data[np + 2])
+                                Math.abs(pd[pos] - pd[np]),
+                                Math.abs(pd[pos + 1] - pd[np + 1]),
+                                Math.abs(pd[pos + 2] - pd[np + 2])
                             );
                             nearestVisitedDiff = Math.min(nearestVisitedDiff, d);
                         }
                         if (nearestVisitedDiff < 60) {
-                            // Close to fill color → strip with soft fade
                             const fade = nearestVisitedDiff / 60;
-                            data[pos + 3] = Math.round(a * fade);
+                            pd[pos + 3] = Math.round(a * fade);
                         }
-                        // Otherwise keep as-is (linework)
                     }
                 }
+                paintCtx.putImageData(paintImgData, 0, 0);
                 
-                // === PASS 3b: Paint gradient into fill region ===
-                // Create full-canvas gradient, then mask to the expanded region
+                // === PASS 3b: Paint gradient into fill region on paint sublayer ===
                 const fillLayer = document.createElement('canvas');
                 fillLayer.width = width;
                 fillLayer.height = height;
@@ -17454,23 +18386,22 @@
                 }
                 fillLayerCtx.putImageData(gradImgData, 0, 0);
                 
-                // Put the stripped original into a temp canvas
-                const strippedCanvas = document.createElement('canvas');
-                strippedCanvas.width = width;
-                strippedCanvas.height = height;
-                const strippedCtx = strippedCanvas.getContext('2d');
-                strippedCtx.putImageData(imageData, 0, 0);
+                // Composite: gradient behind stripped paint content
+                const strippedPaint = document.createElement('canvas');
+                strippedPaint.width = width;
+                strippedPaint.height = height;
+                strippedPaint.getContext('2d').drawImage(paintCanvas, 0, 0);
                 
-                // Composite: gradient fill on bottom, stripped original on top
-                frameCtx.clearRect(0, 0, width, height);
-                frameCtx.drawImage(fillLayer, 0, 0);
-                frameCtx.drawImage(strippedCanvas, 0, 0);
+                paintCtx.clearRect(0, 0, width, height);
+                paintCtx.drawImage(fillLayer, 0, 0);
+                paintCtx.drawImage(strippedPaint, 0, 0);
                 
                 // Store the gradient def so it can be replayed
                 this.gradientDef = { ...gradDef };
                 this._syncGradientUI();
                 
                 this._dirtyThumb(frame);
+                if (frame._paintCanvas) frame._paintCanvas._thumbVer = (frame._paintCanvas._thumbVer || 0) + 1;
                 this._invalidateCompositeCache();
                 this.render();
             }
@@ -17887,6 +18818,41 @@
                     originalBounds: { x: minX, y: minY, width: selW, height: selH }
                 };
                 
+                // Lift paint sublayer content using same visited mask
+                if (frame._paintCanvas) {
+                    const pc = frame._paintCanvas;
+                    const pcCtx = pc.getContext('2d');
+                    const paintImgData = pcCtx.getImageData(0, 0, width, height);
+                    const pd = paintImgData.data;
+                    
+                    const paintSel = document.createElement('canvas');
+                    paintSel.width = selW;
+                    paintSel.height = selH;
+                    const pSelCtx = paintSel.getContext('2d');
+                    const pSelData = pSelCtx.createImageData(selW, selH);
+                    
+                    for (let y = minY; y <= maxY; y++) {
+                        for (let x = minX; x <= maxX; x++) {
+                            const srcIdx = y * width + x;
+                            if (!visited[srcIdx]) continue;
+                            const srcPos = srcIdx * 4;
+                            const dstPos = ((y - minY) * selW + (x - minX)) * 4;
+                            pSelData.data[dstPos] = pd[srcPos];
+                            pSelData.data[dstPos + 1] = pd[srcPos + 1];
+                            pSelData.data[dstPos + 2] = pd[srcPos + 2];
+                            pSelData.data[dstPos + 3] = pd[srcPos + 3];
+                            // Erase from paint canvas
+                            pd[srcPos] = 0;
+                            pd[srcPos + 1] = 0;
+                            pd[srcPos + 2] = 0;
+                            pd[srcPos + 3] = 0;
+                        }
+                    }
+                    pSelCtx.putImageData(pSelData, 0, 0);
+                    pcCtx.putImageData(paintImgData, 0, 0);
+                    this.selection._paintImageData = paintSel;
+                }
+                
                 // Switch to transform tool to enable moving
                 this.selectTool('transform');
                 this.render();
@@ -17908,16 +18874,23 @@
                 
                 const layer = this.getCurrentLayer();
                 const frame = layer.frames[this.currentFrameIndex];
-                const frameCtx = frame.getContext('2d');
                 const width = frame.width;
                 const height = frame.height;
                 
-                const imageData = frameCtx.getImageData(0, 0, width, height);
-                const data = imageData.data;
+                // Read ink layer separately — ink pixels are hard walls regardless of color
+                const inkData = frame.getContext('2d').getImageData(0, 0, width, height).data;
+                
+                // Build composite (paint behind + ink on top) for color matching
+                const comp = this._getCompositeForFill(frame);
+                const data = comp.data.data;
                 
                 if (startX < 0 || startX >= width || startY < 0 || startY >= height) return;
                 
                 const startPos = (startY * width + startX) * 4;
+                
+                // Don't start flood from an ink pixel — ink is a wall
+                if (inkData[startPos + 3] > 30) return;
+                
                 const targetR = data[startPos];
                 const targetG = data[startPos + 1];
                 const targetB = data[startPos + 2];
@@ -17935,12 +18908,16 @@
                 const tolerance = 50;
                 
                 // === PASS 1: Scanline flood fill → build region mask ===
+                // Ink pixels act as hard walls; color matching uses composite for paint regions
                 const visited = new Uint8Array(width * height);
                 
                 const colorMatch = (idx) => {
                     const pos = idx * 4;
+                    // Ink pixel = wall (stop flood regardless of color)
+                    if (inkData[pos + 3] > 30) return false;
+                    // Non-ink pixel: match by composite color
                     const a = data[pos + 3];
-                    if (a < 30) return true;
+                    if (a < 30) return true; // Transparent = fillable
                     return Math.abs(data[pos] - targetR) <= tolerance &&
                            Math.abs(data[pos + 1] - targetG) <= tolerance &&
                            Math.abs(data[pos + 2] - targetB) <= tolerance &&
@@ -17999,38 +18976,36 @@
                     }
                 }
                 
-                // === PASS 3a: Strip old fill color from the region ===
-                // For re-fill support: pixels matching the target (previous fill) get
-                // their alpha zeroed so the new fill shows through them.
-                // Linework of ANY color is preserved because it won't match the target.
+                // === PASS 3: Write fill to paint sublayer ===
+                const paintCanvas = this._getPaintCanvas(frame, true);
+                const paintCtx = paintCanvas.getContext('2d');
+                const paintImgData = paintCtx.getImageData(0, 0, width, height);
+                const pd = paintImgData.data;
+                
+                // Strip old fill color from the region on the paint canvas
                 for (let i = 0; i < width * height; i++) {
                     if (!expanded[i]) continue;
                     const pos = i * 4;
-                    const a = data[pos + 3];
+                    const a = pd[pos + 3];
                     if (a === 0) continue;
                     
-                    // Distance from target — includes alpha so transparent-target
-                    // doesn't accidentally match opaque content
                     const diff = Math.max(
-                        Math.abs(data[pos] - targetR),
-                        Math.abs(data[pos + 1] - targetG),
-                        Math.abs(data[pos + 2] - targetB),
+                        Math.abs(pd[pos] - targetR),
+                        Math.abs(pd[pos + 1] - targetG),
+                        Math.abs(pd[pos + 2] - targetB),
                         Math.abs(a - targetA)
                     );
                     
                     if (diff <= tolerance) {
-                        // Matches old fill → make transparent for new fill
-                        data[pos + 3] = 0;
+                        pd[pos + 3] = 0;
                     } else if (diff < tolerance * 2) {
-                        // Transition zone → smooth fade
                         const t = (diff - tolerance) / tolerance;
-                        data[pos + 3] = Math.round(a * t);
+                        pd[pos + 3] = Math.round(a * t);
                     }
                 }
+                paintCtx.putImageData(paintImgData, 0, 0);
                 
-                // === PASS 3b: Paint fill behind remaining content ===
-                // Uses canvas compositing so the browser handles AA blending natively.
-                // Fill layer goes down first, then the stripped original on top.
+                // Build fill color layer from expanded mask
                 const fillLayer = document.createElement('canvas');
                 fillLayer.width = width;
                 fillLayer.height = height;
@@ -18049,17 +19024,130 @@
                 }
                 fillLayerCtx.putImageData(fillImgData, 0, 0);
                 
-                // Put the stripped original into a temp canvas
-                const strippedCanvas = document.createElement('canvas');
-                strippedCanvas.width = width;
-                strippedCanvas.height = height;
-                const strippedCtx = strippedCanvas.getContext('2d');
-                strippedCtx.putImageData(imageData, 0, 0);
+                // Composite: new fill behind stripped paint content
+                const strippedPaint = document.createElement('canvas');
+                strippedPaint.width = width;
+                strippedPaint.height = height;
+                strippedPaint.getContext('2d').drawImage(paintCanvas, 0, 0);
                 
-                // Composite: fill on bottom, stripped original on top
-                frameCtx.clearRect(0, 0, width, height);
-                frameCtx.drawImage(fillLayer, 0, 0);
-                frameCtx.drawImage(strippedCanvas, 0, 0);
+                paintCtx.clearRect(0, 0, width, height);
+                paintCtx.drawImage(fillLayer, 0, 0);
+                paintCtx.drawImage(strippedPaint, 0, 0);
+                
+                this._dirtyThumb(frame);
+                if (frame._paintCanvas) frame._paintCanvas._thumbVer = (frame._paintCanvas._thumbVer || 0) + 1;
+                this._invalidateCompositeCache();
+                this.render();
+            }
+            
+            // Ink Bottle: recolor contiguous ink pixels without touching the paint sublayer
+            inkBottleFill(startX, startY) {
+                // Flush any pending async saveState
+                if (this._pendingSaveTimer) {
+                    clearTimeout(this._pendingSaveTimer);
+                    this._pendingSaveTimer = null;
+                    if (this._pendingSnapshot) {
+                        this._pushUndo(this._pendingSnapshot);
+                        this._pendingSnapshot = null;
+                    } else {
+                        this.saveState();
+                    }
+                }
+                
+                const layer = this.getCurrentLayer();
+                const frame = layer.frames[this.currentFrameIndex];
+                if (!frame) return;
+                
+                const frameCtx = frame.getContext('2d');
+                const width = frame.width;
+                const height = frame.height;
+                
+                // Read ONLY ink canvas pixels
+                const imageData = frameCtx.getImageData(0, 0, width, height);
+                const data = imageData.data;
+                
+                if (startX < 0 || startX >= width || startY < 0 || startY >= height) return;
+                
+                const startPos = (startY * width + startX) * 4;
+                const targetA = data[startPos + 3];
+                
+                // Must click on an ink pixel (non-transparent)
+                if (targetA < 10) return;
+                
+                const targetR = data[startPos];
+                const targetG = data[startPos + 1];
+                const targetB = data[startPos + 2];
+                
+                const newColor = this.hexToRgb(this.color);
+                
+                // Skip if clicking on a pixel that's already the target color
+                if (targetR === newColor.r && targetG === newColor.g && targetB === newColor.b && targetA === 255) {
+                    return;
+                }
+                
+                this.saveState();
+                
+                const tolerance = 50;
+                
+                // Scanline flood fill on ink canvas — find contiguous similar-color region
+                const visited = new Uint8Array(width * height);
+                
+                const colorMatch = (idx) => {
+                    const pos = idx * 4;
+                    const a = data[pos + 3];
+                    if (a < 1) return false; // Stop at fully transparent pixels (gaps between lines)
+                    // Match RGB only — ignore alpha so anti-aliased edge pixels are included
+                    return Math.abs(data[pos] - targetR) <= tolerance &&
+                           Math.abs(data[pos + 1] - targetG) <= tolerance &&
+                           Math.abs(data[pos + 2] - targetB) <= tolerance;
+                };
+                
+                const stack = [startX + startY * width];
+                let filledCount = 0;
+                
+                while (stack.length > 0) {
+                    let idx = stack.pop();
+                    let x = idx % width;
+                    const y = (idx - x) / width;
+                    
+                    while (x > 0 && !visited[idx - 1] && colorMatch(idx - 1)) { x--; idx--; }
+                    
+                    let spanAbove = false, spanBelow = false;
+                    
+                    while (x < width && !visited[idx] && colorMatch(idx)) {
+                        visited[idx] = 1;
+                        filledCount++;
+                        
+                        if (y > 0) {
+                            const aboveIdx = idx - width;
+                            if (!visited[aboveIdx] && colorMatch(aboveIdx)) {
+                                if (!spanAbove) { stack.push(aboveIdx); spanAbove = true; }
+                            } else { spanAbove = false; }
+                        }
+                        if (y < height - 1) {
+                            const belowIdx = idx + width;
+                            if (!visited[belowIdx] && colorMatch(belowIdx)) {
+                                if (!spanBelow) { stack.push(belowIdx); spanBelow = true; }
+                            } else { spanBelow = false; }
+                        }
+                        x++; idx++;
+                    }
+                }
+                
+                if (filledCount === 0) return;
+                
+                // Recolor: replace RGB of matched pixels, preserve original alpha
+                // This keeps anti-aliased edges perfectly smooth
+                for (let i = 0; i < width * height; i++) {
+                    if (!visited[i]) continue;
+                    const pos = i * 4;
+                    data[pos]     = newColor.r;
+                    data[pos + 1] = newColor.g;
+                    data[pos + 2] = newColor.b;
+                    // data[pos + 3] stays untouched — preserves AA alpha
+                }
+                
+                frameCtx.putImageData(imageData, 0, 0);
                 
                 this._dirtyThumb(frame);
                 this._invalidateCompositeCache();
@@ -18079,23 +19167,83 @@
             play(modeOverride) {
                 if (this.isPlaying) return;
                 
-                // Fully dismiss any active free transform / selection
+                // Save frame index before any cleanup changes it
+                const prePlayFrame = this.currentFrameIndex;
+                
+                // Flush any pending undo snapshots from prior strokes
+                if (this._pendingSaveTimer) {
+                    clearTimeout(this._pendingSaveTimer);
+                    this._pendingSaveTimer = null;
+                    if (this._pendingSnapshot) {
+                        this._pushUndo(this._pendingSnapshot);
+                        this._pendingSnapshot = null;
+                    }
+                }
+                this.strokeStateSaved = false;
+                
+                // Freeze selection for playback:
+                // Save the frame (with hole) + selection state, stamp pixels back for clean playback,
+                // then restore everything on stop so it's like nothing happened.
+                this._frozenSelection = null;
                 if (this.selection) {
+                    const layer = this.getCurrentLayer();
+                    const frame = layer.frames[this.currentFrameIndex];
+                    
+                    // Save a copy of the frame canvas as-is (with the selection hole)
+                    const savedInk = document.createElement('canvas');
+                    savedInk.width = frame.width;
+                    savedInk.height = frame.height;
+                    savedInk.getContext('2d').drawImage(frame, 0, 0);
+                    savedInk._originX = frame._originX || 0;
+                    savedInk._originY = frame._originY || 0;
+                    
+                    let savedPaint = null;
+                    if (frame._paintCanvas) {
+                        savedPaint = document.createElement('canvas');
+                        savedPaint.width = frame._paintCanvas.width;
+                        savedPaint.height = frame._paintCanvas.height;
+                        savedPaint.getContext('2d').drawImage(frame._paintCanvas, 0, 0);
+                    }
+                    
+                    this._frozenSelection = {
+                        selection: this.selection,
+                        transformHandles: this.transformHandles,
+                        selectionUndoStack: this.selectionUndoStack,
+                        selectionRedoStack: this.selectionRedoStack,
+                        frameIndex: this.currentFrameIndex,
+                        layerId: this.currentLayerId,
+                        savedInk,
+                        savedPaint,
+                        tool: this.tool
+                    };
+                    
+                    // Stamp selection pixels back onto frame for clean playback
                     this.applySelection();
+                    
+                    // Null out selection so nothing floats during playback
                     this.selection = null;
                     this.transformHandles = [];
                     this.selectionUndoStack = [];
                     this.selectionRedoStack = [];
                 }
+                
+                this._invalidateCompositeCache();
+                this.currentFrameIndex = prePlayFrame;
+                
+                // Deselect any active loop instance
+                if (this._activeInstance) {
+                    this.deselectInstance();
+                }
                 this.selectionCtx.clearRect(0, 0, this.selectionCanvas.width, this.selectionCanvas.height);
-                this.hideTransformHandles();
                 this.isTransforming = false;
                 this.isRotating = false;
                 this.activeHandle = null;
-                // Switch to active selection tool
+                // Switch away from transform tools
                 const transformTools = ['transform', 'scale', 'rotate', 'skew', 'distort'];
                 if (transformTools.includes(this.tool)) {
                     this.selectTool(this._activeSelectTool || 'lasso');
+                    // selectTool may call commitSelection again (no-op) but restore frame just in case
+                    this.currentFrameIndex = prePlayFrame;
                 }
                 
                 if (this.frameSelectMode) this.exitFrameSelectMode();
@@ -18106,7 +19254,8 @@
                     x: this.viewportX, y: this.viewportY,
                     pasteboard: this.pasteboardVisible,
                     scrollLeft: this.canvasContainer.scrollLeft,
-                    scrollTop: this.canvasContainer.scrollTop
+                    scrollTop: this.canvasContainer.scrollTop,
+                    frameIndex: prePlayFrame
                 };
                 if (this.pasteboardVisible) {
                     // Temporarily disable pasteboard for clean playback
@@ -18290,6 +19439,10 @@
                 
                 // Restore viewport and pasteboard from before playback
                 if (this._savedViewport) {
+                    // Restore frame index to where the user was before play
+                    if (this._savedViewport.frameIndex != null) {
+                        this.currentFrameIndex = this._savedViewport.frameIndex;
+                    }
                     if (this._savedViewport.pasteboard && !this.pasteboardVisible) {
                         this.pasteboardVisible = true;
                         this.updatePasteboard(); // This sets viewport too
@@ -18304,6 +19457,51 @@
                     this.canvasContainer.scrollLeft = this._savedViewport.scrollLeft || 0;
                     this.canvasContainer.scrollTop = this._savedViewport.scrollTop || 0;
                     this._savedViewport = null;
+                }
+                
+                // Restore frozen selection from before playback
+                if (this._frozenSelection) {
+                    const fs = this._frozenSelection;
+                    this._frozenSelection = null;
+                    
+                    // Navigate back to the original frame/layer
+                    this.currentLayerId = fs.layerId;
+                    this.currentFrameIndex = fs.frameIndex;
+                    
+                    // Restore the frame canvas to its pre-playback state (with the selection hole)
+                    const layer = this.layers.find(l => l.id === fs.layerId);
+                    if (layer) {
+                        const frame = layer.frames[fs.frameIndex];
+                        if (frame && fs.savedInk) {
+                            frame.width = fs.savedInk.width;
+                            frame.height = fs.savedInk.height;
+                            frame._originX = fs.savedInk._originX;
+                            frame._originY = fs.savedInk._originY;
+                            frame.getContext('2d').clearRect(0, 0, frame.width, frame.height);
+                            frame.getContext('2d').drawImage(fs.savedInk, 0, 0);
+                            
+                            if (fs.savedPaint && frame._paintCanvas) {
+                                frame._paintCanvas.width = fs.savedPaint.width;
+                                frame._paintCanvas.height = fs.savedPaint.height;
+                                const pctx = frame._paintCanvas.getContext('2d');
+                                pctx.clearRect(0, 0, frame._paintCanvas.width, frame._paintCanvas.height);
+                                pctx.drawImage(fs.savedPaint, 0, 0);
+                            }
+                        }
+                    }
+                    
+                    // Restore selection state exactly as it was
+                    this.selection = fs.selection;
+                    this.transformHandles = fs.transformHandles;
+                    this.selectionUndoStack = fs.selectionUndoStack;
+                    this.selectionRedoStack = fs.selectionRedoStack;
+                    
+                    // Restore the tool
+                    this.selectTool(fs.tool);
+                    this.showTransformHandles();
+                    this.drawTransformHandles();
+                    
+                    this._invalidateCompositeCache();
                 }
                 
                 this.render(); // Full render to restore timeline + onion skin
@@ -19145,10 +20343,42 @@
                 
                 const playheadPos = this.getPlayheadPosition();
                 
+                // Sync layer panel highlight if active layer changed
+                if (this._prevLayerId !== this.currentLayerId) {
+                    const layersList = document.getElementById('layersList');
+                    if (layersList) {
+                        // Update label rows (left panel)
+                        layersList.querySelectorAll('.tl-label').forEach(label => {
+                            const lid = parseInt(label.dataset.layerId, 10);
+                            label.classList.toggle('active-row', lid === this.currentLayerId);
+                            label.classList.toggle('inactive-row', lid !== this.currentLayerId);
+                        });
+                    }
+                    // Also update frame rows (right panel)
+                    const allFrameRows = container.querySelectorAll('.layer-frames-row');
+                    allFrameRows.forEach(row => {
+                        const rowLayerId = parseInt(row.dataset.layerId, 10);
+                        row.classList.toggle('active-row', rowLayerId === this.currentLayerId);
+                        row.classList.toggle('inactive-row', rowLayerId !== this.currentLayerId);
+                    });
+                    this._prevLayerId = this.currentLayerId;
+                }
+                
                 // Remove active class from previously tracked element
+                // Also clear any stale .active frames left from full timeline rebuilds
                 if (this._activeFrameEl) {
                     this._activeFrameEl.classList.remove('active');
+                    // Restore loop range dimming on the previously active frame
+                    if (this.isLoopRangeNarrowed()) {
+                        const prevPos = parseInt(this._activeFrameEl.dataset.timelinePos, 10);
+                        if (prevPos < this.loopRange.inPoint || prevPos > this.loopRange.outPoint) {
+                            this._activeFrameEl.style.opacity = '0.3';
+                        }
+                    }
                 }
+                // Catch any orphaned .active frames from full DOM rebuilds
+                const staleActives = container.querySelectorAll('.frame.active');
+                for (const el of staleActives) el.classList.remove('active');
                 // Remove active from previous hold block
                 if (this._activeHoldBlock) {
                     this._activeHoldBlock.classList.remove('has-active');
@@ -19156,7 +20386,25 @@
                     if (oldPh) oldPh.remove();
                     const oldSource = this._activeHoldBlock.querySelector('.hold-block-source');
                     if (oldSource) oldSource.classList.remove('source-active');
+                    // Restore loop range dimming on deactivated hold block
+                    if (this.isLoopRangeNarrowed()) {
+                        const hStart = parseInt(this._activeHoldBlock.dataset.holdStart, 10);
+                        const hLen = parseInt(this._activeHoldBlock.dataset.holdLength, 10);
+                        const hLayerOffset = this.layers.find(l => l.id === parseInt(this._activeHoldBlock.dataset.layerId, 10))?.startFrame || 0;
+                        const hTpStart = hLayerOffset + hStart;
+                        const hTpEnd = hTpStart + hLen - 1;
+                        if (hTpEnd < this.loopRange.inPoint || hTpStart > this.loopRange.outPoint) {
+                            this._activeHoldBlock.style.opacity = '0.3';
+                        }
+                    }
                     this._activeHoldBlock = null;
+                }
+                // Catch any orphaned .has-active hold blocks from full DOM rebuilds
+                const staleHolds = container.querySelectorAll('.hold-block.has-active');
+                for (const el of staleHolds) {
+                    el.classList.remove('has-active');
+                    const ph = el.querySelector('.hold-block-playhead');
+                    if (ph) ph.remove();
                 }
                 
                 // Check if active frame is inside a hold block
@@ -19172,6 +20420,7 @@
                     );
                     if (holdBlockEl) {
                         holdBlockEl.classList.add('has-active');
+                        holdBlockEl.style.opacity = '';
                         this._activeHoldBlock = holdBlockEl;
                         
                         // Position playhead within the block
@@ -19222,6 +20471,8 @@
                     );
                     if (newActive) {
                         newActive.classList.add('active');
+                        // Clear loop range dimming on active frame — playhead always shows bright
+                        newActive.style.opacity = '';
                         this._activeFrameEl = newActive;
                         
                         // Refresh indicator for active frame
@@ -19803,6 +21054,114 @@
                         opRow.appendChild(makeScrub('opacity', Math.round(tf.opacity * 100), 0, 100, 1, '%', 0.5));
                         props.appendChild(opRow);
                         
+                        // Blur row (single)
+                        const blurRow = document.createElement('div');
+                        blurRow.className = 'tl-prop';
+                        const blurDia = document.createElement('span');
+                        blurDia.className = 'tl-prop-diamond' + (hasKeyHere ? ' has-key' : '');
+                        blurDia.innerHTML = diamondSVG;
+                        blurDia.addEventListener('click', (e) => { e.stopPropagation(); if (!hasKeyHere) { this.saveFullState(); this.setTransformKeyframe(layer, this.currentFrameIndex, this._readPropInputs(inputs)); this.render(); }});
+                        blurRow.appendChild(blurDia);
+                        const blurLbl = document.createElement('span');
+                        blurLbl.className = 'tl-prop-name';
+                        blurLbl.textContent = 'Blur';
+                        blurRow.appendChild(blurLbl);
+                        blurRow.appendChild(makeScrub('blur', Math.round(tf.blur || 0), 0, 100, 0.5, 'px', 0.25));
+                        props.appendChild(blurRow);
+                        
+                        // === Inner Shadow section ===
+                        const isData = tf.innerShadow || { on: false, color: '#000000', opacity: 0.5, size: 5, choke: 0 };
+                        // Read from actual keyframe if it exists
+                        const curKf = (layer.transformKeyframes || []).find(k => k.frame === this.currentFrameIndex);
+                        inputs._innerShadowOn = curKf ? (curKf.innerShadowOn || false) : isData.on;
+                        inputs._innerShadowColor = curKf ? (curKf.innerShadowColor || '#000000') : isData.color;
+                        
+                        const isHeader = document.createElement('div');
+                        isHeader.className = 'tl-prop';
+                        isHeader.style.gap = '6px';
+                        
+                        const isDia = document.createElement('span');
+                        isDia.className = 'tl-prop-diamond' + (hasKeyHere ? ' has-key' : '');
+                        isDia.innerHTML = diamondSVG;
+                        isDia.addEventListener('click', (e) => { e.stopPropagation(); if (!hasKeyHere) { this.saveFullState(); this.setTransformKeyframe(layer, this.currentFrameIndex, this._readPropInputs(inputs)); this.render(); }});
+                        isHeader.appendChild(isDia);
+                        
+                        const isLbl = document.createElement('span');
+                        isLbl.className = 'tl-prop-name';
+                        isLbl.textContent = 'Inner Shadow';
+                        isHeader.appendChild(isLbl);
+                        
+                        const isToggle = document.createElement('div');
+                        isToggle.className = 'onion-mini-toggle ' + (isData.on ? 'on' : 'off');
+                        isToggle.style.marginLeft = 'auto';
+                        isToggle.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            inputs._innerShadowOn = !inputs._innerShadowOn;
+                            isToggle.className = 'onion-mini-toggle ' + (inputs._innerShadowOn ? 'on' : 'off');
+                            isDetails.style.display = inputs._innerShadowOn ? '' : 'none';
+                        });
+                        isHeader.appendChild(isToggle);
+                        props.appendChild(isHeader);
+                        
+                        const isDetails = document.createElement('div');
+                        isDetails.style.display = isData.on ? '' : 'none';
+                        isDetails.style.paddingLeft = '20px';
+                        
+                        // Color row
+                        const isColorRow = document.createElement('div');
+                        isColorRow.className = 'tl-prop';
+                        isColorRow.style.gap = '6px';
+                        const isColorLbl = document.createElement('span');
+                        isColorLbl.className = 'tl-prop-name';
+                        isColorLbl.textContent = 'Color';
+                        isColorRow.appendChild(isColorLbl);
+                        const isColorPick = document.createElement('div');
+                        isColorPick.style.cssText = 'width:22px;height:22px;flex-shrink:0;border-radius:50%;cursor:pointer;box-shadow:2px 2px 5px rgba(0,0,0,0.4),-1px -1px 3px rgba(255,255,255,0.03);';
+                        isColorPick.style.background = isData.color;
+                        isColorPick.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            if (window._customColorPicker) {
+                                window._customColorPicker.open(isColorPick, inputs._innerShadowColor || '#000000', (hex) => {
+                                    inputs._innerShadowColor = hex;
+                                    isColorPick.style.background = hex;
+                                });
+                            }
+                        });
+                        isColorRow.appendChild(isColorPick);
+                        isDetails.appendChild(isColorRow);
+                        
+                        // Opacity row
+                        const isOpRow = document.createElement('div');
+                        isOpRow.className = 'tl-prop';
+                        const isOpLbl = document.createElement('span');
+                        isOpLbl.className = 'tl-prop-name';
+                        isOpLbl.textContent = 'Opacity';
+                        isOpRow.appendChild(isOpLbl);
+                        isOpRow.appendChild(makeScrub('isOpacity', Math.round(isData.opacity * 100), 0, 100, 1, '%', 0.5));
+                        isDetails.appendChild(isOpRow);
+                        
+                        // Size row
+                        const isSzRow = document.createElement('div');
+                        isSzRow.className = 'tl-prop';
+                        const isSzLbl = document.createElement('span');
+                        isSzLbl.className = 'tl-prop-name';
+                        isSzLbl.textContent = 'Size';
+                        isSzRow.appendChild(isSzLbl);
+                        isSzRow.appendChild(makeScrub('isSize', Math.round(isData.size), 0, 100, 0.5, 'px', 0.25));
+                        isDetails.appendChild(isSzRow);
+                        
+                        // Choke row
+                        const isChRow = document.createElement('div');
+                        isChRow.className = 'tl-prop';
+                        const isChLbl = document.createElement('span');
+                        isChLbl.className = 'tl-prop-name';
+                        isChLbl.textContent = 'Choke';
+                        isChRow.appendChild(isChLbl);
+                        isChRow.appendChild(makeScrub('isChoke', Math.round(isData.choke), 0, 100, 1, '%', 0.5));
+                        isDetails.appendChild(isChRow);
+                        
+                        props.appendChild(isDetails);
+                        
                         // Keyframe actions
                         const actRow = document.createElement('div');
                         actRow.className = 'tl-key-actions';
@@ -20115,6 +21474,22 @@
                 // Flush fragments to DOM in one batch (minimizes reflow)
                 layersList.appendChild(labelsFrag);
                 container.appendChild(containerFrag);
+                
+                // Sync heights between label rows and frame rows
+                // (properties panels can make labels taller than frame rows)
+                const labels = layersList.querySelectorAll('.tl-label');
+                const frameRows = container.querySelectorAll('.layer-frames-row');
+                if (labels.length === frameRows.length) {
+                    for (let ri = 0; ri < labels.length; ri++) {
+                        const lh = labels[ri].offsetHeight;
+                        const rh = frameRows[ri].offsetHeight;
+                        if (lh > rh) {
+                            frameRows[ri].style.minHeight = lh + 'px';
+                        } else if (rh > lh) {
+                            labels[ri].style.minHeight = rh + 'px';
+                        }
+                    }
+                }
                 
                 // Restore scroll position preserved before rebuild
                 if (framesSection && savedScrollLeft > 0) {
@@ -20707,9 +22082,10 @@
                 frameDiv.dataset.timelinePos = timelinePos;
                 frameDiv.dataset.layerId = v.layer.id;
                 
-                // Loop range dimming
+                // Loop range dimming (skip active frame — always show playhead clearly)
                 if (this.isLoopRangeNarrowed()) {
-                    if (timelinePos < this.loopRange.inPoint || timelinePos > this.loopRange.outPoint) {
+                    const isActiveFrame = v.isActive && timelinePos === v.playheadPos;
+                    if (!isActiveFrame && (timelinePos < this.loopRange.inPoint || timelinePos > this.loopRange.outPoint)) {
                         frameDiv.style.opacity = '0.3';
                     }
                 }
@@ -20775,8 +22151,10 @@
                 block.dataset.timelinePos = timelinePos;
                 block.dataset.layerId = v.layer.id;
                 
-                // Loop range dimming: dim if entirely outside the range
-                if (this.isLoopRangeNarrowed()) {
+                // Loop range dimming: dim if entirely outside the range (skip if playhead is inside)
+                const playheadLocal = v.playheadPos - v.offset;
+                const hasActive = v.isActive && playheadLocal >= startIndex && playheadLocal < startIndex + length;
+                if (this.isLoopRangeNarrowed() && !hasActive) {
                     const blockEnd = timelinePos + length - 1;
                     if (blockEnd < this.loopRange.inPoint || timelinePos > this.loopRange.outPoint) {
                         block.style.opacity = '0.3';
@@ -20788,8 +22166,6 @@
                 block.style.width = totalWidth + 'px';
                 
                 // Check if playhead is within this block
-                const playheadLocal = v.playheadPos - v.offset;
-                const hasActive = v.isActive && playheadLocal >= startIndex && playheadLocal < startIndex + length;
                 if (hasActive) block.classList.add('has-active');
                 
                 // Check if hold block is selected (any frame in range is selected)
@@ -20963,9 +22339,11 @@
                 spanEl.style.width = totalWidth + 'px';
                 spanEl.style.height = h + 'px';
                 
-                // Loop range dimming
+                // Loop range dimming (skip if playhead is inside this span)
                 const timelinePos = v.offset + instance.startFrame;
-                if (this.isLoopRangeNarrowed()) {
+                const playheadLocal = v.playheadPos - v.offset;
+                const spanHasActive = v.isActive && playheadLocal >= instance.startFrame && playheadLocal < instance.startFrame + dur;
+                if (this.isLoopRangeNarrowed() && !spanHasActive) {
                     const spanEnd = timelinePos + dur - 1;
                     if (spanEnd < this.loopRange.inPoint || timelinePos > this.loopRange.outPoint) {
                         spanEl.style.opacity = '0.3';
@@ -20973,8 +22351,7 @@
                 }
                 
                 // Playhead within span → selected
-                const playheadLocal = v.playheadPos - v.offset;
-                if (v.isActive && playheadLocal >= instance.startFrame && playheadLocal < instance.startFrame + dur) {
+                if (spanHasActive) {
                     spanEl.classList.add('selected');
                 }
                 
@@ -21085,30 +22462,77 @@
                 
                 // === Interactions ===
                 
-                // Click to select / double-click to enter
+                // Click to select / double-click to enter / drag to slide
                 spanEl.addEventListener('pointerdown', (e) => {
                     if (e.target === resizeHandle) return; // let resize handle take over
                     e.stopPropagation();
+                    e.preventDefault();
                     
-                    // Double-click detection (render() destroys DOM so native dblclick won't fire)
-                    const now = performance.now();
-                    if (this._lastSpanClick && this._lastSpanClick.instanceId === instance.id && now - this._lastSpanClick.time < 400) {
-                        this._lastSpanClick = null;
-                        this.pushContext(instance.symbolId, instance.id);
-                        return;
-                    }
-                    this._lastSpanClick = { instanceId: instance.id, time: now };
+                    const startX = e.clientX;
+                    const startFrame = instance.startFrame;
+                    let dragging = false;
+                    let savedUndo = false;
                     
-                    this._selectedInstanceId = instance.id;
-                    this._selectedInstanceLayerId = v.layer.id;
-                    // Navigate playhead to span start (clamped to actual frames)
-                    const targetFrame = Math.min(instance.startFrame, v.layer.frames.length - 1);
-                    this.currentFrameIndex = Math.max(0, targetFrame);
-                    if (v.layer.id !== this.currentLayerId) {
-                        this.currentLayerId = v.layer.id;
-                    }
-                    this._timelineDirty = true;
-                    this.render();
+                    const onMove = (me) => {
+                        const dx = me.clientX - startX;
+                        if (!dragging && Math.abs(dx) > 5) {
+                            dragging = true;
+                            if (!savedUndo) {
+                                this.saveFullState();
+                                savedUndo = true;
+                            }
+                            spanEl.style.cursor = 'grabbing';
+                        }
+                        if (!dragging) return;
+                        
+                        const frameDelta = Math.round(dx / v.cellW);
+                        const newStart = Math.max(0, startFrame + frameDelta);
+                        if (newStart === instance.startFrame) return;
+                        
+                        instance.startFrame = newStart;
+                        
+                        // Ensure layer has enough frames to cover the instance
+                        const instEnd = instance.startFrame + instance.duration;
+                        while (v.layer.frames.length < instEnd) {
+                            v.layer.frames.push(this._createSpacerFrame());
+                        }
+                        
+                        this._timelineDirty = true;
+                        this._invalidateCompositeCache();
+                        this.render();
+                    };
+                    
+                    const onUp = () => {
+                        document.removeEventListener('pointermove', onMove);
+                        document.removeEventListener('pointerup', onUp);
+                        document.removeEventListener('pointercancel', onUp);
+                        spanEl.style.cursor = '';
+                        
+                        if (!dragging) {
+                            // No drag — handle as click/double-click
+                            const now = performance.now();
+                            if (this._lastSpanClick && this._lastSpanClick.instanceId === instance.id && now - this._lastSpanClick.time < 400) {
+                                this._lastSpanClick = null;
+                                this.pushContext(instance.symbolId, instance.id);
+                                return;
+                            }
+                            this._lastSpanClick = { instanceId: instance.id, time: now };
+                            
+                            this._selectedInstanceId = instance.id;
+                            this._selectedInstanceLayerId = v.layer.id;
+                            const targetFrame = Math.min(instance.startFrame, v.layer.frames.length - 1);
+                            this.currentFrameIndex = Math.max(0, targetFrame);
+                            if (v.layer.id !== this.currentLayerId) {
+                                this.currentLayerId = v.layer.id;
+                            }
+                            this._timelineDirty = true;
+                            this.render();
+                        }
+                    };
+                    
+                    document.addEventListener('pointermove', onMove);
+                    document.addEventListener('pointerup', onUp);
+                    document.addEventListener('pointercancel', onUp);
                 });
                 
                 // Right-click context menu
@@ -21549,8 +22973,20 @@
                 // Remove the frame from its original position
                 const [movedFrame] = layer.frames.splice(fromIndex, 1);
                 
+                // Shift instances back for the removal
+                if (layer.symbolInstances) {
+                    for (const inst of layer.symbolInstances) {
+                        if (inst.startFrame > fromIndex) {
+                            inst.startFrame--;
+                        }
+                    }
+                }
+                
                 // Insert it at the new position
                 layer.frames.splice(toIndex, 0, movedFrame);
+                
+                // Shift instances forward for the insertion
+                this._shiftInstances(layer, toIndex - 1, 1);
                 
                 // Update current frame index if needed
                 if (this.currentFrameIndex === fromIndex) {
@@ -21594,6 +23030,9 @@
                                         fData.originX = frame._originX || 0;
                                         fData.originY = frame._originY || 0;
                                     }
+                                    if (frame._paintCanvas) {
+                                        fData.paintData = frame._paintCanvas.toDataURL('image/png');
+                                    }
                                     frames.push(fData);
                                 }
                             } else {
@@ -21632,6 +23071,9 @@
                                         if (frame._originX || frame._originY) {
                                             fData.originX = frame._originX || 0;
                                             fData.originY = frame._originY || 0;
+                                        }
+                                        if (frame._paintCanvas) {
+                                            fData.paintData = frame._paintCanvas.toDataURL('image/png');
                                         }
                                         symFrames.push(fData);
                                     }
@@ -21809,7 +23251,7 @@
                     }
                     
                     // Load layers and frames from base64
-                    const loadImage = (dataUrl, originX, originY) => {
+                    const loadImage = (dataUrl, originX, originY, paintDataUrl) => {
                         return new Promise((resolve, reject) => {
                             const img = new Image();
                             img.onload = () => {
@@ -21819,7 +23261,22 @@
                                 c._originX = originX || 0;
                                 c._originY = originY || 0;
                                 c.getContext('2d').drawImage(img, 0, 0);
-                                resolve(c);
+                                // Load paint sublayer if present
+                                if (paintDataUrl) {
+                                    const pImg = new Image();
+                                    pImg.onload = () => {
+                                        const pc = document.createElement('canvas');
+                                        pc.width = pImg.naturalWidth || c.width;
+                                        pc.height = pImg.naturalHeight || c.height;
+                                        pc.getContext('2d').drawImage(pImg, 0, 0);
+                                        c._paintCanvas = pc;
+                                        resolve(c);
+                                    };
+                                    pImg.onerror = () => resolve(c); // Paint load failed, continue without it
+                                    pImg.src = paintDataUrl;
+                                } else {
+                                    resolve(c);
+                                }
                             };
                             img.onerror = reject;
                             img.src = dataUrl;
@@ -21840,7 +23297,8 @@
                                 const dataUrl = (typeof frameData === 'string') ? frameData : frameData.data;
                                 const originX = (typeof frameData === 'object') ? (frameData.originX || 0) : 0;
                                 const originY = (typeof frameData === 'object') ? (frameData.originY || 0) : 0;
-                                const canvas = await loadImage(dataUrl, originX, originY);
+                                const paintDataUrl = (typeof frameData === 'object') ? (frameData.paintData || null) : null;
+                                const canvas = await loadImage(dataUrl, originX, originY, paintDataUrl);
                                 holdCanvasMap.set(fi, canvas);
                                 frames.push(canvas);
                             } else {
@@ -21887,7 +23345,8 @@
                                         const dataUrl = (typeof frameData === 'string') ? frameData : frameData.data;
                                         const originX = (typeof frameData === 'object') ? (frameData.originX || 0) : 0;
                                         const originY = (typeof frameData === 'object') ? (frameData.originY || 0) : 0;
-                                        const canvas = await loadImage(dataUrl, originX, originY);
+                                        const paintDataUrl = (typeof frameData === 'object') ? (frameData.paintData || null) : null;
+                                        const canvas = await loadImage(dataUrl, originX, originY, paintDataUrl);
                                         symHoldMap.set(fi, canvas);
                                         symFrames.push(canvas);
                                     } else {
@@ -22591,6 +24050,9 @@
                     if (frame) {
                         const offX = frame._originX || 0;
                         const offY = frame._originY || 0;
+                        if (frame._paintCanvas) {
+                            ctx.drawImage(frame._paintCanvas, offX + index * frameWidth, offY);
+                        }
                         ctx.drawImage(frame, offX + index * frameWidth, offY);
                     }
                 });
