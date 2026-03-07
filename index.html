@@ -10892,8 +10892,11 @@
             }
             
             startDrawing(e) {
-                // Block all canvas interactions during playback
-                if (this.isPlaying) return;
+                // Block selection/transform/instance interactions during playback, but allow drawing
+                if (this.isPlaying) {
+                    const drawTools = ['brush', 'eraser', 'fill', 'inkbottle', 'gradient', 'pen', 'line', 'rect', 'roundrect', 'ellipse'];
+                    if (!drawTools.includes(this.tool)) return;
+                }
                 
                 // Pan and magnifier tools don't draw
                 if (this.tool === 'pan' || this.tool === 'magnifier' || this.tool === 'magnifier-out') return;
@@ -10902,8 +10905,10 @@
                 // For non-transform tools: clicking on an instance selects it (blocks drawing),
                 // double-clicking enters the loop.
                 // Transform tools have their own instance handling below, so skip this.
+                // Skip all instance interactions during playback.
                 const _isXformTool = this.tool === 'transform' || this.tool === 'scale' || 
                                      this.tool === 'rotate' || this.tool === 'skew' || this.tool === 'distort';
+                if (!this.isPlaying) {
                 // Select tool with active instance: check handles first
                 if (this.tool === 'select' && this._activeInstance) {
                     const canvas = e.target === this.selectionCanvas ? this.selectionCanvas : this.canvas;
@@ -10962,6 +10967,7 @@
                         }
                     }
                 }
+                } // end !isPlaying guard for instance interactions
                 
                 // Handle select tool — flood-select pixel artwork
                 if (this.tool === 'select') {
