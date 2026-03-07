@@ -7750,31 +7750,9 @@
                         
                         let selTargetLayer = layer;
                         const origSelFrameIdx = this.currentFrameIndex;
-                        if (hasRemainingContent) {
-                            const timelinePos = (layer.startFrame || 0) + this.currentFrameIndex;
-                            selTargetLayer = {
-                                id: this.nextLayerId++,
-                                name: name,
-                                visible: true,
-                                opacity: 1.0,
-                                frames: [this.createEmptyFrame()],
-                                transformKeyframes: [],
-                                startFrame: timelinePos,
-                                parentId: null,
-                                symbolInstances: []
-                            };
-                            const currentIdx = this.layers.findIndex(l => l.id === this.currentLayerId);
-                            if (currentIdx >= 0) {
-                                this.layers.splice(currentIdx + 1, 0, selTargetLayer);
-                            } else {
-                                this.layers.push(selTargetLayer);
-                            }
-                            this.currentLayerId = selTargetLayer.id;
-                            this.currentFrameIndex = 0; // local frame 0 = timeline position
-                        }
                         
-                        const duration = Math.max(1, (hasRemainingContent ? 1 : layer.frames.length));
-                        const instance = this.createSymbolInstance(sym.id, 0, duration, instX, instY);
+                        const duration = Math.max(1, layer.frames.length - this.currentFrameIndex);
+                        const instance = this.createSymbolInstance(sym.id, this.currentFrameIndex, duration, instX, instY);
                         selTargetLayer.symbolInstances.push(instance);
                         
                         // Erase the selected region from the original frame
@@ -7785,6 +7763,7 @@
                             if (origFrame._paintCanvas) {
                                 origFrame._paintCanvas.getContext('2d').clearRect(selBounds.x, selBounds.y, selBounds.width, selBounds.height);
                             }
+                            this._dirtyThumb(origFrame);
                         }
                     }
                     
@@ -7987,45 +7966,19 @@
                         hasRemainingContent = true;
                     }
                     
-                    // Determine target layer for the loop instance
+                    // Place instance on the same layer at the source frame position
                     let targetLayer = layer;
-                    if (hasRemainingContent) {
-                        // Other content exists — create a new layer for the loop
-                        const timelinePos = (layer.startFrame || 0) + startFrame;
-                        targetLayer = {
-                            id: this.nextLayerId++,
-                            name: name,
-                            visible: true,
-                            opacity: 1.0,
-                            frames: [this.createEmptyFrame()],
-                            transformKeyframes: [],
-                            startFrame: timelinePos,
-                            parentId: null,
-                            symbolInstances: []
-                        };
-                        const currentIdx = this.layers.findIndex(l => l.id === this.currentLayerId);
-                        if (currentIdx >= 0) {
-                            this.layers.splice(currentIdx + 1, 0, targetLayer);
-                        } else {
-                            this.layers.push(targetLayer);
-                        }
-                        this.currentLayerId = targetLayer.id;
-                        this.currentFrameIndex = 0; // local frame 0 = timeline position
-                    }
-                    
-                    // Instance starts at 0 relative to the new layer (layer offset handles timeline position)
-                    const instStart = hasRemainingContent ? 0 : startFrame;
-                    const instance = this.createSymbolInstance(sym.id, instStart, duration, instX, instY);
+                    const instance = this.createSymbolInstance(sym.id, startFrame, duration, instX, instY);
                     targetLayer.symbolInstances.push(instance);
                     
                     // Clear source frames on original layer (pixels now in the symbol)
-                    // Use saved index since currentFrameIndex may have changed for new layer
-                    const origFrameIdx = sourceFrameIndices.includes(this.currentFrameIndex) ? this.currentFrameIndex : sourceFrameIndices[0];
                     if (includeMode === 'current') {
-                        layer.frames[origFrameIdx] = this.createEmptyFrame();
+                        layer.frames[this.currentFrameIndex] = this.createEmptyFrame();
+                        this._dirtyThumb(layer.frames[this.currentFrameIndex]);
                     } else {
                         for (const fi of sourceFrameIndices) {
                             layer.frames[fi] = this.createEmptyFrame();
+                            this._dirtyThumb(layer.frames[fi]);
                         }
                     }
                 }
@@ -9256,6 +9209,10 @@
                             if (layer && layer.symbolInstances) {
                                 layer.symbolInstances = layer.symbolInstances.filter(i => i.id !== inst.id);
                             }
+                            // Bust content indicator cache on affected frames
+                            for (const f of (layer ? layer.frames : [])) {
+                                if (f) this._dirtyThumb(f);
+                            }
                             this.deselectInstance();
                             this._timelineDirty = true;
                             this._invalidateCompositeCache();
@@ -9272,6 +9229,12 @@
                                 const srcLayer = this.layers.find(l => l.id === this._selectedInstanceLayerId);
                                 if (srcLayer && srcLayer.symbolInstances) {
                                     srcLayer.symbolInstances = srcLayer.symbolInstances.filter(i => i.id !== tlInst.id);
+                                }
+                                // Bust content indicator cache on affected frames
+                                if (srcLayer) {
+                                    for (const f of srcLayer.frames) {
+                                        if (f) this._dirtyThumb(f);
+                                    }
                                 }
                                 this._selectedInstanceId = null;
                                 this._timelineDirty = true;
@@ -9348,7 +9311,7 @@
                         }
                     } else if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
                         e.preventDefault();
-                        this.selectTool('transform');
+                        if (!this.isPlaying) this.selectTool('transform');
                     } else if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+')) {
                         e.preventDefault();
                         this.zoomIn();
@@ -9392,6 +9355,12 @@
                         if (layer && layer.symbolInstances) {
                             layer.symbolInstances = layer.symbolInstances.filter(inst => inst.id !== this._activeInstance.id);
                         }
+                        // Bust content indicator cache on affected frames
+                        if (layer) {
+                            for (const f of layer.frames) {
+                                if (f) this._dirtyThumb(f);
+                            }
+                        }
                         this.deselectInstance();
                         this._timelineDirty = true;
                         this._invalidateCompositeCache();
@@ -9399,6 +9368,17 @@
                         this.render();
                     } else if (this._activeInstance && (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
                         e.preventDefault();
+                        // Save undo state on first arrow press, batch rapid presses
+                        if (!this._instArrowUndoSaved) {
+                            this.saveFullState();
+                            this._instArrowUndoSaved = true;
+                            // Reset flag after a pause so next burst gets a new undo entry
+                            clearTimeout(this._instArrowUndoTimer);
+                            this._instArrowUndoTimer = setTimeout(() => { this._instArrowUndoSaved = false; }, 500);
+                        } else {
+                            clearTimeout(this._instArrowUndoTimer);
+                            this._instArrowUndoTimer = setTimeout(() => { this._instArrowUndoSaved = false; }, 500);
+                        }
                         const step = e.shiftKey ? 10 : 1;
                         if (e.key === 'ArrowUp') this._activeInstance.y -= step;
                         else if (e.key === 'ArrowDown') this._activeInstance.y += step;
@@ -10510,7 +10490,23 @@
             selectAllInFrame() {
                 const layer = this.getCurrentLayer();
                 const frame = layer.frames[this.currentFrameIndex];
-                if (!frame) return;
+                
+                // Check for loop instances first — if there are instances and no pixel content,
+                // select the first instance instead of creating a pixel selection
+                const instances = this.getInstancesAtFrame(layer, this.currentFrameIndex);
+                
+                if (!frame || !this._frameHasContent(frame)) {
+                    // No pixel content — try selecting a loop instance
+                    if (instances.length > 0) {
+                        const inst = instances[0];
+                        this.selectInstance(inst, layer);
+                        this.selectTool('select');
+                        this.render();
+                    } else {
+                        this.hideTransformHandles();
+                    }
+                    return;
+                }
                 
                 // Scan composite (ink + paint) for tight bounding box
                 const comp = this._getCompositeForFill(frame);
@@ -10531,9 +10527,16 @@
                     }
                 }
                 
-                // Nothing on the frame
+                // Nothing on the frame — try instances
                 if (maxX < 0 || maxY < 0) {
-                    this.hideTransformHandles();
+                    if (instances.length > 0) {
+                        const inst = instances[0];
+                        this.selectInstance(inst, layer);
+                        this.selectTool('select');
+                        this.render();
+                    } else {
+                        this.hideTransformHandles();
+                    }
                     return;
                 }
                 
@@ -10846,6 +10849,31 @@
                 this.currentFrameIndex = state.currentFrameIndex;
                 this.nextLayerId = state.nextLayerId;
                 
+                // Re-resolve active instance reference (old object is dead after restore)
+                if (this._activeInstance) {
+                    const instId = this._activeInstance.id;
+                    const instLayerId = this._activeInstanceLayer ? this._activeInstanceLayer.id : null;
+                    let found = false;
+                    for (const layer of this.layers) {
+                        if (instLayerId && layer.id !== instLayerId) continue;
+                        if (layer.symbolInstances) {
+                            const match = layer.symbolInstances.find(i => i.id === instId);
+                            if (match) {
+                                this._activeInstance = match;
+                                this._activeInstanceLayer = layer;
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!found) {
+                        // Instance no longer exists after undo — deselect
+                        this._activeInstance = null;
+                        this._activeInstanceLayer = null;
+                        this._selectedInstanceId = null;
+                    }
+                }
+                
                 this.render();
             }
             
@@ -10864,6 +10892,9 @@
             }
             
             startDrawing(e) {
+                // Block all canvas interactions during playback
+                if (this.isPlaying) return;
+                
                 // Pan and magnifier tools don't draw
                 if (this.tool === 'pan' || this.tool === 'magnifier' || this.tool === 'magnifier-out') return;
                 
@@ -13998,7 +14029,7 @@
                 if (before && !after) return buildResult(before);
                 if (before === after || before.frame === after.frame) return buildResult(before);
                 
-                // Bezier easing: use the "before" keyframe's easing for this segment
+                // Bezier easing
                 const linearT = (frameIndex - before.frame) / (after.frame - before.frame);
                 const t = this.easedT(linearT, before);
                 
@@ -14016,8 +14047,8 @@
                     opacity: kfOp(before) + (kfOp(after) - kfOp(before)) * t,
                     blur: kfBlur(before) + (kfBlur(after) - kfBlur(before)) * t,
                     innerShadow: {
-                        on: isA.on, // boolean: use "before" keyframe
-                        color: isA.color, // color: use "before" keyframe
+                        on: isA.on,
+                        color: isA.color,
                         opacity: isA.opacity + (isB.opacity - isA.opacity) * t,
                         size: isA.size + (isB.size - isA.size) * t,
                         choke: isA.choke + (isB.choke - isA.choke) * t
@@ -14122,6 +14153,165 @@
             }
             
             // Apply a single layer's transform to the canvas context
+            // Pixel-based inner shadow — no ctx.filter, no composite operations
+            // Works by: inverting content alpha → blur → mask to content bounds → blend shadow color
+            _applyInnerShadow(canvas, is) {
+                if (!is || !is.on || is.size < 0.5 || is.opacity < 0.01) return;
+                
+                const w = canvas.width, h = canvas.height;
+                if (w === 0 || h === 0) return;
+                const ctx = canvas.getContext('2d');
+                const imgData = ctx.getImageData(0, 0, w, h);
+                const px = imgData.data;
+                const total = w * h;
+                
+                // Parse shadow color
+                const sc = this._parseHexColor(is.color || '#000000');
+                
+                // 1. Build inverted alpha channel (shadow source = where content ISN'T)
+                // If choke > 0, dilate content alpha first to shrink shadow inward
+                const shadowAlpha = new Uint8ClampedArray(total);
+                
+                if (is.choke > 0) {
+                    // Dilate: blur content alpha then threshold to expand the shape
+                    const chokeRadius = Math.max(1, Math.round((is.choke / 100) * is.size));
+                    
+                    // Extract content alpha into a temporary ImageData for _boxBlur
+                    const chokeData = new ImageData(w, h);
+                    const cd = chokeData.data;
+                    for (let i = 0; i < total; i++) {
+                        const a = px[i * 4 + 3];
+                        cd[i * 4] = a; cd[i * 4 + 1] = a; cd[i * 4 + 2] = a; cd[i * 4 + 3] = 255;
+                    }
+                    this._boxBlur(chokeData, w, h, chokeRadius);
+                    
+                    // Threshold + re-solidify, then invert
+                    for (let i = 0; i < total; i++) {
+                        const dilated = Math.min(255, cd[i * 4] * 3); // boost blurred alpha
+                        shadowAlpha[i] = 255 - dilated;
+                    }
+                } else {
+                    // No choke — just invert content alpha directly
+                    for (let i = 0; i < total; i++) {
+                        shadowAlpha[i] = 255 - px[i * 4 + 3];
+                    }
+                }
+                
+                // 2. Blur the shadow alpha using _boxBlur
+                const blurRadius = Math.max(1, Math.round(is.size));
+                const blurData = new ImageData(w, h);
+                const bd = blurData.data;
+                for (let i = 0; i < total; i++) {
+                    const v = shadowAlpha[i];
+                    bd[i * 4] = v; bd[i * 4 + 1] = v; bd[i * 4 + 2] = v; bd[i * 4 + 3] = 255;
+                }
+                this._boxBlur(blurData, w, h, blurRadius);
+                
+                // 3. Blend shadow into content pixels
+                // Shadow only appears where content has alpha (inner shadow = inside the shape)
+                const sOp = is.opacity;
+                for (let i = 0; i < total; i++) {
+                    const contentA = px[i * 4 + 3];
+                    if (contentA === 0) continue; // no content = no shadow visible
+                    
+                    const sa = (bd[i * 4] / 255) * sOp; // shadow intensity at this pixel
+                    if (sa < 0.003) continue; // negligible
+                    
+                    const idx = i * 4;
+                    // Blend: result = shadow * sa + original * (1 - sa)
+                    px[idx]     = Math.round(sc.r * sa + px[idx]     * (1 - sa));
+                    px[idx + 1] = Math.round(sc.g * sa + px[idx + 1] * (1 - sa));
+                    px[idx + 2] = Math.round(sc.b * sa + px[idx + 2] * (1 - sa));
+                    // Alpha stays unchanged — shadow is internal
+                }
+                
+                ctx.putImageData(imgData, 0, 0);
+            }
+            
+            _parseHexColor(hex) {
+                const h = hex.replace('#', '');
+                return {
+                    r: parseInt(h.substring(0, 2), 16) || 0,
+                    g: parseInt(h.substring(2, 4), 16) || 0,
+                    b: parseInt(h.substring(4, 6), 16) || 0
+                };
+            }
+            
+            // Fast 3-pass box blur approximating gaussian (operates on ImageData in-place)
+            _boxBlur(imgData, w, h, radius) {
+                if (radius < 1) return;
+                const d = imgData.data;
+                const len = d.length;
+                const buf = new Uint8ClampedArray(len);
+                
+                // 3 passes of box blur approximates gaussian well
+                for (let pass = 0; pass < 3; pass++) {
+                    const r = Math.max(1, Math.round(radius / 3));
+                    
+                    // Horizontal pass: d → buf
+                    for (let y = 0; y < h; y++) {
+                        // Running sum for the row
+                        let rSum = 0, gSum = 0, bSum = 0, aSum = 0;
+                        const yOff = y * w * 4;
+                        
+                        // Seed the window with [-r, r] clamped
+                        for (let ix = -r; ix <= r; ix++) {
+                            const cx = Math.min(Math.max(ix, 0), w - 1);
+                            const i = yOff + cx * 4;
+                            rSum += d[i]; gSum += d[i+1]; bSum += d[i+2]; aSum += d[i+3];
+                        }
+                        const diam = r + r + 1;
+                        
+                        for (let x = 0; x < w; x++) {
+                            const i = yOff + x * 4;
+                            buf[i]   = (rSum / diam) | 0;
+                            buf[i+1] = (gSum / diam) | 0;
+                            buf[i+2] = (bSum / diam) | 0;
+                            buf[i+3] = (aSum / diam) | 0;
+                            
+                            // Slide window: add right edge, remove left edge
+                            const addX = Math.min(x + r + 1, w - 1);
+                            const remX = Math.max(x - r, 0);
+                            const ai = yOff + addX * 4;
+                            const ri = yOff + remX * 4;
+                            rSum += d[ai]   - d[ri];
+                            gSum += d[ai+1] - d[ri+1];
+                            bSum += d[ai+2] - d[ri+2];
+                            aSum += d[ai+3] - d[ri+3];
+                        }
+                    }
+                    
+                    // Vertical pass: buf → d
+                    for (let x = 0; x < w; x++) {
+                        let rSum = 0, gSum = 0, bSum = 0, aSum = 0;
+                        
+                        for (let iy = -r; iy <= r; iy++) {
+                            const cy = Math.min(Math.max(iy, 0), h - 1);
+                            const i = (cy * w + x) * 4;
+                            rSum += buf[i]; gSum += buf[i+1]; bSum += buf[i+2]; aSum += buf[i+3];
+                        }
+                        const diam = r + r + 1;
+                        
+                        for (let y = 0; y < h; y++) {
+                            const i = (y * w + x) * 4;
+                            d[i]   = (rSum / diam) | 0;
+                            d[i+1] = (gSum / diam) | 0;
+                            d[i+2] = (bSum / diam) | 0;
+                            d[i+3] = (aSum / diam) | 0;
+                            
+                            const addY = Math.min(y + r + 1, h - 1);
+                            const remY = Math.max(y - r, 0);
+                            const ai = (addY * w + x) * 4;
+                            const ri = (remY * w + x) * 4;
+                            rSum += buf[ai]   - buf[ri];
+                            gSum += buf[ai+1] - buf[ri+1];
+                            bSum += buf[ai+2] - buf[ri+2];
+                            aSum += buf[ai+3] - buf[ri+3];
+                        }
+                    }
+                }
+            }
+            
             _applyLayerTransform(ctx, tf) {
                 const ax = -this.viewportX + this.projectWidth / 2 + tf.anchorX;
                 const ay = -this.viewportY + this.projectHeight / 2 + tf.anchorY;
@@ -14129,71 +14319,6 @@
                 ctx.rotate(tf.rotation * Math.PI / 180);
                 ctx.scale(tf.scaleX, tf.scaleY);
                 ctx.translate(-ax, -ay);
-            }
-            
-            // Apply inner shadow effect to a canvas in-place
-            // is = { on, color, opacity, size, choke }
-            _applyInnerShadow(canvas, is) {
-                if (!is || !is.on || is.size < 0.1 || is.opacity < 0.01) return;
-                
-                const w = canvas.width, h = canvas.height;
-                const ctx = canvas.getContext('2d');
-                
-                // Reuse temp canvases for performance
-                if (!this._isShadowTemp) {
-                    this._isShadowTemp = document.createElement('canvas');
-                    this._isShadowTempCtx = this._isShadowTemp.getContext('2d');
-                    this._isMaskTemp = document.createElement('canvas');
-                    this._isMaskTempCtx = this._isMaskTemp.getContext('2d');
-                }
-                const shadowC = this._isShadowTemp;
-                const shadowCtx = this._isShadowTempCtx;
-                const maskC = this._isMaskTemp;
-                const maskCtx = this._isMaskTempCtx;
-                
-                if (shadowC.width !== w || shadowC.height !== h) {
-                    shadowC.width = w; shadowC.height = h;
-                    maskC.width = w; maskC.height = h;
-                }
-                
-                // 1. Create shadow canvas: fill with shadow color everywhere
-                shadowCtx.clearRect(0, 0, w, h);
-                shadowCtx.globalAlpha = is.opacity;
-                shadowCtx.fillStyle = is.color;
-                shadowCtx.fillRect(0, 0, w, h);
-                shadowCtx.globalAlpha = 1;
-                
-                // 2. Create cutout mask (optionally dilated by choke)
-                const chokePixels = Math.round((is.choke / 100) * is.size);
-                
-                if (chokePixels > 0) {
-                    // Dilate content alpha: blur then re-solidify to expand the shape
-                    maskCtx.clearRect(0, 0, w, h);
-                    maskCtx.filter = `blur(${chokePixels}px)`;
-                    maskCtx.drawImage(canvas, 0, 0);
-                    maskCtx.filter = 'none';
-                    // Re-solidify: draw on top of itself to boost alpha toward 1
-                    for (let pass = 0; pass < 5; pass++) {
-                        maskCtx.drawImage(maskC, 0, 0);
-                    }
-                    // Cut out the dilated shape from shadow
-                    shadowCtx.globalCompositeOperation = 'destination-out';
-                    shadowCtx.drawImage(maskC, 0, 0);
-                } else {
-                    // Cut out original content shape from shadow
-                    shadowCtx.globalCompositeOperation = 'destination-out';
-                    shadowCtx.drawImage(canvas, 0, 0);
-                }
-                shadowCtx.globalCompositeOperation = 'source-over';
-                
-                // 3. Composite blurred shadow inside content
-                ctx.save();
-                ctx.globalCompositeOperation = 'source-atop';
-                ctx.filter = `blur(${is.size}px)`;
-                ctx.drawImage(shadowC, 0, 0);
-                ctx.filter = 'none';
-                ctx.globalCompositeOperation = 'source-over';
-                ctx.restore();
             }
             
             drawLayerWithTransform(ctx, layer, timelinePos) {
@@ -14204,7 +14329,8 @@
                 const tf = this.getLayerTransformAtFrame(layer, localIdx);
                 const hasOwnTransform = tf.x !== 0 || tf.y !== 0 || tf.anchorX !== 0 || tf.anchorY !== 0 || tf.scaleX !== 1 || tf.scaleY !== 1 || tf.rotation !== 0;
                 const blurAmount = tf.blur || 0;
-                const hasInnerShadow = tf.innerShadow && tf.innerShadow.on && tf.innerShadow.size > 0.1;
+                const hasInnerShadow = tf.innerShadow && tf.innerShadow.on && tf.innerShadow.size > 0.5;
+                const needsOffscreen = blurAmount > 0.5 || hasInnerShadow;
                 
                 // Get parent chain transforms
                 const parentChain = this._getParentChain(layer);
@@ -14214,94 +14340,75 @@
                 const instances = this.getInstancesAtFrame(layer, localIdx);
                 if (!frame && instances.length === 0) return;
                 
-                // Offscreen path: needed for blur or inner shadow (effects applied to composited content)
-                if (blurAmount > 0.1 || hasInnerShadow) {
-                    const w = ctx.canvas.width;
-                    const h = ctx.canvas.height;
-                    if (!this._blurTempCanvas) {
-                        this._blurTempCanvas = document.createElement('canvas');
-                        this._blurTempCtx = this._blurTempCanvas.getContext('2d');
-                    }
-                    if (this._blurTempCanvas.width !== w || this._blurTempCanvas.height !== h) {
-                        this._blurTempCanvas.width = w;
-                        this._blurTempCanvas.height = h;
-                    }
-                    const bctx = this._blurTempCtx;
-                    bctx.clearRect(0, 0, w, h);
-                    
-                    bctx.save();
+                // Helper: draw all layer content onto a target context
+                const drawLayerContent = (tctx) => {
+                    tctx.save();
                     if (hasParents) {
                         for (const parent of parentChain) {
                             const pLocalIdx = timelinePos - (parent.startFrame || 0);
                             const ptf = this.getLayerTransformAtFrame(parent, pLocalIdx);
-                            this._applyLayerTransform(bctx, ptf);
+                            this._applyLayerTransform(tctx, ptf);
                         }
                     }
                     if (hasOwnTransform) {
-                        this._applyLayerTransform(bctx, tf);
+                        this._applyLayerTransform(tctx, tf);
                     }
-                    
                     if (frame) {
                         const offX = (frame._originX || 0) - this.viewportX;
                         const offY = (frame._originY || 0) - this.viewportY;
-                        if (frame._paintCanvas) bctx.drawImage(frame._paintCanvas, offX, offY);
-                        bctx.drawImage(frame, offX, offY);
+                        if (frame._paintCanvas) tctx.drawImage(frame._paintCanvas, offX, offY);
+                        tctx.drawImage(frame, offX, offY);
                     }
                     if (instances.length > 0) {
                         for (const inst of instances) {
-                            this.compositeSymbolInstance(bctx, inst, localIdx, 0);
+                            this.compositeSymbolInstance(tctx, inst, localIdx, 0);
                         }
                     }
-                    bctx.restore();
+                    tctx.restore();
+                };
+                
+                // Offscreen path: needed for blur or inner shadow
+                if (needsOffscreen) {
+                    const w = ctx.canvas.width;
+                    const h = ctx.canvas.height;
                     
-                    // Apply inner shadow to the offscreen content
+                    if (!this._effectOffscreen) {
+                        this._effectOffscreen = document.createElement('canvas');
+                    }
+                    const oc = this._effectOffscreen;
+                    if (oc.width !== w || oc.height !== h) {
+                        oc.width = w; oc.height = h;
+                    }
+                    const octx = oc.getContext('2d');
+                    
+                    // Draw layer content to offscreen
+                    octx.clearRect(0, 0, w, h);
+                    drawLayerContent(octx);
+                    
+                    // Apply inner shadow (pixel-based, modifies offscreen in-place)
                     if (hasInnerShadow) {
-                        this._applyInnerShadow(this._blurTempCanvas, tf.innerShadow);
+                        this._applyInnerShadow(oc, tf.innerShadow);
                     }
                     
-                    // Composite to main canvas with blur + opacity
+                    // Apply blur (pixel-based)
+                    if (blurAmount > 0.5) {
+                        const imgData = octx.getImageData(0, 0, w, h);
+                        this._boxBlur(imgData, w, h, Math.round(blurAmount));
+                        octx.putImageData(imgData, 0, 0);
+                    }
+                    
+                    // Draw result to main canvas with opacity
                     ctx.save();
                     ctx.globalAlpha = tf.opacity;
-                    if (blurAmount > 0.1) {
-                        ctx.filter = `blur(${blurAmount}px)`;
-                    }
-                    ctx.drawImage(this._blurTempCanvas, 0, 0);
-                    ctx.filter = 'none';
+                    ctx.drawImage(oc, 0, 0);
                     ctx.restore();
                     return;
                 }
                 
-                // No blur, no inner shadow — direct render (fast path)
+                // No effects — direct render
                 ctx.save();
                 ctx.globalAlpha = tf.opacity;
-                
-                if (hasParents) {
-                    for (const parent of parentChain) {
-                        const pLocalIdx = timelinePos - (parent.startFrame || 0);
-                        const ptf = this.getLayerTransformAtFrame(parent, pLocalIdx);
-                        this._applyLayerTransform(ctx, ptf);
-                    }
-                }
-                
-                if (hasOwnTransform) {
-                    this._applyLayerTransform(ctx, tf);
-                }
-                
-                if (frame) {
-                    const offX = (frame._originX || 0) - this.viewportX;
-                    const offY = (frame._originY || 0) - this.viewportY;
-                    if (frame._paintCanvas) {
-                        ctx.drawImage(frame._paintCanvas, offX, offY);
-                    }
-                    ctx.drawImage(frame, offX, offY);
-                }
-                
-                if (instances.length > 0) {
-                    for (const inst of instances) {
-                        this.compositeSymbolInstance(ctx, inst, localIdx, 0);
-                    }
-                }
-                
+                drawLayerContent(ctx);
                 ctx.restore();
             }
             
@@ -14363,11 +14470,12 @@
                     const layerOp = symTf.opacity != null ? symTf.opacity : (symLayer.opacity != null ? symLayer.opacity : 1);
                     const symBlur = symTf.blur || 0;
                     const symIS = symTf.innerShadow;
-                    const hasEffects = symBlur > 0.1 || (symIS && symIS.on && symIS.size > 0.1);
+                    const hasSymIS = symIS && symIS.on && symIS.size > 0.5;
+                    const needsSymOffscreen = symBlur > 0.5 || hasSymIS;
                     const hasTransform = symTf.x !== 0 || symTf.y !== 0 || symTf.anchorX !== 0 || symTf.anchorY !== 0 || symTf.scaleX !== 1 || symTf.scaleY !== 1 || symTf.rotation !== 0;
                     
-                    // Helper: apply symbol-local transform (uses symbol center, not project center)
-                    const applySymTransform = (c) => {
+                    // Helper: apply transform for this symbol layer
+                    const applyTf = (c) => {
                         const ax = sym.width / 2 - minX + symTf.anchorX;
                         const ay = sym.height / 2 - minY + symTf.anchorY;
                         c.translate(ax + symTf.x, ay + symTf.y);
@@ -14376,7 +14484,7 @@
                         c.translate(-ax, -ay);
                     };
                     
-                    // Helper: draw frame content (paint + ink + nested instances)
+                    // Helper: draw frame content
                     const drawContent = (c) => {
                         if (frame._paintCanvas) {
                             c.drawImage(frame._paintCanvas, (frame._originX || 0) - minX, (frame._originY || 0) - minY);
@@ -14388,38 +14496,45 @@
                         }
                     };
                     
-                    if (hasEffects) {
-                        // Render to separate offscreen canvas, apply effects
+                    if (needsSymOffscreen) {
+                        // Offscreen path for blur and/or inner shadow
                         if (!this._symEffectTemp) {
                             this._symEffectTemp = document.createElement('canvas');
-                            this._symEffectTempCtx = this._symEffectTemp.getContext('2d');
                         }
-                        if (this._symEffectTemp.width < tempW || this._symEffectTemp.height < tempH) {
-                            this._symEffectTemp.width = Math.max(this._symEffectTemp.width, tempW);
-                            this._symEffectTemp.height = Math.max(this._symEffectTemp.height, tempH);
+                        const sbt = this._symEffectTemp;
+                        if (sbt.width < tempW || sbt.height < tempH) {
+                            sbt.width = Math.max(sbt.width, tempW);
+                            sbt.height = Math.max(sbt.height, tempH);
                         }
-                        const ectx = this._symEffectTempCtx;
-                        ectx.clearRect(0, 0, tempW, tempH);
+                        const sbtCtx = sbt.getContext('2d');
+                        sbtCtx.clearRect(0, 0, tempW, tempH);
                         
-                        ectx.save();
-                        if (hasTransform) applySymTransform(ectx);
-                        drawContent(ectx);
-                        ectx.restore();
+                        sbtCtx.save();
+                        if (hasTransform) applyTf(sbtCtx);
+                        drawContent(sbtCtx);
+                        sbtCtx.restore();
                         
-                        if (symIS && symIS.on && symIS.size > 0.1) {
-                            this._applyInnerShadow(this._symEffectTemp, symIS);
+                        // Apply inner shadow (pixel-based)
+                        if (hasSymIS) {
+                            this._applyInnerShadow(sbt, symIS);
                         }
                         
-                        tempCtx.globalAlpha = layerOp;
-                        if (symBlur > 0.1) tempCtx.filter = `blur(${symBlur}px)`;
-                        tempCtx.drawImage(this._symEffectTemp, 0, 0, tempW, tempH, 0, 0, tempW, tempH);
-                        tempCtx.filter = 'none';
-                        tempCtx.globalAlpha = 1;
-                    } else {
-                        // No effects — draw with transform + opacity directly
+                        // Apply blur (pixel-based)
+                        if (symBlur > 0.5) {
+                            const blurData = sbtCtx.getImageData(0, 0, tempW, tempH);
+                            this._boxBlur(blurData, tempW, tempH, Math.round(symBlur));
+                            sbtCtx.putImageData(blurData, 0, 0);
+                        }
+                        
                         tempCtx.save();
                         tempCtx.globalAlpha = layerOp;
-                        if (hasTransform) applySymTransform(tempCtx);
+                        tempCtx.drawImage(sbt, 0, 0, tempW, tempH, 0, 0, tempW, tempH);
+                        tempCtx.restore();
+                    } else {
+                        // Direct draw — no blur
+                        tempCtx.save();
+                        tempCtx.globalAlpha = layerOp;
+                        if (hasTransform) applyTf(tempCtx);
                         drawContent(tempCtx);
                         tempCtx.restore();
                     }
@@ -20791,7 +20906,7 @@
                         props.className = 'tl-props open';
                         
                         const tf = this.getLayerTransformAtFrame(layer, this.currentFrameIndex);
-                        const hasKeyHere = this.hasTransformKeyframeAt(layer, this.currentFrameIndex);
+                        let hasKeyHere = this.hasTransformKeyframeAt(layer, this.currentFrameIndex);
                         const inputs = {};
                         
                         // Diamond SVG template
@@ -20841,6 +20956,13 @@
                                     this.renderCanvasOnly();
                                 } else if (key === 'opacity') {
                                     layer.opacity = Math.max(0, Math.min(1, currentVal / 100));
+                                    this._invalidateCompositeCache();
+                                    this.renderCanvasOnly();
+                                } else {
+                                    // Auto-create keyframe when scrubbing any property without existing keyframe
+                                    const p = this._readPropInputs(inputs);
+                                    this.setTransformKeyframe(layer, this.currentFrameIndex, p);
+                                    hasKeyHere = true; // subsequent scrubs update in-place
                                     this._invalidateCompositeCache();
                                     this.renderCanvasOnly();
                                 }
@@ -21054,7 +21176,7 @@
                         opRow.appendChild(makeScrub('opacity', Math.round(tf.opacity * 100), 0, 100, 1, '%', 0.5));
                         props.appendChild(opRow);
                         
-                        // Blur row (single)
+                        // Blur row
                         const blurRow = document.createElement('div');
                         blurRow.className = 'tl-prop';
                         const blurDia = document.createElement('span');
@@ -21071,7 +21193,6 @@
                         
                         // === Inner Shadow section ===
                         const isData = tf.innerShadow || { on: false, color: '#000000', opacity: 0.5, size: 5, choke: 0 };
-                        // Read from actual keyframe if it exists
                         const curKf = (layer.transformKeyframes || []).find(k => k.frame === this.currentFrameIndex);
                         inputs._innerShadowOn = curKf ? (curKf.innerShadowOn || false) : isData.on;
                         inputs._innerShadowColor = curKf ? (curKf.innerShadowColor || '#000000') : isData.color;
