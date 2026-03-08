@@ -5022,6 +5022,11 @@
                             <span class="brush-setting-value" id="brushDiameterValue">8</span>
                         </div>
                         <div class="brush-setting-row">
+                            <label>Opacity:</label>
+                            <input type="range" id="brushOpacitySlider" min="1" max="100" value="100">
+                            <span class="brush-setting-value" id="brushOpacityValue">100%</span>
+                        </div>
+                        <div class="brush-setting-row">
                             <label>Smoothing:</label>
                             <input type="range" id="brushSmoothing" min="0" max="100" value="80">
                             <span class="brush-setting-value" id="brushSmoothingValue">80%</span>
@@ -5074,6 +5079,11 @@
                             <span class="brush-setting-value" id="eraserDiameterValue">8</span>
                         </div>
                         <div class="brush-setting-row">
+                            <label>Opacity:</label>
+                            <input type="range" id="eraserOpacitySlider" min="1" max="100" value="100">
+                            <span class="brush-setting-value" id="eraserOpacityValue">100%</span>
+                        </div>
+                        <div class="brush-setting-row">
                             <label>Smoothing:</label>
                             <input type="range" id="eraserSmoothing" min="0" max="100" value="0">
                             <span class="brush-setting-value" id="eraserSmoothingValue">0%</span>
@@ -5124,6 +5134,9 @@
                         <button class="dropdown-item" data-xformtool="rotate"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M13.5 8A5.5 5.5 0 112.5 5.5"/><path d="M2.5 1.5v4h4"/></svg> Rotate <span class="shortcut">R</span></button>
                         <button class="dropdown-item" data-xformtool="skew"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M4 2.5h9.5v11H2.5V6"/><circle cx="4" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="2.5" r="1" fill="currentColor" stroke="none"/><circle cx="2.5" cy="13.5" r="1" fill="currentColor" stroke="none"/><circle cx="13.5" cy="13.5" r="1" fill="currentColor" stroke="none"/></svg> Skew</button>
                         <button class="dropdown-item" data-xformtool="distort"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M4 1.5L13 3l1 11.5L2 13z"/><circle cx="4" cy="1.5" r="1" fill="currentColor" stroke="none"/><circle cx="13" cy="3" r="1" fill="currentColor" stroke="none"/><circle cx="3" cy="13" r="1" fill="currentColor" stroke="none"/><circle cx="14" cy="14.5" r="1" fill="currentColor" stroke="none"/></svg> Distort</button>
+                        <div class="dropdown-divider"></div>
+                        <button class="dropdown-item" id="flipHorizontalBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M8 1v14" stroke-dasharray="2 2"/><path d="M5 4H2.5l3 4-3 4H5"/><path d="M11 4h2.5l-3 4 3 4H11"/></svg> Flip Horizontal</button>
+                        <button class="dropdown-item" id="flipVerticalBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M1 8h14" stroke-dasharray="2 2"/><path d="M4 5V2.5l4 3-4 3V5"/><path d="M4 11v2.5l4-3-4-3V11"/><path d="M12 5V2.5l-4 3 4 3V5"/><path d="M12 11v2.5l-4-3 4-3V11"/></svg> Flip Vertical</button>
                     </div>
                 </div>
                 <button id="alignBtn" title="Align to Canvas"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><line x1="2" y1="1.5" x2="2" y2="14.5" stroke-opacity="0.5"/><rect x="4" y="4" width="7" height="4" rx="0.8" fill="currentColor" fill-opacity="0.15" stroke-opacity="0.7"/><rect x="4" y="10" width="10" height="3" rx="0.8" fill="currentColor" fill-opacity="0.15" stroke-opacity="0.7"/><path d="M3.2 6L4 6" stroke-opacity="0.4" stroke-width="1"/><path d="M3.2 11.5L4 11.5" stroke-opacity="0.4" stroke-width="1"/></svg></button>
@@ -5587,6 +5600,7 @@
                 this._gradientEdit = null; // Edit mode state: {startLocal, endLocal, originX, originY, dragging}
                 this._gradientMaskCache = null; // Cached fill region mask for live preview
                 this.brushSize = 8;
+                this.brushOpacity = 1; // 0-1, brush stroke opacity
                 this.brushShape = 'round';    // 'round', 'square', 'oval-h', 'oval-v'
                 this.eraserShape = 'round';
                 this.brushSmoothing = 80;      // 0-100
@@ -5594,6 +5608,7 @@
                 this.drawingMode = 'normal'; // 'normal' | 'behind' | 'paintFill' | 'fillPaint'
                 this.clearMode = 'all'; // 'all' | 'ink' | 'fill'
                 this.eraserMode = 'ink'; // 'ink' | 'fill' | 'both'
+                this.eraserOpacity = 1; // 0-1, eraser stroke opacity
                 this.eraserSmoothing = 0;
                 this.smoothPoints = [];       // Buffer for smoothing
                 this.isDrawing = false;
@@ -7095,6 +7110,8 @@
                     rotation: 0,
                     scaleX: 1,
                     scaleY: 1,
+                    anchorX: 0,  // Pivot offset from center (0 = center)
+                    anchorY: 0,
                     opacity: 1,
                     firstFrame: 0,
                     loopMode: 'loop'  // 'loop' | 'play-once' | 'single-frame'
@@ -8650,6 +8667,8 @@
                         document.getElementById('drawingModeToggle').querySelectorAll('.dm-btn').forEach(b => {
                             b.classList.toggle('active', b.dataset.mode === this.drawingMode);
                         });
+                        document.getElementById('brushOpacitySlider').value = Math.round(this.brushOpacity * 100);
+                        document.getElementById('brushOpacityValue').textContent = Math.round(this.brushOpacity * 100) + '%';
                     }
                 });
                 
@@ -8663,6 +8682,8 @@
                         document.getElementById('eraserModeToggle').querySelectorAll('.dm-btn').forEach(b => {
                             b.classList.toggle('active', b.dataset.mode === this.eraserMode);
                         });
+                        document.getElementById('eraserOpacitySlider').value = Math.round(this.eraserOpacity * 100);
+                        document.getElementById('eraserOpacityValue').textContent = Math.round(this.eraserOpacity * 100) + '%';
                     }
                 });
                 
@@ -8828,11 +8849,24 @@
                     item.addEventListener('click', (e) => {
                         e.stopPropagation();
                         const xformtool = item.getAttribute('data-xformtool');
+                        if (!xformtool) return; // Skip flip buttons (handled separately)
                         this._activeTransformTool = xformtool;
                         this.selectTool(xformtool);
                         xformDropdown.classList.remove('show');
                         this._updateTransformButton(xformtool);
                     });
+                });
+                
+                // Flip horizontal/vertical buttons
+                document.getElementById('flipHorizontalBtn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    xformDropdown.classList.remove('show');
+                    this.flipSelection('horizontal');
+                });
+                document.getElementById('flipVerticalBtn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    xformDropdown.classList.remove('show');
+                    this.flipSelection('vertical');
                 });
                 
                 // Navigation tool (Magnifier / Pan) dropdown
@@ -8985,6 +9019,18 @@
                 };
                 document.getElementById('brushSizeMinus').addEventListener('click', () => stepBrushSize(-1));
                 document.getElementById('brushSizePlus').addEventListener('click', () => stepBrushSize(1));
+                
+                // Brush opacity slider (in brush dropdown)
+                document.getElementById('brushOpacitySlider').addEventListener('input', (e) => {
+                    this.brushOpacity = parseInt(e.target.value) / 100;
+                    document.getElementById('brushOpacityValue').textContent = e.target.value + '%';
+                });
+                
+                // Eraser opacity slider (in eraser dropdown)
+                document.getElementById('eraserOpacitySlider').addEventListener('input', (e) => {
+                    this.eraserOpacity = parseInt(e.target.value) / 100;
+                    document.getElementById('eraserOpacityValue').textContent = e.target.value + '%';
+                });
                 
                 // Frame controls
                 document.getElementById('clearFrame').addEventListener('click', () => this.clearCurrentFrame());
@@ -9344,6 +9390,8 @@
                             const newInst = this.createSymbolInstance(inst.symbolId, inst.startFrame, inst.duration, inst.x + 20, inst.y + 20);
                             newInst.scaleX = inst.scaleX;
                             newInst.scaleY = inst.scaleY;
+                            newInst.anchorX = inst.anchorX || 0;
+                            newInst.anchorY = inst.anchorY || 0;
                             newInst.rotation = inst.rotation;
                             newInst.opacity = inst.opacity;
                             newInst.loopMode = inst.loopMode;
@@ -10448,8 +10496,8 @@
                 // Show transform handles if transform-family tool and selection exists
                 if (isTransformTool && this.selection) {
                     this.showTransformHandles();
-                } else if (isTransformTool && !this.selection) {
-                    // Auto-select all content in the current frame
+                } else if (isTransformTool && !this.selection && !this._activeInstance) {
+                    // Auto-select all content in the current frame (only if no instance selected)
                     this.selectAllInFrame();
                 } else {
                     this.hideTransformHandles();
@@ -11582,6 +11630,47 @@
                         }
                     }
                     
+                    // Set up opacity stroke buffer for reduced-opacity strokes
+                    const _activeOpacity = this.tool === 'eraser' ? this.eraserOpacity : this.brushOpacity;
+                    if (_activeOpacity < 1 && (this.tool === 'brush' ? this._strokeDrawMode !== 'behind' : true)) {
+                        const layer = this.getCurrentLayer();
+                        const frame = layer.frames[this.currentFrameIndex];
+                        if (frame) {
+                            // Determine target canvas (ink or paint)
+                            const dm = this._strokeDrawMode || 'normal';
+                            const targetCanvas = (dm === 'paintFill' || dm === 'fillPaint') ? (frame._paintCanvas || frame) : frame;
+                            
+                            // Create/resize stroke buffer to match target
+                            if (!this._strokeBuffer) this._strokeBuffer = document.createElement('canvas');
+                            this._strokeBuffer.width = targetCanvas.width;
+                            this._strokeBuffer.height = targetCanvas.height;
+                            this._strokeBuffer.getContext('2d').clearRect(0, 0, this._strokeBuffer.width, this._strokeBuffer.height);
+                            
+                            // Save pre-stroke frame data for opacity flatten
+                            const tCtx = targetCanvas.getContext('2d');
+                            this._opacityPreStroke = {
+                                imageData: tCtx.getImageData(0, 0, targetCanvas.width, targetCanvas.height),
+                                width: targetCanvas.width,
+                                height: targetCanvas.height,
+                                originX: frame._originX || 0,
+                                originY: frame._originY || 0,
+                                targetIsPaint: dm === 'paintFill' || dm === 'fillPaint' || dm === 'eraseFill',
+                                compositeOp: this._strokeCompositeOp || (this.tool === 'eraser' ? 'destination-out' : 'source-over'),
+                                opacity: _activeOpacity
+                            };
+                            // For eraseBoth, also capture paint canvas
+                            if (dm === 'eraseBoth' && frame._paintCanvas) {
+                                const pc = frame._paintCanvas;
+                                this._opacityPreStroke.paintImageData = pc.getContext('2d').getImageData(0, 0, pc.width, pc.height);
+                                this._opacityPreStroke.paintWidth = pc.width;
+                                this._opacityPreStroke.paintHeight = pc.height;
+                            }
+                            this._strokeBufferOriginX = frame._originX || 0;
+                            this._strokeBufferOriginY = frame._originY || 0;
+                            this._opacityBufferActive = true;
+                        }
+                    }
+                    
                     // Shift+click = straight line from last stroke end (Photoshop-style)
                     if (e.shiftKey && this._lastStrokeEnd) {
                         this.drawLine(this._lastStrokeEnd.x, this._lastStrokeEnd.y, this.lastX, this.lastY);
@@ -11656,6 +11745,16 @@
                     if (d.type === 'move') {
                         inst.x = d.origX + (mx - d.startX);
                         inst.y = d.origY + (my - d.startY);
+                    } else if (d.type === 'anchor') {
+                        // Drag anchor point (in un-rotated local space)
+                        const rot = (d.origRotation || 0) * Math.PI / 180;
+                        const dx = mx - d.startX;
+                        const dy = my - d.startY;
+                        // Project into local space
+                        const ldx = dx * Math.cos(-rot) - dy * Math.sin(-rot);
+                        const ldy = dx * Math.sin(-rot) + dy * Math.cos(-rot);
+                        inst.anchorX = d.origAnchorX + ldx;
+                        inst.anchorY = d.origAnchorY + ldy;
                     } else if (d.type === 'rotate') {
                         const angle1 = Math.atan2(d.startY - d.centerY, d.startX - d.centerX);
                         const angle2 = Math.atan2(my - d.centerY, mx - d.centerX);
@@ -11677,11 +11776,13 @@
                         
                         if (isH) {
                             const newW = d.symW * d.origScaleX + ldx * (d.type.includes('w') ? -1 : 1);
-                            inst.scaleX = Math.max(0.01, newW / d.symW);
+                            const sign = d.origScaleX < 0 ? -1 : 1;
+                            inst.scaleX = sign * Math.max(0.01, Math.abs(newW / d.symW));
                         }
                         if (isV) {
                             const newH = d.symH * d.origScaleY + ldy * (d.type.includes('n') ? -1 : 1);
-                            inst.scaleY = Math.max(0.01, newH / d.symH);
+                            const sign = d.origScaleY < 0 ? -1 : 1;
+                            inst.scaleY = sign * Math.max(0.01, Math.abs(newH / d.symH));
                         }
                         if (e.shiftKey && isCorner) {
                             // Constrain proportions
@@ -12418,6 +12519,64 @@
                     if (smoothing > 0 && !this._skipPostSmooth && this._strokePoints && this._strokePoints.length >= 3 && this._preStrokeData) {
                         this._applyPostStrokeSmoothing(smoothing);
                     }
+                    
+                    // Opacity buffer: restore pre-stroke frame, composite buffer at opacity
+                    if (this._opacityBufferActive && this._strokeBuffer && this._opacityPreStroke) {
+                        const layer = this.getCurrentLayer();
+                        const frame = layer.frames[this.currentFrameIndex];
+                        if (frame) {
+                            const pre = this._opacityPreStroke;
+                            const targetCanvas = pre.targetIsPaint ? (frame._paintCanvas || frame) : frame;
+                            const tCtx = targetCanvas.getContext('2d');
+                            
+                            // Restore frame to pre-stroke state
+                            // Frame may have expanded during drawing, so resize if needed
+                            if (targetCanvas.width !== pre.width || targetCanvas.height !== pre.height) {
+                                // Frame expanded — create new pre-stroke at expanded size
+                                const expanded = document.createElement('canvas');
+                                expanded.width = targetCanvas.width;
+                                expanded.height = targetCanvas.height;
+                                const expCtx = expanded.getContext('2d');
+                                // Origin may have shifted
+                                const dx = (pre.originX || 0) - (frame._originX || 0);
+                                const dy = (pre.originY || 0) - (frame._originY || 0);
+                                expCtx.putImageData(pre.imageData, -dx, -dy);
+                                tCtx.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
+                                tCtx.drawImage(expanded, 0, 0);
+                            } else {
+                                tCtx.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
+                                tCtx.putImageData(pre.imageData, 0, 0);
+                            }
+                            
+                            // Composite stroke buffer at desired opacity
+                            tCtx.save();
+                            tCtx.globalAlpha = pre.opacity;
+                            tCtx.globalCompositeOperation = pre.compositeOp || 'source-over';
+                            tCtx.drawImage(this._strokeBuffer, 0, 0);
+                            tCtx.restore();
+                            
+                            // For eraseBoth: also erase from paint canvas
+                            if (pre.compositeOp === 'destination-out' && !pre.targetIsPaint && frame._paintCanvas) {
+                                const eraserMode = this.eraserMode || 'ink';
+                                if (eraserMode === 'both' && pre.paintImageData) {
+                                    // Restore paint to pre-stroke state
+                                    const pc = frame._paintCanvas;
+                                    const pcCtx = pc.getContext('2d');
+                                    pcCtx.clearRect(0, 0, pc.width, pc.height);
+                                    pcCtx.putImageData(pre.paintImageData, 0, 0);
+                                    // Apply eraser buffer at opacity
+                                    pcCtx.save();
+                                    pcCtx.globalAlpha = pre.opacity;
+                                    pcCtx.globalCompositeOperation = 'destination-out';
+                                    pcCtx.drawImage(this._strokeBuffer, 0, 0);
+                                    pcCtx.restore();
+                                }
+                            }
+                        }
+                        this._opacityBufferActive = false;
+                        this._opacityPreStroke = null;
+                    }
+                    
                     this._lastStrokeEnd = { x: this.lastX, y: this.lastY };
                 }
                 
@@ -12455,6 +12614,101 @@
                     this._dirtyThumb(_layer.frames[_drawingFrame]);
                 }
                 this.render();
+            }
+            
+            _ensureStrokeBufferSize(targetCanvas, frame) {
+                // Ensure stroke buffer matches target canvas size, handling origin shifts from frame expansion
+                if (!this._strokeBuffer) return;
+                const curOx = frame._originX || 0;
+                const curOy = frame._originY || 0;
+                const shiftX = (this._strokeBufferOriginX || 0) - curOx;
+                const shiftY = (this._strokeBufferOriginY || 0) - curOy;
+                
+                if (this._strokeBuffer.width < targetCanvas.width || this._strokeBuffer.height < targetCanvas.height || shiftX !== 0 || shiftY !== 0) {
+                    const oldBuf = this._strokeBuffer;
+                    this._strokeBuffer = document.createElement('canvas');
+                    this._strokeBuffer.width = targetCanvas.width;
+                    this._strokeBuffer.height = targetCanvas.height;
+                    this._strokeBuffer.getContext('2d').drawImage(oldBuf, shiftX, shiftY);
+                    this._strokeBufferOriginX = curOx;
+                    this._strokeBufferOriginY = curOy;
+                }
+            }
+            
+            _renderOpacityPreview() {
+                // Fast recomposite showing pre-stroke frame + stroke buffer at opacity
+                if (!this._opacityBufferActive || !this._strokeBuffer || !this._opacityPreStroke) return;
+                
+                const layer = this.getCurrentLayer();
+                const frame = layer.frames[this.currentFrameIndex];
+                if (!frame) return;
+                
+                const pre = this._opacityPreStroke;
+                const opacity = pre.opacity;
+                const compOp = pre.compositeOp || 'source-over';
+                const dm = this._strokeDrawMode;
+                
+                // For modes that target the paint canvas (paintFill, fillPaint, eraseFill),
+                // we need to composite the buffer against the paint canvas first,
+                // then render the layer normally. source-atop/destination-out must clip
+                // against the paint canvas content, not the display canvas.
+                const targetsPaint = dm === 'paintFill' || dm === 'fillPaint' || dm === 'eraseFill';
+                
+                let savedPaintData = null;
+                if (targetsPaint && frame._paintCanvas) {
+                    const pc = frame._paintCanvas;
+                    const pcCtx = pc.getContext('2d');
+                    // Save paint canvas state
+                    savedPaintData = pcCtx.getImageData(0, 0, pc.width, pc.height);
+                    // Composite buffer onto paint canvas with correct op + opacity
+                    pcCtx.save();
+                    pcCtx.globalAlpha = opacity;
+                    pcCtx.globalCompositeOperation = compOp;
+                    pcCtx.drawImage(this._strokeBuffer, 0, 0);
+                    pcCtx.restore();
+                }
+                
+                // Full recomposite
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                const playheadPos = this.getPlayheadPosition();
+                this.drawParentGhost(this.ctx);
+                
+                // Helper: overlay buffer on display (for non-paint-targeting modes like normal brush/eraser)
+                const _overlayBuffer = () => {
+                    if (targetsPaint) return; // Already composited into paint canvas above
+                    const off = this.frameToDisplayOffset(frame);
+                    this.ctx.save();
+                    this.ctx.translate(off.x, off.y);
+                    this.ctx.globalAlpha = opacity;
+                    this.ctx.globalCompositeOperation = compOp;
+                    this.ctx.drawImage(this._strokeBuffer, 0, 0);
+                    this.ctx.restore();
+                };
+                
+                if (this.layers.length > 2) {
+                    const currentKey = this._getCompositeCacheKey();
+                    if (this._compositeCacheDirty || this._compositeCacheKey !== currentKey) {
+                        this._rebuildCompositeCache(playheadPos);
+                    }
+                    this.ctx.drawImage(this._belowCache, 0, 0);
+                    this.drawLayerWithTransform(this.ctx, layer, playheadPos);
+                    _overlayBuffer();
+                    this.ctx.drawImage(this._aboveCache, 0, 0);
+                } else {
+                    for (const l of this.layers) {
+                        this.drawLayerWithTransform(this.ctx, l, playheadPos);
+                    }
+                    _overlayBuffer();
+                }
+                
+                this.drawPasteboardOverlay(this.ctx);
+                
+                // Restore paint canvas to pre-stroke state
+                if (savedPaintData && frame._paintCanvas) {
+                    const pcCtx = frame._paintCanvas.getContext('2d');
+                    pcCtx.clearRect(0, 0, frame._paintCanvas.width, frame._paintCanvas.height);
+                    pcCtx.putImageData(savedPaintData, 0, 0);
+                }
             }
             
             drawPoint(x, y) {
@@ -12498,7 +12752,19 @@
                     ctx.globalCompositeOperation = 'source-over';
                 };
                 
-                _drawMark(targetCtx, compositeOp);
+                // Draw the mark on the target canvas (skip if opacity buffer handles it)
+                if (!this._opacityBufferActive) {
+                    _drawMark(targetCtx, compositeOp);
+                }
+                
+                // Opacity buffer: draw to stroke buffer only, skip direct display draw
+                if (this._opacityBufferActive && this._strokeBuffer) {
+                    this._ensureStrokeBufferSize(targetCanvas, frame);
+                    _drawMark(this._strokeBuffer.getContext('2d'), 'source-over');
+                    // Recomposite display with opacity preview
+                    this._renderOpacityPreview();
+                    return; // Skip normal display draw
+                }
                 
                 // Erase Both: also erase from paint canvas
                 if (drawMode === 'eraseBoth' && frame._paintCanvas) {
@@ -12558,7 +12824,16 @@
                         ctx.globalCompositeOperation = 'source-over';
                     };
                     
-                    _drawOvals(targetCtx, compositeOp);
+                    if (!this._opacityBufferActive) {
+                        _drawOvals(targetCtx, compositeOp);
+                    }
+                    // Opacity buffer: draw to buffer, skip direct display
+                    if (this._opacityBufferActive && this._strokeBuffer) {
+                        this._ensureStrokeBufferSize(targetCanvas, frame);
+                        _drawOvals(this._strokeBuffer.getContext('2d'), 'source-over');
+                        this._renderOpacityPreview();
+                        // Skip normal display + eraseBoth paths
+                    } else {
                     if (drawMode === 'eraseBoth' && frame._paintCanvas) {
                         _drawOvals(frame._paintCanvas.getContext('2d'), compositeOp);
                     }
@@ -12569,6 +12844,7 @@
                         _drawOvals(this.ctx, drawMode === 'fillPaint' ? 'destination-over' : compositeOp);
                         this.ctx.restore();
                     }
+                    } // end opacity else
                 } else {
                     const cap = shape === 'square' ? 'square' : 'round';
                     const join = shape === 'square' ? 'miter' : 'round';
@@ -12586,7 +12862,15 @@
                         ctx.globalCompositeOperation = 'source-over';
                     };
                     
-                    _drawStroke(targetCtx, compositeOp);
+                    if (!this._opacityBufferActive) {
+                        _drawStroke(targetCtx, compositeOp);
+                    }
+                    // Opacity buffer: draw to buffer, skip direct display
+                    if (this._opacityBufferActive && this._strokeBuffer) {
+                        this._ensureStrokeBufferSize(targetCanvas, frame);
+                        _drawStroke(this._strokeBuffer.getContext('2d'), 'source-over');
+                        this._renderOpacityPreview();
+                    } else {
                     if (drawMode === 'eraseBoth' && frame._paintCanvas) {
                         _drawStroke(frame._paintCanvas.getContext('2d'), compositeOp);
                     }
@@ -12597,6 +12881,7 @@
                         _drawStroke(this.ctx, drawMode === 'fillPaint' ? 'destination-over' : compositeOp);
                         this.ctx.restore();
                     }
+                    } // end opacity else
                 }
             }
             
@@ -12605,6 +12890,8 @@
                 const layer = this.getCurrentLayer();
                 const frame = layer.frames[this.currentFrameIndex];
                 if (!frame || !this._preStrokeData) return;
+                
+                // Clear opacity stroke buffer before redrawing smoothed stroke (deferred to after frame restore)
                 
                 const preData = this._preStrokeData;
                 
@@ -12689,6 +12976,15 @@
                 for (const pt of smoothed) {
                     pt.x -= newOx;
                     pt.y -= newOy;
+                }
+                
+                // Clear opacity stroke buffer before redrawing smoothed stroke
+                if (this._opacityBufferActive && this._strokeBuffer) {
+                    this._strokeBuffer.width = frame.width;
+                    this._strokeBuffer.height = frame.height;
+                    this._strokeBuffer.getContext('2d').clearRect(0, 0, this._strokeBuffer.width, this._strokeBuffer.height);
+                    this._strokeBufferOriginX = frame._originX || 0;
+                    this._strokeBufferOriginY = frame._originY || 0;
                 }
                 
                 // Redraw the smoothed path
@@ -14467,24 +14763,25 @@
                 ctx.save();
                 ctx.globalAlpha *= instance.opacity;
                 
-                // Translate to instance position (offset by viewport)
-                // Pivot is center of the symbol's declared canvas, not the content extents
+                // Instance position in screen space
                 const ix = instance.x - this.viewportX;
                 const iy = instance.y - this.viewportY;
-                ctx.translate(ix + sym.width * instance.scaleX / 2, iy + sym.height * instance.scaleY / 2);
                 
-                // Rotate around center
+                // Pivot = center of symbol + anchor offset
+                const iax = instance.anchorX || 0;
+                const iay = instance.anchorY || 0;
+                const pivotX = ix + sym.width / 2 + iax;
+                const pivotY = iy + sym.height / 2 + iay;
+                
+                ctx.translate(pivotX, pivotY);
                 if (instance.rotation) {
                     ctx.rotate(instance.rotation * Math.PI / 180);
                 }
+                ctx.scale(instance.scaleX, instance.scaleY);
+                ctx.translate(-pivotX, -pivotY);
                 
-                // Scale
-                if (instance.scaleX !== 1 || instance.scaleY !== 1) {
-                    ctx.scale(instance.scaleX, instance.scaleY);
-                }
-                
-                // Draw from pooled canvas so symbol origin (0,0) aligns correctly
-                ctx.drawImage(poolEntry.canvas, 0, 0, tempW, tempH, -sym.width / 2 + minX, -sym.height / 2 + minY, tempW, tempH);
+                // Draw from pooled canvas
+                ctx.drawImage(poolEntry.canvas, 0, 0, tempW, tempH, ix + minX, iy + minY, tempW, tempH);
                 ctx.restore();
             }
             
@@ -14533,11 +14830,29 @@
             
             // Get bounding box of an instance in canvas (viewport) coordinates
             _getInstanceBBox(inst, sym) {
-                const x = inst.x - this.viewportX;
-                const y = inst.y - this.viewportY;
-                const w = sym.width * inst.scaleX;
-                const h = sym.height * inst.scaleY;
-                return { x, y, w, h };
+                const ix = inst.x - this.viewportX;
+                const iy = inst.y - this.viewportY;
+                const sw = sym.width, sh = sym.height;
+                const ax = inst.anchorX || 0, ay = inst.anchorY || 0;
+                const sx = inst.scaleX, sy = inst.scaleY;
+                
+                // Pivot in screen space
+                const px = ix + sw / 2 + ax;
+                const py = iy + sh / 2 + ay;
+                
+                // Four corners in local space (relative to pivot)
+                const lx0 = ix - px, ly0 = iy - py;         // top-left
+                const lx1 = ix + sw - px, ly1 = iy + sh - py; // bottom-right
+                
+                // Scaled corners
+                const x0 = lx0 * sx + px, y0 = ly0 * sy + py;
+                const x1 = lx1 * sx + px, y1 = ly1 * sy + py;
+                
+                const bx = Math.min(x0, x1);
+                const by = Math.min(y0, y1);
+                const bw = Math.abs(x1 - x0);
+                const bh = Math.abs(y1 - y0);
+                return { x: bx, y: by, w: bw, h: bh };
             }
             
             // Select an instance for on-canvas transform
@@ -14550,6 +14865,13 @@
                 // Deselect any pixel selection
                 if (this.selection) {
                     this.commitSelection();
+                }
+                
+                // Switch to transform tool so handles are interactive
+                const isXform = this.tool === 'transform' || this.tool === 'scale' || 
+                               this.tool === 'rotate' || this.tool === 'skew' || this.tool === 'distort';
+                if (!isXform) {
+                    this.selectTool(this._activeTransformTool || 'transform');
                 }
                 
                 this.updateInstPropsBar();
@@ -14574,6 +14896,15 @@
                 const cx = bb.x + bb.w / 2;
                 const cy = bb.y + bb.h / 2;
                 const rot = (inst.rotation || 0) * Math.PI / 180;
+                
+                // Check anchor point first (at offset from center)
+                const aox = inst.anchorX || 0;
+                const aoy = inst.anchorY || 0;
+                const aSX = cx + aox * Math.cos(rot) - aoy * Math.sin(rot);
+                const aSY = cy + aox * Math.sin(rot) + aoy * Math.cos(rot);
+                if (Math.hypot(canvasX - aSX, canvasY - aSY) < 10) {
+                    return 'anchor';
+                }
                 
                 // Handle positions in local (un-rotated) space relative to center
                 const hw = bb.w / 2, hh = bb.h / 2;
@@ -14644,7 +14975,7 @@
                     ctx.strokeStyle = 'rgba(72, 160, 80, 0.9)';
                     ctx.lineWidth = 1.5;
                     ctx.beginPath();
-                    ctx.rect(hx - 4, hy - 4, 8, 8);
+                    ctx.rect(hx - 6, hy - 6, 12, 12);
                     ctx.fill();
                     ctx.stroke();
                     
@@ -14654,7 +14985,7 @@
                         ctx.translate(hx, hy);
                         ctx.strokeStyle = 'rgba(72, 160, 80, 0.7)';
                         ctx.lineWidth = 1.2;
-                        const r = 7;
+                        const r = 9;
                         ctx.beginPath();
                         ctx.arc(0, 0, r, -Math.PI * 0.7, Math.PI * 0.2);
                         ctx.stroke();
@@ -14662,23 +14993,25 @@
                         const ax = r * Math.cos(Math.PI * 0.2);
                         const ay = r * Math.sin(Math.PI * 0.2);
                         ctx.beginPath();
-                        ctx.moveTo(ax + 2, ay - 3);
+                        ctx.moveTo(ax + 3, ay - 4);
                         ctx.lineTo(ax, ay);
-                        ctx.lineTo(ax - 3, ay - 2);
+                        ctx.lineTo(ax - 4, ay - 3);
                         ctx.stroke();
                         ctx.restore();
                     }
                 }
                 
-                // Anchor point indicator (center crosshair)
-                ctx.strokeStyle = 'rgba(72, 160, 80, 0.5)';
-                ctx.lineWidth = 1;
+                // Anchor point indicator (at anchor offset, not necessarily center)
+                const aox = inst.anchorX || 0;
+                const aoy = inst.anchorY || 0;
+                ctx.strokeStyle = 'rgba(72, 160, 80, 0.6)';
+                ctx.lineWidth = 1.5;
                 ctx.beginPath();
-                ctx.moveTo(-5, 0); ctx.lineTo(5, 0);
-                ctx.moveTo(0, -5); ctx.lineTo(0, 5);
+                ctx.moveTo(aox - 8, aoy); ctx.lineTo(aox + 8, aoy);
+                ctx.moveTo(aox, aoy - 8); ctx.lineTo(aox, aoy + 8);
                 ctx.stroke();
                 ctx.beginPath();
-                ctx.arc(0, 0, 3, 0, Math.PI * 2);
+                ctx.arc(aox, aoy, 5, 0, Math.PI * 2);
                 ctx.stroke();
                 
                 ctx.restore();
@@ -14707,8 +15040,8 @@
                 document.getElementById('instPropsName').textContent = sym ? sym.name : '?';
                 document.getElementById('instPropsX').value = Math.round(inst.x);
                 document.getElementById('instPropsY').value = Math.round(inst.y);
-                document.getElementById('instPropsW').textContent = sym ? Math.round(sym.width * inst.scaleX) : '?';
-                document.getElementById('instPropsH').textContent = sym ? Math.round(sym.height * inst.scaleY) : '?';
+                document.getElementById('instPropsW').textContent = sym ? Math.round(sym.width * Math.abs(inst.scaleX)) : '?';
+                document.getElementById('instPropsH').textContent = sym ? Math.round(sym.height * Math.abs(inst.scaleY)) : '?';
                 document.getElementById('instPropsRot').value = Math.round(inst.rotation || 0);
                 document.getElementById('instPropsAlpha').value = Math.round((inst.opacity ?? 1) * 100);
             }
@@ -14773,6 +15106,8 @@
                     origScaleX: inst.scaleX,
                     origScaleY: inst.scaleY,
                     origRotation: inst.rotation || 0,
+                    origAnchorX: inst.anchorX || 0,
+                    origAnchorY: inst.anchorY || 0,
                     symW: sym.width,
                     symH: sym.height,
                     centerX: bb.x + bb.w / 2,
@@ -16901,6 +17236,95 @@
                 return inside;
             }
             
+            flipSelection(direction) {
+                // direction: 'horizontal' or 'vertical'
+                if (this._activeInstance) {
+                    // Flip instance by negating scaleX or scaleY
+                    this.saveFullState();
+                    const inst = this._activeInstance;
+                    if (direction === 'horizontal') {
+                        inst.scaleX = -inst.scaleX;
+                    } else {
+                        inst.scaleY = -inst.scaleY;
+                    }
+                    this._invalidateCompositeCache();
+                    this.updateInstPropsBar();
+                    this.render();
+                } else if (this.selection) {
+                    // Flip the floating selection around its anchor point
+                    this.saveSelectionState();
+                    
+                    const b = this.selection.bounds;
+                    const ax = this.selection.anchorX != null ? this.selection.anchorX : (b.x + b.width / 2);
+                    const ay = this.selection.anchorY != null ? this.selection.anchorY : (b.y + b.height / 2);
+                    
+                    const flipCanvas = (srcCanvas) => {
+                        const w = srcCanvas.width, h = srcCanvas.height;
+                        const flipped = document.createElement('canvas');
+                        flipped.width = w; flipped.height = h;
+                        const ctx = flipped.getContext('2d');
+                        if (direction === 'horizontal') {
+                            ctx.translate(w, 0);
+                            ctx.scale(-1, 1);
+                        } else {
+                            ctx.translate(0, h);
+                            ctx.scale(1, -1);
+                        }
+                        ctx.drawImage(srcCanvas, 0, 0);
+                        return flipped;
+                    };
+                    
+                    this.selection.imageData = flipCanvas(this.selection.imageData);
+                    if (this.selection._paintImageData) {
+                        this.selection._paintImageData = flipCanvas(this.selection._paintImageData);
+                    }
+                    
+                    // Reflect bounds position around the anchor point
+                    if (direction === 'horizontal') {
+                        this.selection.bounds.x = 2 * ax - b.x - b.width;
+                    } else {
+                        this.selection.bounds.y = 2 * ay - b.y - b.height;
+                    }
+                    
+                    this.showTransformHandles();
+                    this._invalidateCompositeCache();
+                    this.render();
+                } else {
+                    // No selection — flip the entire current frame
+                    this.saveState();
+                    const layer = this.getCurrentLayer();
+                    const frame = layer.frames[this.currentFrameIndex];
+                    if (!frame) return;
+                    
+                    const flipFrameCanvas = (canvas) => {
+                        const w = canvas.width, h = canvas.height;
+                        const temp = document.createElement('canvas');
+                        temp.width = w; temp.height = h;
+                        const ctx = temp.getContext('2d');
+                        if (direction === 'horizontal') {
+                            ctx.translate(w, 0);
+                            ctx.scale(-1, 1);
+                        } else {
+                            ctx.translate(0, h);
+                            ctx.scale(1, -1);
+                        }
+                        ctx.drawImage(canvas, 0, 0);
+                        canvas.getContext('2d').clearRect(0, 0, w, h);
+                        canvas.getContext('2d').drawImage(temp, 0, 0);
+                    };
+                    
+                    flipFrameCanvas(frame);
+                    if (frame._paintCanvas) {
+                        flipFrameCanvas(frame._paintCanvas);
+                    }
+                    
+                    this._dirtyThumb(frame);
+                    this._invalidateCompositeCache();
+                    this._timelineDirty = true;
+                    this.render();
+                }
+            }
+            
             showTransformHandles() {
                 if (!this.selection || this.isPlaying) return;
                 
@@ -17615,6 +18039,7 @@
                     duration: inst.duration,
                     x: inst.x, y: inst.y,
                     scaleX: inst.scaleX, scaleY: inst.scaleY,
+                    anchorX: inst.anchorX || 0, anchorY: inst.anchorY || 0,
                     rotation: inst.rotation || 0,
                     opacity: inst.opacity != null ? inst.opacity : 1,
                     firstFrame: inst.firstFrame || 0,
@@ -17669,6 +18094,8 @@
                 const newInst = this.createSymbolInstance(ci.symbolId, startFrame, duration, ci.x + offset, ci.y + offset);
                 newInst.scaleX = ci.scaleX;
                 newInst.scaleY = ci.scaleY;
+                newInst.anchorX = ci.anchorX || 0;
+                newInst.anchorY = ci.anchorY || 0;
                 newInst.rotation = ci.rotation;
                 newInst.opacity = ci.opacity;
                 newInst.firstFrame = ci.firstFrame;
