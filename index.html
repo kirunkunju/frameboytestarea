@@ -8220,6 +8220,11 @@
                         
                         // Two-finger touch = always pan (but track for tap-to-undo)
                         if (e.touches.length === 2) {
+                            // Cancel any pending single-finger draw
+                            if (this._pendingFingerDraw) {
+                                clearTimeout(this._pendingFingerDrawTimer);
+                                this._pendingFingerDraw = null;
+                            }
                             this._twoFingerTouchStart = {
                                 time: performance.now(),
                                 x0: e.touches[0].clientX, y0: e.touches[0].clientY,
@@ -8237,6 +8242,11 @@
                         
                         // Three-finger touch = track for tap-to-redo
                         if (e.touches.length === 3) {
+                            // Cancel any pending single-finger draw
+                            if (this._pendingFingerDraw) {
+                                clearTimeout(this._pendingFingerDrawTimer);
+                                this._pendingFingerDraw = null;
+                            }
                             this._threeFingerTouchStart = {
                                 time: performance.now(),
                                 moved: false
@@ -8266,19 +8276,30 @@
                             this.hasStylusInput = true;
                             this.pointerType = 'pen';
                             this.currentPressure = touch.force > 0 ? touch.force : 0.5;
+                            // Stylus: start immediately, no delay
+                            this.startDrawing({
+                                clientX: touch.clientX,
+                                clientY: touch.clientY,
+                                target: canvasEl
+                            });
                         } else {
                             // Palm rejection: once Apple Pencil is detected, ignore
                             // finger/knuckle touches for drawing (still works for pan/zoom above)
                             if (this.hasStylusInput) return;
                             this.pointerType = 'touch';
                             this.currentPressure = 0.5;
+                            // Delay finger drawing to allow multi-finger gesture detection
+                            // If a 2nd/3rd finger arrives within 80ms, cancel the draw
+                            const touchData = { clientX: touch.clientX, clientY: touch.clientY, target: canvasEl };
+                            this._pendingFingerDraw = touchData;
+                            clearTimeout(this._pendingFingerDrawTimer);
+                            this._pendingFingerDrawTimer = setTimeout(() => {
+                                if (this._pendingFingerDraw === touchData) {
+                                    this._pendingFingerDraw = null;
+                                    this.startDrawing(touchData);
+                                }
+                            }, 80);
                         }
-                        
-                        this.startDrawing({
-                            clientX: touch.clientX,
-                            clientY: touch.clientY,
-                            target: canvasEl
-                        });
                     }, { passive: false });
                     
                     canvasEl.addEventListener('touchmove', (e) => {
@@ -8341,6 +8362,11 @@
                         
                         // Multi-finger tap detection — check when ALL fingers are lifted
                         if (e.touches.length === 0) {
+                            // Cancel any pending single-finger draw
+                            if (this._pendingFingerDraw) {
+                                clearTimeout(this._pendingFingerDrawTimer);
+                                this._pendingFingerDraw = null;
+                            }
                             // 3-finger tap → redo
                             if (this._threeFingerTouchStart) {
                                 const dt = performance.now() - this._threeFingerTouchStart.time;
