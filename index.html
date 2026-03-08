@@ -8218,19 +8218,8 @@
                             return;
                         }
                         
-                        // Two-finger touch = always pan (but track for tap-to-undo)
+                        // Two-finger touch = pan
                         if (e.touches.length === 2) {
-                            // Cancel any pending single-finger draw
-                            if (this._pendingFingerDraw) {
-                                clearTimeout(this._pendingFingerDrawTimer);
-                                this._pendingFingerDraw = null;
-                            }
-                            this._twoFingerTouchStart = {
-                                time: performance.now(),
-                                x0: e.touches[0].clientX, y0: e.touches[0].clientY,
-                                x1: e.touches[1].clientX, y1: e.touches[1].clientY,
-                                moved: false
-                            };
                             const mid = {
                                 x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
                                 y: (e.touches[0].clientY + e.touches[1].clientY) / 2
@@ -8240,21 +8229,8 @@
                             return;
                         }
                         
-                        // Three-finger touch = track for tap-to-redo
-                        if (e.touches.length === 3) {
-                            // Cancel any pending single-finger draw
-                            if (this._pendingFingerDraw) {
-                                clearTimeout(this._pendingFingerDrawTimer);
-                                this._pendingFingerDraw = null;
-                            }
-                            this._threeFingerTouchStart = {
-                                time: performance.now(),
-                                moved: false
-                            };
-                            // Clear 2-finger state so lifting doesn't also trigger undo
-                            this._twoFingerTouchStart = null;
-                            return;
-                        }
+                        // Three+ fingers = ignore
+                        if (e.touches.length >= 3) return;
                         
                         const touch = e.touches[0];
                         if (!touch) return;
@@ -8276,43 +8252,26 @@
                             this.hasStylusInput = true;
                             this.pointerType = 'pen';
                             this.currentPressure = touch.force > 0 ? touch.force : 0.5;
-                            // Stylus: start immediately, no delay
-                            this.startDrawing({
-                                clientX: touch.clientX,
-                                clientY: touch.clientY,
-                                target: canvasEl
-                            });
                         } else {
                             // Palm rejection: once Apple Pencil is detected, ignore
                             // finger/knuckle touches for drawing (still works for pan/zoom above)
                             if (this.hasStylusInput) return;
                             this.pointerType = 'touch';
                             this.currentPressure = 0.5;
-                            // Delay finger drawing to allow multi-finger gesture detection
-                            // If a 2nd/3rd finger arrives within 80ms, cancel the draw
-                            const touchData = { clientX: touch.clientX, clientY: touch.clientY, target: canvasEl };
-                            this._pendingFingerDraw = touchData;
-                            clearTimeout(this._pendingFingerDrawTimer);
-                            this._pendingFingerDrawTimer = setTimeout(() => {
-                                if (this._pendingFingerDraw === touchData) {
-                                    this._pendingFingerDraw = null;
-                                    this.startDrawing(touchData);
-                                }
-                            }, 80);
                         }
+                        
+                        this.startDrawing({
+                            clientX: touch.clientX,
+                            clientY: touch.clientY,
+                            target: canvasEl
+                        });
                     }, { passive: false });
                     
                     canvasEl.addEventListener('touchmove', (e) => {
                         e.preventDefault();
                         
-                        // Mark 3-finger move to prevent tap detection
-                        if (e.touches.length >= 3 && this._threeFingerTouchStart) {
-                            this._threeFingerTouchStart.moved = true;
-                        }
-                        
                         // Two-finger pan
                         if (this.isPanning && e.touches.length >= 2) {
-                            if (this._twoFingerTouchStart) this._twoFingerTouchStart.moved = true;
                             const mid = {
                                 x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
                                 y: (e.touches[0].clientY + e.touches[1].clientY) / 2
@@ -8359,38 +8318,6 @@
                     
                     canvasEl.addEventListener('touchend', (e) => {
                         e.preventDefault();
-                        
-                        // Multi-finger tap detection — check when ALL fingers are lifted
-                        if (e.touches.length === 0) {
-                            // Cancel any pending single-finger draw
-                            if (this._pendingFingerDraw) {
-                                clearTimeout(this._pendingFingerDrawTimer);
-                                this._pendingFingerDraw = null;
-                            }
-                            // 3-finger tap → redo
-                            if (this._threeFingerTouchStart) {
-                                const dt = performance.now() - this._threeFingerTouchStart.time;
-                                const moved = this._threeFingerTouchStart.moved;
-                                this._threeFingerTouchStart = null;
-                                if (dt < 400 && !moved) {
-                                    this._twoFingerTouchStart = null;
-                                    if (this.isPanning) { this.stopPan(); this._touchPanFingers = 0; }
-                                    this.redo();
-                                    return;
-                                }
-                            }
-                            // 2-finger tap → undo
-                            if (this._twoFingerTouchStart) {
-                                const dt = performance.now() - this._twoFingerTouchStart.time;
-                                const moved = this._twoFingerTouchStart.moved;
-                                this._twoFingerTouchStart = null;
-                                if (dt < 300 && !moved) {
-                                    if (this.isPanning) { this.stopPan(); this._touchPanFingers = 0; }
-                                    this.undo();
-                                    return;
-                                }
-                            }
-                        }
                         
                         if (this.isPanning) {
                             // If went from 2 fingers to 1, stay panning only if pan tool
