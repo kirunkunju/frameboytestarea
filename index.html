@@ -5162,10 +5162,20 @@
                         <button class="grad-type-btn" data-gradtype="radial" title="Radial gradient"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="2"/><circle cx="8" cy="8" r="5"/></svg></button>
                     </div>
                 </div>
-                <button class="size-step-btn" id="brushSizeMinus" title="Decrease brush size ([)">−</button>
-                <input type="range" id="brushSize" min="1" max="100" value="8">
-                <button class="size-step-btn" id="brushSizePlus" title="Increase brush size (])">+</button>
-                <span id="sizeValue">8</span>
+                <div style="display:flex;flex-direction:column;gap:2px">
+                    <div style="display:flex;align-items:center;gap:0">
+                        <button class="size-step-btn" id="brushSizeMinus" title="Decrease brush size ([)">−</button>
+                        <input type="range" id="brushSize" min="1" max="100" value="8">
+                        <button class="size-step-btn" id="brushSizePlus" title="Increase brush size (])">+</button>
+                        <span id="sizeValue">8</span>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:0">
+                        <button class="size-step-btn" id="opacityMinus" title="Decrease opacity">−</button>
+                        <input type="range" id="toolbarOpacity" min="1" max="100" value="100" style="flex:1">
+                        <button class="size-step-btn" id="opacityPlus" title="Increase opacity">+</button>
+                        <span id="toolbarOpacityValue" style="font-size:10px;font-weight:600;min-width:26px;height:22px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:#2b2d31;border:none;border-radius:6px;color:#a0a0a0;font-variant-numeric:tabular-nums;box-shadow:inset 2px 2px 4px rgba(0,0,0,0.35),inset -1px -1px 3px rgba(255,255,255,0.03)">100</span>
+                    </div>
+                </div>
                 <button class="pressure-toggle active" id="pressureToggle" title="Brush Pressure">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="14" height="14">
                         <path d="M2 2.5 C4 4, 8.5 8, 11 11 C12 12.5, 12.5 14, 11 14 C9.5 14, 8 12, 6.5 10 C4 7, 2 4, 2 2.5Z" fill="currentColor"/>
@@ -9024,13 +9034,47 @@
                 document.getElementById('brushOpacitySlider').addEventListener('input', (e) => {
                     this.brushOpacity = parseInt(e.target.value) / 100;
                     document.getElementById('brushOpacityValue').textContent = e.target.value + '%';
+                    // Sync toolbar slider if brush is active
+                    if (this.tool === 'brush') {
+                        document.getElementById('toolbarOpacity').value = e.target.value;
+                        document.getElementById('toolbarOpacityValue').textContent = e.target.value;
+                    }
                 });
                 
                 // Eraser opacity slider (in eraser dropdown)
                 document.getElementById('eraserOpacitySlider').addEventListener('input', (e) => {
                     this.eraserOpacity = parseInt(e.target.value) / 100;
                     document.getElementById('eraserOpacityValue').textContent = e.target.value + '%';
+                    // Sync toolbar slider if eraser is active
+                    if (this.tool === 'eraser') {
+                        document.getElementById('toolbarOpacity').value = e.target.value;
+                        document.getElementById('toolbarOpacityValue').textContent = e.target.value;
+                    }
                 });
+                
+                // Toolbar opacity slider — controls whichever tool is active
+                document.getElementById('toolbarOpacity').addEventListener('input', (e) => {
+                    const val = parseInt(e.target.value);
+                    document.getElementById('toolbarOpacityValue').textContent = val;
+                    if (this.tool === 'eraser') {
+                        this.eraserOpacity = val / 100;
+                        document.getElementById('eraserOpacitySlider').value = val;
+                        document.getElementById('eraserOpacityValue').textContent = val + '%';
+                    } else {
+                        this.brushOpacity = val / 100;
+                        document.getElementById('brushOpacitySlider').value = val;
+                        document.getElementById('brushOpacityValue').textContent = val + '%';
+                    }
+                });
+                
+                const stepOpacity = (delta) => {
+                    const slider = document.getElementById('toolbarOpacity');
+                    const val = Math.max(1, Math.min(100, parseInt(slider.value) + delta));
+                    slider.value = val;
+                    slider.dispatchEvent(new Event('input'));
+                };
+                document.getElementById('opacityMinus').addEventListener('click', () => stepOpacity(-1));
+                document.getElementById('opacityPlus').addEventListener('click', () => stepOpacity(1));
                 
                 // Frame controls
                 document.getElementById('clearFrame').addEventListener('click', () => this.clearCurrentFrame());
@@ -10472,6 +10516,14 @@
                 // Sync gradient UI state
                 this._syncGradientUI();
                 
+                // Sync toolbar opacity slider to active tool
+                if (tool === 'brush' || tool === 'eraser') {
+                    const activeOp = tool === 'eraser' ? this.eraserOpacity : this.brushOpacity;
+                    const opVal = Math.round(activeOp * 100);
+                    document.getElementById('toolbarOpacity').value = opVal;
+                    document.getElementById('toolbarOpacityValue').textContent = opVal;
+                }
+                
                 // Sync pill pan button
                 const pillPan = document.getElementById('pillPanBtn');
                 if (pillPan) {
@@ -10621,6 +10673,11 @@
                     document.getElementById('eraserDiameter').value = this.brushSize;
                     document.getElementById('eraserDiameterValue').textContent = this.brushSize;
                 }
+                // Sync toolbar opacity slider to active tool's opacity
+                const activeOp = this.tool === 'eraser' ? this.eraserOpacity : this.brushOpacity;
+                const opVal = Math.round(activeOp * 100);
+                document.getElementById('toolbarOpacity').value = opVal;
+                document.getElementById('toolbarOpacityValue').textContent = opVal;
             }
             
             getCurrentBrushShape() {
