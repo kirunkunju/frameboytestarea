@@ -489,8 +489,8 @@
         }
         .custom-cp-swatches-header {
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            gap: 4px;
             margin-bottom: 5px;
         }
         .custom-cp-swatches-label {
@@ -499,6 +499,7 @@
             font-weight: 700;
             letter-spacing: 1px;
             text-transform: uppercase;
+            flex: 1;
         }
         .custom-cp-add-btn {
             background: rgba(255,255,255,0.06);
@@ -550,6 +551,7 @@
             position: fixed;
             inset: 0;
             z-index: 4999;
+            background: rgba(0,0,0,0.01);
         }
         .custom-cp-backdrop.show { display: block; }
         
@@ -18774,6 +18776,11 @@
                             swatch.style.boxShadow = '';
                             setTimeout(() => { swatch.style.transition = ''; }, 200);
                         }, 500);
+                        // Return to previous tool if eyedropper was activated from color picker
+                        if (this._toolBeforeEyedropper) {
+                            this.selectTool(this._toolBeforeEyedropper);
+                            this._toolBeforeEyedropper = null;
+                        }
                         return;
                     }
                 }
@@ -18790,6 +18797,12 @@
                     cp.style.boxShadow = '';
                     setTimeout(() => { cp.style.transition = ''; }, 200);
                 }, 300);
+                
+                // Return to previous tool if eyedropper was activated from color picker
+                if (this._toolBeforeEyedropper) {
+                    this.selectTool(this._toolBeforeEyedropper);
+                    this._toolBeforeEyedropper = null;
+                }
             }
             
             // Detect if a region contains a gradient. Returns a gradientDef or null.
@@ -24731,6 +24744,7 @@
         <div class="custom-cp-divider"></div>
         <div class="custom-cp-swatches-header">
             <span class="custom-cp-swatches-label">Swatches</span>
+            <button class="custom-cp-add-btn" id="cpEyedropper" title="Pick color from canvas"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M13.5 2.5a1.4 1.4 0 00-2 0L10 4l-1-.5-5 5-.5 3.5 3.5-.5 5-5L11.5 6l1.5-1.5a1.4 1.4 0 000-2z"/><path d="M3.5 12l.5.5"/></svg></button>
             <button class="custom-cp-add-btn" id="cpAddSwatch" title="Save current color">+</button>
         </div>
         <div class="custom-cp-grid" id="cpSwatchGrid"></div>
@@ -24835,6 +24849,15 @@
             }
         });
         
+        // Eyedropper button — activate eyedropper tool, close picker
+        document.getElementById('cpEyedropper').addEventListener('click', () => {
+            if (typeof app !== 'undefined' && app.selectTool) {
+                app._toolBeforeEyedropper = app.tool;
+                app.selectTool('eyedropper');
+                closePicker();
+            }
+        });
+        
         hexInput.addEventListener('input', () => {
             const val = hexInput.value.trim();
             if (/^#[0-9a-f]{6}$/i.test(val)) {
@@ -24905,6 +24928,15 @@
         }
         
         backdrop.addEventListener('pointerdown', closePicker);
+        backdrop.addEventListener('click', closePicker);
+        
+        // Also close if clicking anywhere outside the popup (fallback for environments where backdrop doesn't catch)
+        document.addEventListener('pointerdown', (e) => {
+            if (!popup.classList.contains('show')) return;
+            if (popup.contains(e.target)) return;
+            if (backdrop.contains(e.target)) return; // backdrop handler already fires
+            closePicker();
+        }, true);
         
         // Close on Escape
         document.addEventListener('keydown', (e) => {
