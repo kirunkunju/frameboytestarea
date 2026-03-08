@@ -8358,8 +8358,8 @@
                     if (!isTransformTool) return;
                     // If click is on canvas or selection canvas, startDrawing handles it
                     if (e.target === this.canvas || e.target === this.selectionCanvas) return;
-                    // Don't dismiss when interacting with toolbar or dropdowns
-                    if (e.target && e.target.closest && e.target.closest('.toolbar, .dropdown-menu, .dropdown-container')) return;
+                    // Don't dismiss when interacting with toolbar, buttons, or dropdowns
+                    if (e.target && e.target.closest && e.target.closest('.toolbar, .dropdown-menu, .dropdown-container, .tool-group, button, .custom-cp')) return;
                     this._dismissTransform();
                 });
                 
@@ -9688,6 +9688,65 @@
                                 this.zoomFit();
                                 break;
                         }
+                    }
+                });
+                
+                // Clipboard event fallbacks for iPad (browser may intercept Cmd+C/V before keydown)
+                document.addEventListener('copy', (e) => {
+                    // Don't intercept if focused on an input
+                    const ae = document.activeElement;
+                    if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable)) return;
+                    if (this._activeInstance) {
+                        e.preventDefault();
+                        this._copyInstanceToClipboard(this._activeInstance);
+                    } else if (this.selection) {
+                        e.preventDefault();
+                        this.copySelection();
+                        this._copiedInstance = null;
+                        this._clipboardToast('Selection copied');
+                    }
+                });
+                document.addEventListener('cut', (e) => {
+                    const ae = document.activeElement;
+                    if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable)) return;
+                    if (this.selection) {
+                        e.preventDefault();
+                        // Same as Ctrl+X with selection
+                        this.copiedSelection = {
+                            imageData: (() => { const c = document.createElement('canvas'); c.width = this.selection.imageData.width; c.height = this.selection.imageData.height; c.getContext('2d').drawImage(this.selection.imageData, 0, 0); return c; })(),
+                            width: this.selection.bounds.width,
+                            height: this.selection.bounds.height,
+                            x: this.selection.bounds.x,
+                            y: this.selection.bounds.y
+                        };
+                        if (this.selection._paintImageData) {
+                            const pc = document.createElement('canvas');
+                            pc.width = this.selection._paintImageData.width;
+                            pc.height = this.selection._paintImageData.height;
+                            pc.getContext('2d').drawImage(this.selection._paintImageData, 0, 0);
+                            this.copiedSelection._paintImageData = pc;
+                        }
+                        if (this.selection._fillOnly) this.copiedSelection._fillOnly = true;
+                        if (this.selection._inkOnly) this.copiedSelection._inkOnly = true;
+                        this._copiedInstance = null;
+                        this.selection = null;
+                        this.transformHandles = [];
+                        this.selectionUndoStack = [];
+                        this.selectionRedoStack = [];
+                        this.selectionCtx.clearRect(0, 0, this.selectionCanvas.width, this.selectionCanvas.height);
+                        this._invalidateCompositeCache();
+                        this._dirtyThumb(this.getCurrentLayer().frames[this.currentFrameIndex]);
+                        this._timelineDirty = true;
+                        this.render();
+                        this._clipboardToast('Selection cut');
+                    }
+                });
+                document.addEventListener('paste', (e) => {
+                    const ae = document.activeElement;
+                    if (ae && (ae.tagName === 'INPUT' || ae.tagName === 'TEXTAREA' || ae.isContentEditable)) return;
+                    if (this._hasCanvasClipboard() && !this.frameSelectMode) {
+                        e.preventDefault();
+                        this._smartPaste(false);
                     }
                 });
                 
@@ -17793,6 +17852,9 @@
                 }
                 
                 // Switch to transform tool
+                this.selectTool('transform');
+                this.render();
+                this._clipboardToast('Selection pasted in place');
             }
             
             // Clipboard Methods - Frames
