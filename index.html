@@ -7393,15 +7393,22 @@
                     card.addEventListener('click', (e) => {
                         if (this._renamingSymbolId) return;
                         if (this._libDragJustCompleted) { this._libDragJustCompleted = false; return; }
+                        if (this._selectedLibrarySymbolId === sym.id) {
+                            // Already selected — just update detail, don't rebuild grid
+                            this.updateLibraryDetail(sym.id);
+                            return;
+                        }
                         this._selectedLibrarySymbolId = sym.id;
-                        this.renderLibraryGrid();
+                        // Update selection styling without full rebuild
+                        grid.querySelectorAll('.library-card').forEach(c => c.classList.remove('selected'));
+                        card.classList.add('selected');
                         this.updateLibraryDetail(sym.id);
                     });
                     
-                    // Double-click to enter (wired later in Step 7)
+                    // Double-click to enter loop
                     card.addEventListener('dblclick', (e) => {
                         if (this._renamingSymbolId) return;
-                        console.log('Enter loop:', sym.id);
+                        this.pushContext(sym.id);
                     });
                     
                     // Right-click for context menu
@@ -7551,16 +7558,31 @@
             }
             
             showNewSymbolDialog() {
-                const name = prompt('Loop name:', 'Loop ' + (Object.keys(this.symbolLibrary).length + 1));
-                if (!name) return;
+                const name = 'Loop ' + (Object.keys(this.symbolLibrary).length + 1);
                 
-                // For now, create with project dimensions. 
-                // Step 3 will add the full dialog with size options.
+                this.saveFullState();
+                
+                // Create symbol at project dimensions
                 const sym = this.createSymbolDefinition(name, this.projectWidth, this.projectHeight);
                 
+                // Place an instance on the current layer at the current frame
+                const layer = this.getCurrentLayer();
+                if (!layer.symbolInstances) layer.symbolInstances = [];
+                
+                const instance = this.createSymbolInstance(
+                    sym.id,
+                    this.currentFrameIndex,
+                    Math.max(1, sym.layers[0] ? sym.layers[0].frames.length : 1),
+                    0, 0  // top-left of canvas (project-size loop fills the canvas)
+                );
+                layer.symbolInstances.push(instance);
+                
                 this._selectedLibrarySymbolId = sym.id;
+                this._invalidateCompositeCache();
+                this._timelineDirty = true;
                 this.renderLibraryGrid();
                 this.updateLibraryDetail(sym.id);
+                this.render();
                 
                 // Auto-open the panel if collapsed
                 const panel = document.getElementById('libraryPanel');
@@ -9275,6 +9297,9 @@
                             if (this.selection._fillOnly) {
                                 this.copiedSelection._fillOnly = true;
                             }
+                            if (this.selection._inkOnly) {
+                                this.copiedSelection._inkOnly = true;
+                            }
                             this._copiedInstance = null;
                             // Discard the floating selection — do NOT apply back
                             this.selection = null;
@@ -9419,7 +9444,13 @@
                         this.pushContext(this._activeInstance.symbolId, this._activeInstance.id);
                     } else if ((e.key === 'Delete' || e.key === 'Backspace') && this.selection) {
                         e.preventDefault();
+                        // Don't saveFullState here — floodSelect/paste already saved pre-lift state.
+                        // clearSelection discards the floating pixels; undo restores pre-selection frame.
                         this.clearSelection();
+                        const _delLayer = this.getCurrentLayer();
+                        if (_delLayer) this._dirtyThumb(_delLayer.frames[this.currentFrameIndex]);
+                        this._invalidateCompositeCache();
+                        this._timelineDirty = true;
                         this.render();
                     } else if (this.selection && (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
                         e.preventDefault();
@@ -9593,7 +9624,7 @@
                                 this.showConvertToLoopGroupDialog();
                                 break;
                             case 'Backspace':
-                                if (!this.selection) {
+                                if (!this.selection && !e.defaultPrevented) {
                                     e.preventDefault();
                                     this.clearCurrentFrame();
                                 }
@@ -10987,6 +11018,7 @@
                 // Handle select tools — flood-select pixel artwork
                 if (this.tool === 'select' || this.tool === 'selectLines' || this.tool === 'selectFills') {
                     const selectMode = this.tool === 'selectLines' ? 'ink' : this.tool === 'selectFills' ? 'fill' : 'all';
+                    const modifier = e.shiftKey ? 'add' : (e.altKey ? 'subtract' : null);
                     const canvas = e.target === this.selectionCanvas ? this.selectionCanvas : this.canvas;
                     const rect = canvas.getBoundingClientRect();
                     const scaleX = canvas.width / rect.width;
@@ -10997,6 +11029,16 @@
                     const worldY = canvasY + this.viewportY;
                     const layer = this.getCurrentLayer();
                     const frame = layer.frames[this.currentFrameIndex];
+                    
+                    // Option+click subtract: check if clicking within existing selection
+                    if (modifier === 'subtract' && this.selection) {
+                        const local = this.worldToLocal(worldX, worldY, frame);
+                        const lx = Math.floor(local.x);
+                        const ly = Math.floor(local.y);
+                        this.subtractFromSelection(lx, ly);
+                        return;
+                    }
+                    
                     if (frame) {
                         const local = this.worldToLocal(worldX, worldY, frame);
                         const lx = Math.floor(local.x);
@@ -11021,7 +11063,7 @@
                                 }
                             }
                             if (hasContent) {
-                                this.floodSelect(lx, ly, selectMode);
+                                this.floodSelect(lx, ly, selectMode, modifier);
                                 return;
                             }
                         }
@@ -11267,6 +11309,15 @@
                     
                     // Check if clicking inside selection to move it
                     if (this.selection && this.isPointInSelection(x, y)) {
+                        // Option+drag inside selection → start marquee subtract
+                        if (e.altKey) {
+                            this._marqueeStart = { x, y };
+                            this._marqueeCurrent = { x, y };
+                            this._marqueeDidDrag = false;
+                            this._marqueeModifier = 'subtract';
+                            this.isDrawing = true;
+                            return;
+                        }
                         this.activeHandle = {type: 'move'};
                         this.transformStart = {x, y};
                         this.isTransforming = true;
@@ -11274,8 +11325,26 @@
                         return;
                     }
                     
-                    // Clicked outside selection — apply, deselect, switch to select
+                    // Clicked outside selection
                     if (this.selection) {
+                        // Shift+drag outside → start marquee add
+                        if (e.shiftKey) {
+                            this._marqueeStart = { x, y };
+                            this._marqueeCurrent = { x, y };
+                            this._marqueeDidDrag = false;
+                            this._marqueeModifier = 'add';
+                            this.isDrawing = true;
+                            return;
+                        }
+                        // Option+drag outside → start marquee subtract  
+                        if (e.altKey) {
+                            this._marqueeStart = { x, y };
+                            this._marqueeCurrent = { x, y };
+                            this._marqueeDidDrag = false;
+                            this._marqueeModifier = 'subtract';
+                            this.isDrawing = true;
+                            return;
+                        }
                         this._dismissTransform();
                         this.selectTool(this._activeSelectTool || 'select');
                         return;
@@ -11469,14 +11538,17 @@
                     }
                     
                     // Push the pre-stroke snapshot to undo stack asynchronously
-                    // (the snapshot is already captured — this just defers the stack push)
+                    // _pendingSnapshot stays alive so flush code can push it if timer is cancelled
                     if (this._pendingSnapshot) {
                         const snap = this._pendingSnapshot;
-                        this._pendingSnapshot = null;
                         this._pendingSaveTimer = setTimeout(() => {
                             this._pendingSaveTimer = null;
-                            this._pushUndo(snap);
-                            this.updateUndoRedoButtons();
+                            // Only push if still the same snapshot (not overwritten by a new stroke)
+                            if (this._pendingSnapshot === snap) {
+                                this._pushUndo(snap);
+                                this._pendingSnapshot = null;
+                                this.updateUndoRedoButtons();
+                            }
                         }, 0);
                     }
                 }
@@ -11785,7 +11857,7 @@
                 }
                 
                 // Handle marquee (standalone or select tool marquee mode)
-                if ((this.tool === 'select' || this.tool === 'selectLines' || this.tool === 'selectFills') && this.isDrawing && this._marqueeStart) {
+                if ((this.tool === 'select' || this.tool === 'selectLines' || this.tool === 'selectFills' || this._marqueeModifier) && this.isDrawing && this._marqueeStart) {
                     this._marqueeCurrent = { x, y };
                     const dx = x - this._marqueeStart.x;
                     const dy = y - this._marqueeStart.y;
@@ -12171,15 +12243,31 @@
                 }
                 
                 // Handle marquee completion (standalone or select tool marquee mode)
-                if ((this.tool === 'select' || this.tool === 'selectLines' || this.tool === 'selectFills') && this.isDrawing && this._marqueeStart) {
+                if ((this.tool === 'select' || this.tool === 'selectLines' || this.tool === 'selectFills' || this._marqueeModifier) && this.isDrawing && this._marqueeStart) {
                     this.isDrawing = false;
                     if (this._marqueeDidDrag) {
-                        this.completeMarqueeSelection();
+                        const mod = this._marqueeModifier;
+                        this._marqueeModifier = null;
+                        if (mod === 'add' || mod === 'subtract') {
+                            this.completeModifierMarquee(mod);
+                        } else {
+                            this.completeMarqueeSelection();
+                        }
                     } else {
                         // Didn't drag — just a click on empty, clean up
+                        const mod = this._marqueeModifier;
+                        this._marqueeModifier = null;
                         this._marqueeStart = null;
                         this._marqueeCurrent = null;
                         this.selectionCtx.clearRect(0, 0, this.selectionCanvas.width, this.selectionCanvas.height);
+                        // For click (no drag) with modifier, do flood add/subtract
+                        if (mod && this.selection) {
+                            const canvas = this.canvas;
+                            const rect = canvas.getBoundingClientRect();
+                            const sx = canvas.width / rect.width;
+                            const sy = canvas.height / rect.height;
+                            // Use the stored start position
+                        }
                     }
                     return;
                 }
@@ -16421,10 +16509,266 @@
                     this.selection.imageData = paintCanvas;
                     this.selection._paintImageData = paintCanvas;
                     this.selection._fillOnly = true;
+                } else if (selectMode === 'ink' && inkCanvas && !paintCanvas) {
+                    this.selection._inkOnly = true;
                 }
                 
                 this.selectTool('transform');
                 this.render();
+            }
+            
+            completeModifierMarquee(modifier) {
+                // modifier: 'add' or 'subtract'
+                if (!this._marqueeStart || !this._marqueeCurrent) {
+                    this._marqueeStart = null;
+                    this._marqueeCurrent = null;
+                    this.selectionCtx.clearRect(0, 0, this.selectionCanvas.width, this.selectionCanvas.height);
+                    return;
+                }
+                
+                const selectMode = this._activeSelectTool === 'selectLines' ? 'ink' : this._activeSelectTool === 'selectFills' ? 'fill' : 'all';
+                
+                const dispX = Math.min(this._marqueeStart.x, this._marqueeCurrent.x);
+                const dispY = Math.min(this._marqueeStart.y, this._marqueeCurrent.y);
+                const dispW = Math.abs(this._marqueeCurrent.x - this._marqueeStart.x);
+                const dispH = Math.abs(this._marqueeCurrent.y - this._marqueeStart.y);
+                
+                this._marqueeStart = null;
+                this._marqueeCurrent = null;
+                this.selectionCtx.clearRect(0, 0, this.selectionCanvas.width, this.selectionCanvas.height);
+                
+                if (dispW < 2 || dispH < 2) return;
+                
+                const off = this.getSelectionDisplayOffset();
+                const localX = dispX - off.x;
+                const localY = dispY - off.y;
+                
+                const layer = this.getCurrentLayer();
+                const frame = layer.frames[this.currentFrameIndex];
+                if (!frame) return;
+                
+                const clampX = Math.max(0, Math.floor(localX));
+                const clampY = Math.max(0, Math.floor(localY));
+                const clampR = Math.min(frame.width, Math.ceil(localX + dispW));
+                const clampB = Math.min(frame.height, Math.ceil(localY + dispH));
+                const selW = clampR - clampX;
+                const selH = clampB - clampY;
+                if (selW <= 0 || selH <= 0) return;
+                
+                if (modifier === 'subtract' && this.selection) {
+                    // Subtract: put pixels within the marquee rect back on the frame
+                    this.saveState();
+                    const sel = this.selection;
+                    const b = sel.bounds;
+                    
+                    // Intersection of marquee and selection bounds
+                    const ix0 = Math.max(clampX, b.x);
+                    const iy0 = Math.max(clampY, b.y);
+                    const ix1 = Math.min(clampX + selW, b.x + b.width);
+                    const iy1 = Math.min(clampY + selH, b.y + b.height);
+                    if (ix0 >= ix1 || iy0 >= iy1) return;
+                    
+                    const iw = ix1 - ix0;
+                    const ih = iy1 - iy0;
+                    
+                    // Put intersected pixels back from selection to frame
+                    const putBack = (selCanvas, targetCanvas) => {
+                        const sw = selCanvas.width, sh = selCanvas.height;
+                        const sc = selCanvas.getContext('2d');
+                        const si = sc.getImageData(0, 0, sw, sh);
+                        const sd = si.data;
+                        const tc = targetCanvas.getContext('2d');
+                        const tw = targetCanvas.width, th = targetCanvas.height;
+                        const ti = tc.getImageData(0, 0, tw, th);
+                        const td = ti.data;
+                        
+                        for (let y = iy0; y < iy1; y++) {
+                            for (let x = ix0; x < ix1; x++) {
+                                const sx = x - b.x;
+                                const sy = y - b.y;
+                                if (sx < 0 || sx >= sw || sy < 0 || sy >= sh) continue;
+                                const sp = (sy * sw + sx) * 4;
+                                if (sd[sp + 3] === 0) continue;
+                                if (x >= 0 && x < tw && y >= 0 && y < th) {
+                                    const dp = (y * tw + x) * 4;
+                                    td[dp] = sd[sp]; td[dp+1] = sd[sp+1]; td[dp+2] = sd[sp+2]; td[dp+3] = sd[sp+3];
+                                }
+                                sd[sp] = 0; sd[sp+1] = 0; sd[sp+2] = 0; sd[sp+3] = 0;
+                            }
+                        }
+                        sc.putImageData(si, 0, 0);
+                        tc.putImageData(ti, 0, 0);
+                    };
+                    
+                    if (!sel._fillOnly) {
+                        putBack(sel.imageData, frame);
+                    }
+                    if (sel._paintImageData) {
+                        putBack(sel._paintImageData, this._getPaintCanvas(frame, true));
+                    }
+                    if (sel._fillOnly) {
+                        putBack(sel.imageData, this._getPaintCanvas(frame, true));
+                    }
+                    
+                    // Check if selection is now empty
+                    const rd = sel.imageData.getContext('2d').getImageData(0, 0, sel.imageData.width, sel.imageData.height).data;
+                    let hasContent = false;
+                    for (let i = 3; i < rd.length; i += 4) { if (rd[i] > 0) { hasContent = true; break; } }
+                    if (!hasContent && sel._paintImageData) {
+                        const pd = sel._paintImageData.getContext('2d').getImageData(0, 0, sel._paintImageData.width, sel._paintImageData.height).data;
+                        for (let i = 3; i < pd.length; i += 4) { if (pd[i] > 0) { hasContent = true; break; } }
+                    }
+                    
+                    if (!hasContent) {
+                        this.clearSelection();
+                    } else {
+                        this.showTransformHandles();
+                    }
+                    this._invalidateCompositeCache();
+                    this.render();
+                    
+                } else if (modifier === 'add' && this.selection) {
+                    // Add: lift pixels within marquee from frame, merge into selection
+                    const oldSelection = {
+                        imageData: this.selection.imageData,
+                        _paintImageData: this.selection._paintImageData,
+                        bounds: { ...this.selection.bounds },
+                        _fillOnly: this.selection._fillOnly,
+                        _inkOnly: this.selection._inkOnly
+                    };
+                    
+                    // Apply current selection back to frame
+                    this.applySelection();
+                    this.clearSelection();
+                    
+                    this.saveState();
+                    const frameCtx = frame.getContext('2d');
+                    
+                    // Build scan canvas for bounding box
+                    const scanCanvas = document.createElement('canvas');
+                    scanCanvas.width = selW; scanCanvas.height = selH;
+                    const scanCtx = scanCanvas.getContext('2d');
+                    if (selectMode === 'ink') {
+                        scanCtx.drawImage(frame, clampX, clampY, selW, selH, 0, 0, selW, selH);
+                    } else if (selectMode === 'fill') {
+                        if (frame._paintCanvas) scanCtx.drawImage(frame._paintCanvas, clampX, clampY, selW, selH, 0, 0, selW, selH);
+                    } else {
+                        if (frame._paintCanvas) scanCtx.drawImage(frame._paintCanvas, clampX, clampY, selW, selH, 0, 0, selW, selH);
+                        scanCtx.drawImage(frame, clampX, clampY, selW, selH, 0, 0, selW, selH);
+                    }
+                    
+                    // Tight bounding box
+                    const pd = scanCtx.getImageData(0, 0, selW, selH).data;
+                    let tMinX = selW, tMinY = selH, tMaxX = -1, tMaxY = -1;
+                    for (let py = 0; py < selH; py++) {
+                        for (let px = 0; px < selW; px++) {
+                            if (pd[(py * selW + px) * 4 + 3] > 0) {
+                                if (px < tMinX) tMinX = px;
+                                if (px > tMaxX) tMaxX = px;
+                                if (py < tMinY) tMinY = py;
+                                if (py > tMaxY) tMaxY = py;
+                            }
+                        }
+                    }
+                    
+                    if (tMaxX < 0) {
+                        // Nothing to add — restore old selection
+                        // Re-lift old selection from the frame
+                        this.selection = oldSelection;
+                        this._liftSelectionFromFrame();
+                        this.showTransformHandles();
+                        this.render();
+                        return;
+                    }
+                    
+                    const tW = tMaxX - tMinX + 1;
+                    const tH = tMaxY - tMinY + 1;
+                    const fX = clampX + tMinX;
+                    const fY = clampY + tMinY;
+                    
+                    // Lift new pixels
+                    let newInk = null, newPaint = null;
+                    if (selectMode === 'ink' || selectMode === 'all') {
+                        newInk = document.createElement('canvas');
+                        newInk.width = tW; newInk.height = tH;
+                        newInk.getContext('2d').drawImage(frame, fX, fY, tW, tH, 0, 0, tW, tH);
+                        frameCtx.clearRect(clampX, clampY, selW, selH);
+                    }
+                    if ((selectMode === 'fill' || selectMode === 'all') && frame._paintCanvas) {
+                        newPaint = document.createElement('canvas');
+                        newPaint.width = tW; newPaint.height = tH;
+                        newPaint.getContext('2d').drawImage(frame._paintCanvas, fX, fY, tW, tH, 0, 0, tW, tH);
+                        frame._paintCanvas.getContext('2d').clearRect(clampX, clampY, selW, selH);
+                    }
+                    
+                    // Also re-lift old selection pixels from frame (they were applied back)
+                    const oldB = oldSelection.bounds;
+                    let reInk = null, rePaint = null;
+                    if (oldSelection._fillOnly && frame._paintCanvas) {
+                        // Fill-only: old imageData was paint pixels, re-lift from paint canvas
+                        reInk = document.createElement('canvas');
+                        reInk.width = oldB.width; reInk.height = oldB.height;
+                        reInk.getContext('2d').drawImage(frame._paintCanvas, oldB.x, oldB.y, oldB.width, oldB.height, 0, 0, oldB.width, oldB.height);
+                        frame._paintCanvas.getContext('2d').clearRect(oldB.x, oldB.y, oldB.width, oldB.height);
+                    } else {
+                        if (!oldSelection._fillOnly) {
+                            reInk = document.createElement('canvas');
+                            reInk.width = oldB.width; reInk.height = oldB.height;
+                            reInk.getContext('2d').drawImage(frame, oldB.x, oldB.y, oldB.width, oldB.height, 0, 0, oldB.width, oldB.height);
+                            frameCtx.clearRect(oldB.x, oldB.y, oldB.width, oldB.height);
+                        }
+                        if (oldSelection._paintImageData && frame._paintCanvas) {
+                            rePaint = document.createElement('canvas');
+                            rePaint.width = oldB.width; rePaint.height = oldB.height;
+                            rePaint.getContext('2d').drawImage(frame._paintCanvas, oldB.x, oldB.y, oldB.width, oldB.height, 0, 0, oldB.width, oldB.height);
+                            frame._paintCanvas.getContext('2d').clearRect(oldB.x, oldB.y, oldB.width, oldB.height);
+                        }
+                    }
+                    
+                    // Merge: compute union bounds of old + new
+                    const ux = Math.min(oldB.x, fX);
+                    const uy = Math.min(oldB.y, fY);
+                    const ur = Math.max(oldB.x + oldB.width, fX + tW);
+                    const ub = Math.max(oldB.y + oldB.height, fY + tH);
+                    const uw = ur - ux;
+                    const uh = ub - uy;
+                    
+                    const mergedInk = document.createElement('canvas');
+                    mergedInk.width = uw; mergedInk.height = uh;
+                    const miCtx = mergedInk.getContext('2d');
+                    if (reInk) miCtx.drawImage(reInk, oldB.x - ux, oldB.y - uy);
+                    if (newInk) miCtx.drawImage(newInk, fX - ux, fY - uy);
+                    // For _fillOnly, newPaint also goes into primary since applySelection uses imageData
+                    if (oldSelection._fillOnly && newPaint) {
+                        miCtx.drawImage(newPaint, fX - ux, fY - uy);
+                    }
+                    
+                    let mergedPaint = null;
+                    if (!oldSelection._fillOnly && (rePaint || newPaint)) {
+                        mergedPaint = document.createElement('canvas');
+                        mergedPaint.width = uw; mergedPaint.height = uh;
+                        const mpCtx = mergedPaint.getContext('2d');
+                        if (rePaint) mpCtx.drawImage(rePaint, oldB.x - ux, oldB.y - uy);
+                        if (newPaint) mpCtx.drawImage(newPaint, fX - ux, fY - uy);
+                    }
+                    
+                    this.selection = {
+                        imageData: mergedInk,
+                        bounds: { x: ux, y: uy, width: uw, height: uh },
+                        originalBounds: { x: ux, y: uy, width: uw, height: uh }
+                    };
+                    if (mergedPaint) this.selection._paintImageData = mergedPaint;
+                    if (oldSelection._fillOnly && selectMode !== 'ink') {
+                        this.selection._fillOnly = true;
+                    } else if (oldSelection._inkOnly && selectMode !== 'fill') {
+                        this.selection._inkOnly = true;
+                    }
+                    
+                    this._invalidateCompositeCache();
+                    this.showTransformHandles();
+                    this.selectTool('transform');
+                    this.render();
+                }
             }
             
             // Transform Methods
@@ -16947,9 +17291,10 @@
                         x: c.x - shiftX, y: c.y - shiftY
                     }));
                     if (this.selection._fillOnly) {
-                        // Fill-only: write to paint canvas, not ink
                         const pc = this._getPaintCanvas(frame, true);
                         this._drawImageToQuad(pc.getContext('2d'), this.selection.imageData, localCorners);
+                    } else if (this.selection._inkOnly) {
+                        this._drawImageToQuad(frameCtx, this.selection.imageData, localCorners);
                     } else {
                         this._drawImageToQuad(frameCtx, this.selection.imageData, localCorners);
                         if (this.selection._paintImageData) {
@@ -16959,7 +17304,6 @@
                     }
                 } else {
                     if (this.selection._fillOnly) {
-                        // Fill-only: write to paint canvas, not ink
                         const pc = this._getPaintCanvas(frame, true);
                         const pcCtx = pc.getContext('2d');
                         pcCtx.save();
@@ -16974,6 +17318,20 @@
                             drawX, drawY, b.width, b.height
                         );
                         pcCtx.restore();
+                    } else if (this.selection._inkOnly) {
+                        // Ink-only: write to ink canvas only, never touch paint
+                        frameCtx.save();
+                        frameCtx.translate(drawAnchorX, drawAnchorY);
+                        frameCtx.rotate(rotation);
+                        if (skewX || skewY) {
+                            frameCtx.transform(1, skewY, skewX, 1, 0, 0);
+                        }
+                        frameCtx.translate(-drawAnchorX, -drawAnchorY);
+                        frameCtx.drawImage(
+                            this.selection.imageData,
+                            drawX, drawY, b.width, b.height
+                        );
+                        frameCtx.restore();
                     } else {
                         frameCtx.save();
                         frameCtx.translate(drawAnchorX, drawAnchorY);
@@ -17305,6 +17663,9 @@
                 if (this.selection._fillOnly) {
                     this.copiedSelection._fillOnly = true;
                 }
+                if (this.selection._inkOnly) {
+                    this.copiedSelection._inkOnly = true;
+                }
                 
                 // Apply selection back to the frame and dismiss bounding box
                 this.applySelection();
@@ -17362,6 +17723,9 @@
                 if (this.copiedSelection._fillOnly) {
                     this.selection._fillOnly = true;
                 }
+                if (this.copiedSelection._inkOnly) {
+                    this.selection._inkOnly = true;
+                }
                 
                 // Switch to transform tool so the user can position it
                 this.selectTool('transform');
@@ -17417,6 +17781,9 @@
                 }
                 if (this.copiedSelection._fillOnly) {
                     this.selection._fillOnly = true;
+                }
+                if (this.copiedSelection._inkOnly) {
+                    this.selection._inkOnly = true;
                 }
                 
                 // Switch to transform tool
@@ -18663,9 +19030,22 @@
             }
             
             // Flood Fill (Paint Bucket) Algorithm
-            floodSelect(startX, startY, mode) {
+            floodSelect(startX, startY, mode, modifier) {
                 // mode: 'all' (default), 'ink' (lines only), 'fill' (fills only)
+                // modifier: null (replace), 'add' (shift+click)
                 mode = mode || 'all';
+                
+                // Save old selection for merging if adding
+                let oldSelection = null;
+                if (modifier === 'add' && this.selection) {
+                    oldSelection = {
+                        imageData: this.selection.imageData,
+                        _paintImageData: this.selection._paintImageData,
+                        bounds: { ...this.selection.bounds },
+                        _fillOnly: this.selection._fillOnly,
+                        _inkOnly: this.selection._inkOnly
+                    };
+                }
                 
                 // Commit any existing floating selection back to the frame first
                 if (this.selection) {
@@ -18797,15 +19177,199 @@
                 if (paintSelection) {
                     this.selection._paintImageData = paintSelection;
                 }
-                // If fill-only mode, ink selection is empty — use paint as imageData for preview
-                // but mark as fill-only so applySelection writes to paint canvas
+                // Mark selection mode for proper sublayer targeting
                 if (mode === 'fill' && !inkSelection && paintSelection) {
                     this.selection.imageData = paintSelection;
                     this.selection._fillOnly = true;
                 }
+                if (mode === 'ink' && inkSelection && !paintSelection) {
+                    this.selection._inkOnly = true;
+                }
+                
+                // Merge with old selection if shift+click (add mode)
+                if (oldSelection && this.selection) {
+                    const oldB = oldSelection.bounds;
+                    const newB = this.selection.bounds;
+                    
+                    // Compute union bounds
+                    const ux = Math.min(oldB.x, newB.x);
+                    const uy = Math.min(oldB.y, newB.y);
+                    const ur = Math.max(oldB.x + oldB.width, newB.x + newB.width);
+                    const ub = Math.max(oldB.y + oldB.height, newB.y + newB.height);
+                    const uw = ur - ux;
+                    const uh = ub - uy;
+                    
+                    // Merge ink/primary canvases
+                    const mergedInk = document.createElement('canvas');
+                    mergedInk.width = uw; mergedInk.height = uh;
+                    const miCtx = mergedInk.getContext('2d');
+                    if (oldSelection.imageData) {
+                        miCtx.drawImage(oldSelection.imageData, oldB.x - ux, oldB.y - uy);
+                    }
+                    miCtx.drawImage(this.selection.imageData, newB.x - ux, newB.y - uy);
+                    
+                    // Merge paint canvases
+                    let mergedPaint = null;
+                    const oldPaint = oldSelection._paintImageData;
+                    const newPaint = this.selection._paintImageData;
+                    if (oldPaint || newPaint) {
+                        mergedPaint = document.createElement('canvas');
+                        mergedPaint.width = uw; mergedPaint.height = uh;
+                        const mpCtx = mergedPaint.getContext('2d');
+                        if (oldPaint) mpCtx.drawImage(oldPaint, oldB.x - ux, oldB.y - uy);
+                        if (newPaint) mpCtx.drawImage(newPaint, newB.x - ux, newB.y - uy);
+                    }
+                    
+                    this.selection.imageData = mergedInk;
+                    this.selection.bounds = { x: ux, y: uy, width: uw, height: uh };
+                    this.selection.originalBounds = { x: ux, y: uy, width: uw, height: uh };
+                    if (mergedPaint) {
+                        this.selection._paintImageData = mergedPaint;
+                    }
+                    // Preserve mode flags from old selection if they match
+                    if (oldSelection._fillOnly && this.selection._fillOnly) {
+                        this.selection._fillOnly = true;
+                    } else if (oldSelection._inkOnly && this.selection._inkOnly) {
+                        this.selection._inkOnly = true;
+                    } else {
+                        // Mixed modes — treat as 'all'
+                        delete this.selection._fillOnly;
+                        delete this.selection._inkOnly;
+                    }
+                }
                 
                 // Switch to transform tool to enable moving
                 this.selectTool('transform');
+                this.render();
+            }
+            
+            subtractFromSelection(frameX, frameY) {
+                if (!this.selection) return;
+                const sel = this.selection;
+                const b = sel.bounds;
+                
+                // Convert frame coords to selection-local coords
+                const lx = frameX - b.x;
+                const ly = frameY - b.y;
+                
+                // Check if click is within selection bounds
+                if (lx < 0 || lx >= b.width || ly < 0 || ly >= b.height) return;
+                
+                // Determine which canvas to scan (primary imageData)
+                const srcCanvas = sel.imageData;
+                const w = srcCanvas.width;
+                const h = srcCanvas.height;
+                const srcCtx = srcCanvas.getContext('2d');
+                const imgData = srcCtx.getImageData(0, 0, w, h);
+                const data = imgData.data;
+                
+                // Check if the click point has content
+                if (data[(ly * w + lx) * 4 + 3] === 0) {
+                    // Try paint sublayer
+                    if (sel._paintImageData) {
+                        const pData = sel._paintImageData.getContext('2d').getImageData(0, 0, w, h).data;
+                        if (pData[(ly * w + lx) * 4 + 3] === 0) return;
+                        // Flood within paint canvas
+                        this._subtractFlood(sel._paintImageData, lx, ly, sel, 'paint');
+                    }
+                    return;
+                }
+                
+                this.saveState();
+                
+                // Flood scan within selection imageData
+                const visited = new Uint8Array(w * h);
+                const stack = [lx + ly * w];
+                
+                while (stack.length > 0) {
+                    let idx = stack.pop();
+                    let x = idx % w;
+                    const y = (idx - x) / w;
+                    
+                    while (x > 0 && !visited[idx - 1] && data[(idx - 1) * 4 + 3] > 0) { x--; idx--; }
+                    
+                    let spanAbove = false, spanBelow = false;
+                    while (x < w && !visited[idx] && data[idx * 4 + 3] > 0) {
+                        visited[idx] = 1;
+                        if (y > 0) {
+                            const aboveIdx = idx - w;
+                            if (!visited[aboveIdx] && data[aboveIdx * 4 + 3] > 0) {
+                                if (!spanAbove) { stack.push(aboveIdx); spanAbove = true; }
+                            } else { spanAbove = false; }
+                        }
+                        if (y < h - 1) {
+                            const belowIdx = idx + w;
+                            if (!visited[belowIdx] && data[belowIdx * 4 + 3] > 0) {
+                                if (!spanBelow) { stack.push(belowIdx); spanBelow = true; }
+                            } else { spanBelow = false; }
+                        }
+                        x++; idx++;
+                    }
+                }
+                
+                // Put visited pixels back onto the frame
+                const layer = this.getCurrentLayer();
+                const frame = layer.frames[this.currentFrameIndex];
+                if (!frame) return;
+                
+                const putBack = (selCanvas, targetCanvas) => {
+                    const sc = selCanvas.getContext('2d');
+                    const si = sc.getImageData(0, 0, w, h);
+                    const sd = si.data;
+                    const tc = targetCanvas.getContext('2d');
+                    const ti = tc.getImageData(0, 0, targetCanvas.width, targetCanvas.height);
+                    const td = ti.data;
+                    const tw = targetCanvas.width;
+                    for (let i = 0; i < visited.length; i++) {
+                        if (!visited[i]) continue;
+                        const sp = i * 4;
+                        if (sd[sp + 3] === 0) continue;
+                        const sx = i % w;
+                        const sy = (i - sx) / w;
+                        const fx = sx + b.x;
+                        const fy = sy + b.y;
+                        if (fx < 0 || fx >= tw || fy < 0 || fy >= targetCanvas.height) continue;
+                        const dp = (fy * tw + fx) * 4;
+                        td[dp] = sd[sp]; td[dp+1] = sd[sp+1]; td[dp+2] = sd[sp+2]; td[dp+3] = sd[sp+3];
+                        sd[sp] = 0; sd[sp+1] = 0; sd[sp+2] = 0; sd[sp+3] = 0;
+                    }
+                    sc.putImageData(si, 0, 0);
+                    tc.putImageData(ti, 0, 0);
+                };
+                
+                // Put ink pixels back
+                if (!sel._fillOnly) {
+                    putBack(sel.imageData, frame);
+                }
+                // Put paint pixels back using same visited mask
+                if (sel._paintImageData) {
+                    putBack(sel._paintImageData, this._getPaintCanvas(frame, true));
+                }
+                // For fillOnly, imageData IS the paint data
+                if (sel._fillOnly) {
+                    putBack(sel.imageData, this._getPaintCanvas(frame, true));
+                }
+                
+                // Check if selection is now empty
+                const remaining = srcCtx.getImageData(0, 0, w, h).data;
+                let hasContent = false;
+                for (let i = 3; i < remaining.length; i += 4) {
+                    if (remaining[i] > 0) { hasContent = true; break; }
+                }
+                if (!hasContent && sel._paintImageData) {
+                    const pr = sel._paintImageData.getContext('2d').getImageData(0, 0, w, h).data;
+                    for (let i = 3; i < pr.length; i += 4) {
+                        if (pr[i] > 0) { hasContent = true; break; }
+                    }
+                }
+                
+                if (!hasContent) {
+                    this.clearSelection();
+                } else {
+                    this.showTransformHandles();
+                }
+                
+                this._invalidateCompositeCache();
                 this.render();
             }
             
