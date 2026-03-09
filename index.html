@@ -11725,17 +11725,6 @@
                             this._strokeBufferOriginX = frame._originX || 0;
                             this._strokeBufferOriginY = frame._originY || 0;
                             this._opacityBufferActive = true;
-                            
-                            // Snapshot the display canvas for fast preview during drawing
-                            // For simple modes (source-over on ink/fillPaint), we can just
-                            // blit snapshot + overlay buffer — no full recomposite needed
-                            if (!this._opacityDisplaySnapshot) {
-                                this._opacityDisplaySnapshot = document.createElement('canvas');
-                            }
-                            this._opacityDisplaySnapshot.width = this.canvas.width;
-                            this._opacityDisplaySnapshot.height = this.canvas.height;
-                            this._opacityDisplaySnapshot.getContext('2d').drawImage(this.canvas, 0, 0);
-                            this._opacityFrameOffset = this.frameToDisplayOffset(frame);
                         }
                     }
                     
@@ -12643,9 +12632,6 @@
                         }
                         this._opacityBufferActive = false;
                         this._opacityPreStroke = null;
-                        this._opacityDisplaySnapshot = null;
-                        this._opacityFrameOffset = null;
-                        this._opacityPreviewPending = false;
                     }
                     
                     this._lastStrokeEnd = { x: this.lastX, y: this.lastY };
@@ -12706,96 +12692,6 @@
                 }
             }
             
-            _renderOpacityPreview() {
-                if (!this._opacityBufferActive || !this._strokeBuffer || !this._opacityPreStroke) return;
-                
-                const pre = this._opacityPreStroke;
-                const dm = this._strokeDrawMode;
-                const targetsPaint = dm === 'paintFill' || dm === 'fillPaint' || dm === 'eraseFill';
-                const isEraser = pre.compositeOp === 'destination-out';
-                
-                // Fast path: for source-over modes (normal brush, fillPaint) that don't need
-                // special compositing against a sublayer, just blit the snapshot + buffer overlay.
-                // This reduces per-frame work from full layer recomposite to 2 canvas blits.
-                if (!targetsPaint && !isEraser && this._opacityDisplaySnapshot) {
-                    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-                    this.ctx.drawImage(this._opacityDisplaySnapshot, 0, 0);
-                    const off = this._opacityFrameOffset || this.frameToDisplayOffset(
-                        this.getCurrentLayer().frames[this.currentFrameIndex]
-                    );
-                    this.ctx.save();
-                    this.ctx.translate(off.x, off.y);
-                    this.ctx.globalAlpha = pre.opacity;
-                    this.ctx.drawImage(this._strokeBuffer, 0, 0);
-                    this.ctx.restore();
-                    return;
-                }
-                
-                // Slow path: modes that need sublayer compositing (paintFill, eraser).
-                // Throttle to ~30fps via rAF to avoid choking iPad.
-                if (this._opacityPreviewPending) return;
-                this._opacityPreviewPending = true;
-                requestAnimationFrame(() => {
-                    this._opacityPreviewPending = false;
-                    if (!this._opacityBufferActive || !this._strokeBuffer || !this._opacityPreStroke) return;
-                    
-                    const layer = this.getCurrentLayer();
-                    const frame = layer.frames[this.currentFrameIndex];
-                    if (!frame) return;
-                    
-                    let savedPaintData = null;
-                    if (targetsPaint && frame._paintCanvas) {
-                        const pc = frame._paintCanvas;
-                        const pcCtx = pc.getContext('2d');
-                        savedPaintData = pcCtx.getImageData(0, 0, pc.width, pc.height);
-                        pcCtx.save();
-                        pcCtx.globalAlpha = pre.opacity;
-                        pcCtx.globalCompositeOperation = pre.compositeOp;
-                        pcCtx.drawImage(this._strokeBuffer, 0, 0);
-                        pcCtx.restore();
-                    }
-                    
-                    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-                    const playheadPos = this.getPlayheadPosition();
-                    this.drawParentGhost(this.ctx);
-                    
-                    const _overlayBuffer = () => {
-                        if (targetsPaint) return;
-                        const off = this.frameToDisplayOffset(frame);
-                        this.ctx.save();
-                        this.ctx.translate(off.x, off.y);
-                        this.ctx.globalAlpha = pre.opacity;
-                        this.ctx.globalCompositeOperation = pre.compositeOp;
-                        this.ctx.drawImage(this._strokeBuffer, 0, 0);
-                        this.ctx.restore();
-                    };
-                    
-                    if (this.layers.length > 2) {
-                        const currentKey = this._getCompositeCacheKey();
-                        if (this._compositeCacheDirty || this._compositeCacheKey !== currentKey) {
-                            this._rebuildCompositeCache(playheadPos);
-                        }
-                        this.ctx.drawImage(this._belowCache, 0, 0);
-                        this.drawLayerWithTransform(this.ctx, layer, playheadPos);
-                        _overlayBuffer();
-                        this.ctx.drawImage(this._aboveCache, 0, 0);
-                    } else {
-                        for (const l of this.layers) {
-                            this.drawLayerWithTransform(this.ctx, l, playheadPos);
-                        }
-                        _overlayBuffer();
-                    }
-                    
-                    this.drawPasteboardOverlay(this.ctx);
-                    
-                    if (savedPaintData && frame._paintCanvas) {
-                        const pcCtx = frame._paintCanvas.getContext('2d');
-                        pcCtx.clearRect(0, 0, frame._paintCanvas.width, frame._paintCanvas.height);
-                        pcCtx.putImageData(savedPaintData, 0, 0);
-                    }
-                });
-            }
-            
             drawPoint(x, y) {
                 const layer = this.getCurrentLayer();
                 const frame = layer.frames[this.currentFrameIndex];
@@ -12837,18 +12733,13 @@
                     ctx.globalCompositeOperation = 'source-over';
                 };
                 
-                // Draw the mark on the target canvas (skip if opacity buffer handles it)
-                if (!this._opacityBufferActive) {
-                    _drawMark(targetCtx, compositeOp);
-                }
+                // Draw the mark on the target canvas
+                _drawMark(targetCtx, compositeOp);
                 
-                // Opacity buffer: draw to stroke buffer only, skip direct display draw
+                // Opacity buffer: also draw to stroke buffer (for flatten on pen lift)
                 if (this._opacityBufferActive && this._strokeBuffer) {
                     this._ensureStrokeBufferSize(targetCanvas, frame);
                     _drawMark(this._strokeBuffer.getContext('2d'), 'source-over');
-                    // Recomposite display with opacity preview
-                    this._renderOpacityPreview();
-                    return; // Skip normal display draw
                 }
                 
                 // Erase Both: also erase from paint canvas
@@ -12863,7 +12754,9 @@
                     const off = this.frameToDisplayOffset(frame);
                     this.ctx.save();
                     this.ctx.translate(off.x, off.y);
-                    // fillPaint: draw behind ink on display so strokes are visible under lines
+                    if (this._opacityBufferActive && this._opacityPreStroke) {
+                        this.ctx.globalAlpha = this._opacityPreStroke.opacity;
+                    }
                     _drawMark(this.ctx, drawMode === 'fillPaint' ? 'destination-over' : compositeOp);
                     this.ctx.restore();
                 }
@@ -12909,16 +12802,12 @@
                         ctx.globalCompositeOperation = 'source-over';
                     };
                     
-                    if (!this._opacityBufferActive) {
-                        _drawOvals(targetCtx, compositeOp);
-                    }
-                    // Opacity buffer: draw to buffer, skip direct display
+                    _drawOvals(targetCtx, compositeOp);
+                    // Opacity buffer: also draw to buffer for flatten
                     if (this._opacityBufferActive && this._strokeBuffer) {
                         this._ensureStrokeBufferSize(targetCanvas, frame);
                         _drawOvals(this._strokeBuffer.getContext('2d'), 'source-over');
-                        this._renderOpacityPreview();
-                        // Skip normal display + eraseBoth paths
-                    } else {
+                    }
                     if (drawMode === 'eraseBoth' && frame._paintCanvas) {
                         _drawOvals(frame._paintCanvas.getContext('2d'), compositeOp);
                     }
@@ -12926,10 +12815,12 @@
                     if (drawMode !== 'eraseFill' && drawMode !== 'behind') {
                         this.ctx.save();
                         this.ctx.translate(off.x, off.y);
+                        if (this._opacityBufferActive && this._opacityPreStroke) {
+                            this.ctx.globalAlpha = this._opacityPreStroke.opacity;
+                        }
                         _drawOvals(this.ctx, drawMode === 'fillPaint' ? 'destination-over' : compositeOp);
                         this.ctx.restore();
                     }
-                    } // end opacity else
                 } else {
                     const cap = shape === 'square' ? 'square' : 'round';
                     const join = shape === 'square' ? 'miter' : 'round';
@@ -12947,15 +12838,12 @@
                         ctx.globalCompositeOperation = 'source-over';
                     };
                     
-                    if (!this._opacityBufferActive) {
-                        _drawStroke(targetCtx, compositeOp);
-                    }
-                    // Opacity buffer: draw to buffer, skip direct display
+                    _drawStroke(targetCtx, compositeOp);
+                    // Opacity buffer: also draw to buffer for flatten
                     if (this._opacityBufferActive && this._strokeBuffer) {
                         this._ensureStrokeBufferSize(targetCanvas, frame);
                         _drawStroke(this._strokeBuffer.getContext('2d'), 'source-over');
-                        this._renderOpacityPreview();
-                    } else {
+                    }
                     if (drawMode === 'eraseBoth' && frame._paintCanvas) {
                         _drawStroke(frame._paintCanvas.getContext('2d'), compositeOp);
                     }
@@ -12963,10 +12851,12 @@
                     if (drawMode !== 'eraseFill' && drawMode !== 'behind') {
                         this.ctx.save();
                         this.ctx.translate(off.x, off.y);
+                        if (this._opacityBufferActive && this._opacityPreStroke) {
+                            this.ctx.globalAlpha = this._opacityPreStroke.opacity;
+                        }
                         _drawStroke(this.ctx, drawMode === 'fillPaint' ? 'destination-over' : compositeOp);
                         this.ctx.restore();
                     }
-                    } // end opacity else
                 }
             }
             
