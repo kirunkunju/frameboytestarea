@@ -12752,17 +12752,19 @@
                     ctx.globalCompositeOperation = 'source-over';
                 };
                 
-                // Draw the mark on the target canvas
-                _drawMark(targetCtx, compositeOp);
+                // Draw the mark on the target canvas (skip if opacity buffer — frame stays clean until pen lift)
+                if (!this._opacityBufferActive) {
+                    _drawMark(targetCtx, compositeOp);
+                }
                 
-                // Opacity buffer: also draw to stroke buffer (for flatten on pen lift)
+                // Opacity buffer: draw to stroke buffer only
                 if (this._opacityBufferActive && this._strokeBuffer) {
                     this._ensureStrokeBufferSize(targetCanvas, frame);
                     _drawMark(this._strokeBuffer.getContext('2d'), 'source-over');
                 }
                 
-                // Erase Both: also erase from paint canvas
-                if (drawMode === 'eraseBoth' && frame._paintCanvas) {
+                // Erase Both: also erase from paint canvas (skip if opacity buffer)
+                if (drawMode === 'eraseBoth' && frame._paintCanvas && !this._opacityBufferActive) {
                     _drawMark(frame._paintCanvas.getContext('2d'), compositeOp);
                 }
                 
@@ -12820,13 +12822,15 @@
                         ctx.globalCompositeOperation = 'source-over';
                     };
                     
-                    _drawOvals(targetCtx, compositeOp);
-                    // Opacity buffer: also draw to buffer for flatten
+                    if (!this._opacityBufferActive) {
+                        _drawOvals(targetCtx, compositeOp);
+                    }
+                    // Opacity buffer: draw to buffer only
                     if (this._opacityBufferActive && this._strokeBuffer) {
                         this._ensureStrokeBufferSize(targetCanvas, frame);
                         _drawOvals(this._strokeBuffer.getContext('2d'), 'source-over');
                     }
-                    if (drawMode === 'eraseBoth' && frame._paintCanvas) {
+                    if (drawMode === 'eraseBoth' && frame._paintCanvas && !this._opacityBufferActive) {
                         _drawOvals(frame._paintCanvas.getContext('2d'), compositeOp);
                     }
                     
@@ -12875,13 +12879,15 @@
                         ctx.globalCompositeOperation = 'source-over';
                     };
                     
-                    _drawStroke(targetCtx, compositeOp);
-                    // Opacity buffer: also draw to buffer for flatten
+                    if (!this._opacityBufferActive) {
+                        _drawStroke(targetCtx, compositeOp);
+                    }
+                    // Opacity buffer: draw to buffer only
                     if (this._opacityBufferActive && this._strokeBuffer) {
                         this._ensureStrokeBufferSize(targetCanvas, frame);
                         _drawStroke(this._strokeBuffer.getContext('2d'), 'source-over');
                     }
-                    if (drawMode === 'eraseBoth' && frame._paintCanvas) {
+                    if (drawMode === 'eraseBoth' && frame._paintCanvas && !this._opacityBufferActive) {
                         _drawStroke(frame._paintCanvas.getContext('2d'), compositeOp);
                     }
                     
