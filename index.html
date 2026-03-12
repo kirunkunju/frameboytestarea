@@ -7598,11 +7598,29 @@
                 const layer = this.getCurrentLayer();
                 if (!layer.symbolInstances) layer.symbolInstances = [];
                 
+                const duration = Math.max(1, sym.layers[0] ? sym.layers[0].frames.length : 1);
+                const insertAt = this.currentFrameIndex;
+                
+                // Push existing frames forward to make room for the loop
+                // Insert blank spacer frames at the current position
+                const spacers = [];
+                for (let i = 0; i < duration; i++) {
+                    spacers.push(this.createEmptyFrame());
+                }
+                layer.frames.splice(insertAt, 0, ...spacers);
+                
+                // Shift any existing symbol instances on this layer that start at or after insertAt
+                for (const inst of layer.symbolInstances) {
+                    if (inst.startFrame >= insertAt) {
+                        inst.startFrame += duration;
+                    }
+                }
+                
                 const instance = this.createSymbolInstance(
                     sym.id,
-                    this.currentFrameIndex,
-                    Math.max(1, sym.layers[0] ? sym.layers[0].frames.length : 1),
-                    0, 0  // top-left of canvas (project-size loop fills the canvas)
+                    insertAt,
+                    duration,
+                    0, 0
                 );
                 layer.symbolInstances.push(instance);
                 
@@ -7807,7 +7825,7 @@
                         let selTargetLayer = layer;
                         const origSelFrameIdx = this.currentFrameIndex;
                         
-                        const duration = Math.max(1, layer.frames.length - this.currentFrameIndex);
+                        const duration = 1; // Single frame selection → single frame loop
                         const instance = this.createSymbolInstance(sym.id, this.currentFrameIndex, duration, instX, instY);
                         selTargetLayer.symbolInstances.push(instance);
                         
@@ -7990,53 +8008,29 @@
                 // Create an instance on the layer if replacing
                 if (replaceOriginal) {
                     const startFrame = Math.min(...sourceFrameIndices);
-                    const duration = Math.max(sourceFrameIndices.length, layer.frames.length);
+                    const numSourceFrames = sourceFrameIndices.length;
+                    const duration = numSourceFrames;
                     
                     // Position: where the content was in world space
                     const instX = sizeMode === 'fit' ? minX : 0;
                     const instY = sizeMode === 'fit' ? minY : 0;
                     
-                    // Check if other frames have pixel content NOT being converted
-                    const sourceSet = new Set(sourceFrameIndices);
-                    let hasRemainingContent = false;
-                    for (let fi = 0; fi < layer.frames.length; fi++) {
-                        if (sourceSet.has(fi)) continue;
-                        const f = layer.frames[fi];
-                        if (!f) continue;
-                        // Check ink
-                        const fd = f.getContext('2d').getImageData(0, 0, f.width, f.height).data;
-                        for (let i = 3; i < fd.length; i += 4) {
-                            if (fd[i] > 0) { hasRemainingContent = true; break; }
-                        }
-                        // Check paint
-                        if (!hasRemainingContent && f._paintCanvas) {
-                            const pd = f._paintCanvas.getContext('2d').getImageData(0, 0, f._paintCanvas.width, f._paintCanvas.height).data;
-                            for (let i = 3; i < pd.length; i += 4) {
-                                if (pd[i] > 0) { hasRemainingContent = true; break; }
-                            }
-                        }
-                        if (hasRemainingContent) break;
-                    }
-                    // Also check if layer already has other symbol instances
-                    if (!hasRemainingContent && layer.symbolInstances && layer.symbolInstances.length > 0) {
-                        hasRemainingContent = true;
-                    }
-                    
-                    // Place instance on the same layer at the source frame position
+                    // Place instance on the same layer
                     let targetLayer = layer;
+                    if (!targetLayer.symbolInstances) targetLayer.symbolInstances = [];
                     const instance = this.createSymbolInstance(sym.id, startFrame, duration, instX, instY);
                     targetLayer.symbolInstances.push(instance);
                     
-                    // Clear source frames on original layer (pixels now in the symbol)
-                    if (includeMode === 'current') {
-                        layer.frames[this.currentFrameIndex] = this.createEmptyFrame();
-                        this._dirtyThumb(layer.frames[this.currentFrameIndex]);
-                    } else {
-                        for (const fi of sourceFrameIndices) {
-                            layer.frames[fi] = this.createEmptyFrame();
-                            this._dirtyThumb(layer.frames[fi]);
-                        }
+                    // Replace source frames with blank spacers (loop content lives in symbol now)
+                    // The spacers keep the timeline positions aligned with the loop clip
+                    const sourceSet = new Set(sourceFrameIndices);
+                    for (const fi of sourceFrameIndices) {
+                        layer.frames[fi] = this.createEmptyFrame();
+                        this._dirtyThumb(layer.frames[fi]);
                     }
+                    
+                    // Shift any other symbol instances that start at or after the end of this loop
+                    // (they should stay where they are relative to non-converted frames)
                 }
                 
                 // Update UI
@@ -18320,6 +18314,9 @@
             copyFrame(frameIndex) {
                 const layer = this.getCurrentLayer();
                 
+                // Record which context frames were copied from
+                this._copiedFrameContextDepth = this.contextStack.length;
+                
                 // Multi-frame copy if frames are selected
                 if (this.selectedFrames.size > 1) {
                     const sortedIndices = [...this.selectedFrames].sort((a, b) => a - b);
@@ -18451,6 +18448,47 @@
                 const layer = this.getCurrentLayer();
                 const idx = (afterIndex !== undefined) ? afterIndex : this.currentFrameIndex;
                 
+                // Compute origin offset if pasting across context levels
+                // (e.g., frames copied from main timeline, pasted into a loop)
+                let offsetX = 0, offsetY = 0;
+                const copyDepth = this._copiedFrameContextDepth || 1;
+                const pasteDepth = this.contextStack.length;
+                
+                if (pasteDepth > copyDepth) {
+                    // We're deeper — accumulate instance positions from copy depth to paste depth
+                    for (let d = copyDepth; d < pasteDepth; d++) {
+                        const ctx = this.contextStack[d];
+                        if (ctx && ctx.instanceId && ctx.layers) {
+                            // Find the instance in the parent layers
+                            for (const pl of ctx.layers) {
+                                if (!pl.symbolInstances) continue;
+                                const inst = pl.symbolInstances.find(i => i.id === ctx.instanceId);
+                                if (inst) {
+                                    offsetX += inst.x;
+                                    offsetY += inst.y;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                } else if (pasteDepth < copyDepth) {
+                    // We're shallower — reverse: add instance positions
+                    for (let d = pasteDepth; d < copyDepth; d++) {
+                        const ctx = this.contextStack[d];
+                        if (ctx && ctx.instanceId && ctx.layers) {
+                            for (const pl of ctx.layers) {
+                                if (!pl.symbolInstances) continue;
+                                const inst = pl.symbolInstances.find(i => i.id === ctx.instanceId);
+                                if (inst) {
+                                    offsetX -= inst.x;
+                                    offsetY -= inst.y;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                
                 const framesToPaste = (this.copiedFrames.length > 1) ? this.copiedFrames : [this.copiedFrame];
                 
                 // Preserve hold frame relationships: if copied frames share a canvas,
@@ -18463,9 +18501,10 @@
                     const nf = document.createElement('canvas');
                     nf.width = src.width;
                     nf.height = src.height;
-                    nf._originX = src._originX || 0;
-                    nf._originY = src._originY || 0;
+                    nf._originX = (src._originX || 0) - offsetX;
+                    nf._originY = (src._originY || 0) - offsetY;
                     nf.getContext('2d').drawImage(src, 0, 0);
+                    this._copyPaintCanvas(src, nf);
                     srcToPasted.set(src, nf);
                     return nf;
                 });
@@ -19220,9 +19259,12 @@
                 // Mask: zero alpha outside expanded region
                 const gradImgData = fillLayerCtx.getImageData(0, 0, width, height);
                 const gd = gradImgData.data;
+                const gradOp = this.brushOpacity;
                 for (let i = 0; i < width * height; i++) {
                     if (!expanded[i]) {
                         gd[i * 4 + 3] = 0;
+                    } else if (gradOp < 1) {
+                        gd[i * 4 + 3] = Math.round(gd[i * 4 + 3] * gradOp);
                     }
                 }
                 fillLayerCtx.putImageData(gradImgData, 0, 0);
@@ -20072,7 +20114,7 @@
                         fd[pos]     = fillColor.r;
                         fd[pos + 1] = fillColor.g;
                         fd[pos + 2] = fillColor.b;
-                        fd[pos + 3] = 255;
+                        fd[pos + 3] = Math.round(255 * this.brushOpacity);
                     }
                 }
                 fillLayerCtx.putImageData(fillImgData, 0, 0);
@@ -20189,14 +20231,14 @@
                 
                 if (filledCount === 0) return;
                 
-                // Recolor: replace RGB of matched pixels, preserve original alpha
-                // This keeps anti-aliased edges perfectly smooth
+                // Recolor: blend new color with existing at brush opacity, preserve original alpha
+                const inkOp = this.brushOpacity;
                 for (let i = 0; i < width * height; i++) {
                     if (!visited[i]) continue;
                     const pos = i * 4;
-                    data[pos]     = newColor.r;
-                    data[pos + 1] = newColor.g;
-                    data[pos + 2] = newColor.b;
+                    data[pos]     = Math.round(data[pos] * (1 - inkOp) + newColor.r * inkOp);
+                    data[pos + 1] = Math.round(data[pos + 1] * (1 - inkOp) + newColor.g * inkOp);
+                    data[pos + 2] = Math.round(data[pos + 2] * (1 - inkOp) + newColor.b * inkOp);
                     // data[pos + 3] stays untouched — preserves AA alpha
                 }
                 
