@@ -15263,12 +15263,33 @@
                     const oldFrameCount = ctx.symFrameCountAtEntry;
                     const newFrameCount = this.getSymbolFrameCount(sym);
                     if (newFrameCount !== oldFrameCount) {
+                        const growth = newFrameCount - oldFrameCount;
+                        
                         for (const layer of ctx.layers) {
                             if (!layer.symbolInstances) continue;
                             for (const inst of layer.symbolInstances) {
-                                if (inst.symbolId === ctx.symbolId) {
-                                    if (inst.duration < newFrameCount) {
-                                        inst.duration = newFrameCount;
+                                if (inst.symbolId === ctx.symbolId && inst.duration < newFrameCount) {
+                                    const oldDuration = inst.duration;
+                                    inst.duration = newFrameCount;
+                                    const durationGrowth = newFrameCount - oldDuration;
+                                    
+                                    if (durationGrowth > 0) {
+                                        // Insert blank spacers at the end of the old instance span
+                                        // to push existing frames forward
+                                        const insertAt = inst.startFrame + oldDuration;
+                                        const spacers = [];
+                                        for (let s = 0; s < durationGrowth; s++) {
+                                            spacers.push(this.createEmptyFrame());
+                                        }
+                                        layer.frames.splice(insertAt, 0, ...spacers);
+                                        
+                                        // Shift other instances on this layer that start at or after the insert point
+                                        for (const other of layer.symbolInstances) {
+                                            if (other === inst) continue;
+                                            if (other.startFrame >= insertAt) {
+                                                other.startFrame += durationGrowth;
+                                            }
+                                        }
                                     }
                                 }
                             }
