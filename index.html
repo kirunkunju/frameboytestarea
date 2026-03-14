@@ -269,10 +269,14 @@
             text-align: left;
             cursor: pointer;
             border-radius: 0;
+            font-family: inherit;
             font-size: 14px;
             box-shadow: none;
             touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            user-select: none;
+            box-sizing: border-box;
         }
         
         .dropdown-menu > .dropdown-item:first-child,
@@ -5013,14 +5017,14 @@
                         <button class="dropdown-item" id="gridToggleBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><line x1="1" y1="5.5" x2="15" y2="5.5"/><line x1="1" y1="10.5" x2="15" y2="10.5"/><line x1="5.5" y1="1" x2="5.5" y2="15"/><line x1="10.5" y1="1" x2="10.5" y2="15"/><line x1="3" y1="2" x2="8" y2="8"/><line x1="8" y1="8" x2="13" y2="2"/><line x1="3" y1="14" x2="8" y2="8"/><line x1="8" y1="8" x2="13" y2="14"/></svg> <span id="gridToggleLabel">Show Grid</span> <span class="shortcut">⇧G</span></button>
                         <div class="dropdown-divider"></div>
                         <button class="dropdown-item" id="saveProjectBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M3 1.5h8l3 3V13a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 012 13V3a1.5 1.5 0 011-1.5z"/><path d="M5 1.5v4h6v-4"/><path d="M5 14.5v-4h6v4"/></svg> Save Project (.fby) <span class="shortcut">⌘S</span></button>
-                        <button class="dropdown-item" id="loadProjectBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M2 4v9a1 1 0 001 1h10a1 1 0 001-1V6a1 1 0 00-1-1H8L6.5 3H3a1 1 0 00-1 1z"/></svg> Load Project (.fby) <span class="shortcut">⌘O</span></button>
+                        <label class="dropdown-item" id="loadProjectBtn" for="loadProjectInput"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M2 4v9a1 1 0 001 1h10a1 1 0 001-1V6a1 1 0 00-1-1H8L6.5 3H3a1 1 0 00-1 1z"/></svg> Load Project (.fby) <span class="shortcut">⌘O</span></label>
                         <div class="dropdown-divider"></div>
                         <div class="dropdown-submenu-container">
                             <button class="dropdown-item submenu-trigger"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M8 1v5m-2-2l2 2 2-2"/><rect x="2" y="6" width="12" height="8" rx="1"/></svg> Import <span class="submenu-arrow">▶</span></button>
                             <div class="dropdown-submenu">
                               <div class="dropdown-submenu-inner">
-                                <button class="dropdown-item" id="importSequenceBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="1" y="3" width="8" height="8" rx="1"/><rect x="4" y="1.5" width="8" height="8" rx="1"/><path d="M13 6v5M10.5 8.5h5"/></svg> Image Sequence…</button>
-                                <button class="dropdown-item" id="importAudioBtn"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M8 2v9"/><circle cx="5.5" cy="11" r="2.5" fill="none"/><path d="M1 7v2c0 1 .5 1.5 1.5 1.5M15 7v2c0 1-.5 1.5-1.5 1.5"/><path d="M3 5v4M5 3.5v7M13 5v4M11 3.5v7"/></svg> Audio…</button>
+                                <label class="dropdown-item" id="importSequenceBtn" for="importSequenceInput"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="1" y="3" width="8" height="8" rx="1"/><rect x="4" y="1.5" width="8" height="8" rx="1"/><path d="M13 6v5M10.5 8.5h5"/></svg> Image Sequence…</label>
+                                <label class="dropdown-item" id="importAudioBtn" for="importAudioInput"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M8 2v9"/><circle cx="5.5" cy="11" r="2.5" fill="none"/><path d="M1 7v2c0 1 .5 1.5 1.5 1.5M15 7v2c0 1-.5 1.5-1.5 1.5"/><path d="M3 5v4M5 3.5v7M13 5v4M11 3.5v7"/></svg> Audio…</label>
                               </div>
                             </div>
                         </div>
@@ -5532,9 +5536,9 @@
     </div>
 
     <!-- Frame context menu -->
-    <input type="file" id="loadProjectInput" accept=".fby" style="display: none;">
-    <input type="file" id="importSequenceInput" accept="image/png,image/jpeg,image/gif,image/webp,image/bmp,image/tiff" multiple style="display: none;">
-    <input type="file" id="importAudioInput" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac,.webm" style="display: none;">
+    <input type="file" id="loadProjectInput" accept=".fby" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0,0,0,0);pointer-events:none;">
+    <input type="file" id="importSequenceInput" accept="image/png,image/jpeg,image/gif,image/webp,image/bmp,image/tiff" multiple style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0,0,0,0);pointer-events:none;">
+    <input type="file" id="importAudioInput" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac,.webm" style="position:absolute;width:1px;height:1px;opacity:0;overflow:hidden;clip:rect(0,0,0,0);pointer-events:none;">
     <div class="frame-context-menu" id="frameContextMenu">
         <button class="frame-context-menu-item" id="ctxCopyFrame"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="5" y="1.5" width="8" height="10" rx="1"/><path d="M2 4v8a1 1 0 001 1h6"/></svg> Copy Frame<span class="shortcut">Ctrl+C</span></button>
         <button class="frame-context-menu-item" id="ctxCutFrame"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><circle cx="5" cy="12" r="2.5"/><circle cx="11" cy="12" r="2.5"/><path d="M7.2 10.5L12 2"/><path d="M8.8 10.5L4 2"/></svg> Cut Frame<span class="shortcut">Ctrl+X</span></button>
@@ -12248,61 +12252,30 @@
                     fileMenuDropdown.classList.remove('show');
                     this.saveProject();
                 });
-                // Helper: wire a button to trigger a file input, with Apple Pencil support.
-                //
-                // KEY INSIGHT: iOS Safari only treats `click` and `touchend` as valid
-                // "user activation" events for opening file pickers (input.click()).
-                // `pointerup` does NOT count — Safari silently blocks the file dialog.
-                //
-                // Apple Pencil on iPad fires touch events (touchType==='stylus') but
-                // does NOT reliably fire `click` on buttons. So we must use `touchend`
-                // as the Apple Pencil path to trigger file inputs.
-                //
-                // Event flow for Apple Pencil tap on a button:
-                //   touchstart (touchType='stylus') → touchend → pointerdown → pointerup → (click MISSING)
-                //
-                // We guard against double-firing with a timestamp flag.
-                const wireFileButton = (btnId, inputId) => {
-                    const btn = document.getElementById(btnId);
-                    const input = document.getElementById(inputId);
-                    let _lastTriggered = 0;
-                    const trigger = () => {
-                        const now = Date.now();
-                        if (now - _lastTriggered < 500) return; // debounce
-                        _lastTriggered = now;
-                        input.click();
-                        requestAnimationFrame(() => {
-                            fileMenuDropdown.classList.remove('show');
-                            document.querySelectorAll('.dropdown-submenu-container').forEach(c => c.classList.remove('touch-open'));
-                        });
-                    };
-                    // Standard click — works for mouse, trackpad, and finger taps
-                    btn.addEventListener('click', trigger);
-                    // Apple Pencil: touchend IS a valid user activation for file inputs
-                    btn.addEventListener('touchend', (e) => {
-                        // Only intercept stylus (Apple Pencil) touches
-                        const touch = e.changedTouches && e.changedTouches[0];
-                        if (!touch || touch.touchType !== 'stylus') return;
-                        e.preventDefault(); // prevent ghost click
-                        trigger();
-                    });
-                };
-                wireFileButton('loadProjectBtn', 'loadProjectInput');
-                wireFileButton('importSequenceBtn', 'importSequenceInput');
-                wireFileButton('importAudioBtn', 'importAudioInput');
+                // File import buttons are now <label for="inputId"> elements.
+                // The browser natively opens the file picker when the label is
+                // tapped — no input.click() needed. This works universally with
+                // mouse, trackpad, finger, AND Apple Pencil on iPad.
+                // We just need to handle the file once selected and close the menu.
                 document.getElementById('loadProjectInput').addEventListener('change', (e) => {
+                    fileMenuDropdown.classList.remove('show');
+                    document.querySelectorAll('.dropdown-submenu-container').forEach(c => c.classList.remove('touch-open'));
                     if (e.target.files.length > 0) {
                         this.loadProject(e.target.files[0]);
                         e.target.value = ''; // Reset so same file can be loaded again
                     }
                 });
                 document.getElementById('importSequenceInput').addEventListener('change', (e) => {
+                    fileMenuDropdown.classList.remove('show');
+                    document.querySelectorAll('.dropdown-submenu-container').forEach(c => c.classList.remove('touch-open'));
                     if (e.target.files.length > 0) {
                         this.importImageSequence(Array.from(e.target.files));
                         e.target.value = '';
                     }
                 });
                 document.getElementById('importAudioInput').addEventListener('change', (e) => {
+                    fileMenuDropdown.classList.remove('show');
+                    document.querySelectorAll('.dropdown-submenu-container').forEach(c => c.classList.remove('touch-open'));
                     if (e.target.files.length > 0) {
                         this.importAudio(e.target.files[0]);
                         e.target.value = '';
