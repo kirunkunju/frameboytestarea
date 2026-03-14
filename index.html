@@ -12249,28 +12249,42 @@
                     this.saveProject();
                 });
                 // Helper: wire a button to trigger a file input, with Apple Pencil support.
-                // Apple Pencil doesn't fire 'click' on iOS, so we also listen for 'pointerup'
-                // from pen input. The file input must be triggered synchronously within the
-                // user gesture or iOS Safari will block it.
-                const wireFileButton = (btnId, inputId, closeFn) => {
+                //
+                // KEY INSIGHT: iOS Safari only treats `click` and `touchend` as valid
+                // "user activation" events for opening file pickers (input.click()).
+                // `pointerup` does NOT count — Safari silently blocks the file dialog.
+                //
+                // Apple Pencil on iPad fires touch events (touchType==='stylus') but
+                // does NOT reliably fire `click` on buttons. So we must use `touchend`
+                // as the Apple Pencil path to trigger file inputs.
+                //
+                // Event flow for Apple Pencil tap on a button:
+                //   touchstart (touchType='stylus') → touchend → pointerdown → pointerup → (click MISSING)
+                //
+                // We guard against double-firing with a timestamp flag.
+                const wireFileButton = (btnId, inputId) => {
                     const btn = document.getElementById(btnId);
                     const input = document.getElementById(inputId);
+                    let _lastTriggered = 0;
                     const trigger = () => {
+                        const now = Date.now();
+                        if (now - _lastTriggered < 500) return; // debounce
+                        _lastTriggered = now;
                         input.click();
                         requestAnimationFrame(() => {
                             fileMenuDropdown.classList.remove('show');
                             document.querySelectorAll('.dropdown-submenu-container').forEach(c => c.classList.remove('touch-open'));
-                            if (closeFn) closeFn();
                         });
                     };
+                    // Standard click — works for mouse, trackpad, and finger taps
                     btn.addEventListener('click', trigger);
-                    // Apple Pencil: pointerup with pointerType==='pen' fires even when click doesn't
-                    btn.addEventListener('pointerup', (e) => {
-                        if (e.pointerType === 'pen') {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            trigger();
-                        }
+                    // Apple Pencil: touchend IS a valid user activation for file inputs
+                    btn.addEventListener('touchend', (e) => {
+                        // Only intercept stylus (Apple Pencil) touches
+                        const touch = e.changedTouches && e.changedTouches[0];
+                        if (!touch || touch.touchType !== 'stylus') return;
+                        e.preventDefault(); // prevent ghost click
+                        trigger();
                     });
                 };
                 wireFileButton('loadProjectBtn', 'loadProjectInput');
