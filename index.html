@@ -94,36 +94,29 @@
             box-sizing: border-box;
         }
 
-        body {
+        html, body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: #2b2d31;
+            background: #1a1b1e;
             color: #d0d0d0;
             overflow: hidden;
             width: 100%;
             height: 100%;
             height: 100dvh;
-        }
-
-        html {
-            width: 100%;
-            height: 100%;
-            height: 100dvh;
+            /* Extend background behind safe area on notched/home-bar devices */
+            padding: 0;
+            margin: 0;
         }
 
         .app-container {
             display: flex;
             flex-direction: column;
             width: 100%;
-            height: 100vh;
+            height: 100%;
             height: 100dvh;
             height: var(--app-height, 100dvh);
             min-height: 400px;
-            max-height: 100vh;
-            max-height: 100dvh;
-            max-height: var(--app-height, 100dvh);
             overflow: hidden;
             -webkit-touch-callout: none;
-            padding-bottom: env(safe-area-inset-bottom, 0px);
         }
 
 
@@ -8711,10 +8704,13 @@
                     this.render();
                 });
                 
-                // Mobile Safari viewport fix: track actual visible height
-                // Safari's 100vh includes the area behind the URL bar
+                // Mobile viewport fix: track actual visible height
+                // Use the larger of visualViewport and innerHeight to avoid
+                // a short container that leaves dead space on iPad
                 const updateVH = () => {
-                    const vh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+                    const vvh = window.visualViewport ? window.visualViewport.height : 0;
+                    const ih = window.innerHeight;
+                    const vh = Math.max(vvh, ih);
                     document.documentElement.style.setProperty('--app-height', vh + 'px');
                 };
                 updateVH();
