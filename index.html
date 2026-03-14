@@ -7188,6 +7188,57 @@
 
                 const ctx = this.contextStack.pop();
 
+                // ── Sync symbol dimensions back from projectWidth/Height ──
+                // If the user resized the canvas while inside the symbol,
+                // projectWidth/Height changed but sym.width/height was never updated.
+                // We must sync them before restoring the parent state, otherwise
+                // the instance position (based on sym.width/2, sym.height/2 pivot)
+                // will be wrong on the parent canvas.
+                {
+                    const editedSym = this.getSymbol(ctx.symbolId);
+                    if (editedSym) {
+                        const oldW = editedSym.width;
+                        const oldH = editedSym.height;
+                        const newW = this.app.projectWidth;
+                        const newH = this.app.projectHeight;
+                        if (oldW !== newW || oldH !== newH) {
+                            editedSym.width = newW;
+                            editedSym.height = newH;
+                            // Adjust all instances of this symbol on the parent canvas
+                            // so they stay visually in the same position.
+                            // Instance (x,y) is the top-left corner; the pivot is at
+                            // (x + sym.width/2, y + sym.height/2). To keep the pivot
+                            // in the same place after resize, shift x,y by half the delta.
+                            const dx = (oldW - newW) / 2;
+                            const dy = (oldH - newH) / 2;
+                            if (dx !== 0 || dy !== 0) {
+                                for (const layer of ctx.layers) {
+                                    if (!layer.symbolInstances) continue;
+                                    for (const inst of layer.symbolInstances) {
+                                        if (inst.symbolId === ctx.symbolId) {
+                                            inst.x += dx;
+                                            inst.y += dy;
+                                        }
+                                    }
+                                }
+                                // Also adjust instances inside other symbols
+                                for (const symId in this.symbolLibrary) {
+                                    const otherSym = this.symbolLibrary[symId];
+                                    for (const layer of otherSym.layers) {
+                                        if (!layer.symbolInstances) continue;
+                                        for (const inst of layer.symbolInstances) {
+                                            if (inst.symbolId === ctx.symbolId) {
+                                                inst.x += dx;
+                                                inst.y += dy;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
                 // ── Auto-update instance durations when symbol grew ──
                 // Like Animate's graphic symbols: instances that were "one full cycle"
                 // should stay "one full cycle" when the symbol gains frames.
