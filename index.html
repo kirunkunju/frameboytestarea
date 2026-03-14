@@ -7887,7 +7887,7 @@
                     const off = a.frameToDisplayOffset(frame);
                     a.ctx.save();
                     a.ctx.translate(off.x, off.y);
-                    _drawMark(a.ctx, drawMode === 'fillPaint' ? 'destination-over' : compositeOp);
+                    _drawMark(a.ctx, compositeOp);
                     a.ctx.restore();
                 }
             }
@@ -7963,9 +7963,9 @@
                             _origDrawOvals(a.ctx, compositeOp);
                         } else if (a._opacityBufferActive && a._opacityPreStroke) {
                             a.ctx.globalAlpha = a._opacityPreStroke.opacity;
-                            _drawOvals(a.ctx, drawMode === 'fillPaint' ? 'destination-over' : compositeOp);
+                            _drawOvals(a.ctx, compositeOp);
                         } else {
-                            _drawOvals(a.ctx, drawMode === 'fillPaint' ? 'destination-over' : compositeOp);
+                            _drawOvals(a.ctx, compositeOp);
                         }
                         a.ctx.restore();
                     }
@@ -8013,9 +8013,9 @@
                             a.ctx.globalCompositeOperation = 'source-over';
                         } else if (a._opacityBufferActive && a._opacityPreStroke) {
                             a.ctx.globalAlpha = a._opacityPreStroke.opacity;
-                            _drawStroke(a.ctx, drawMode === 'fillPaint' ? 'destination-over' : compositeOp);
+                            _drawStroke(a.ctx, compositeOp);
                         } else {
-                            _drawStroke(a.ctx, drawMode === 'fillPaint' ? 'destination-over' : compositeOp);
+                            _drawStroke(a.ctx, compositeOp);
                         }
                         a.ctx.restore();
                     }
