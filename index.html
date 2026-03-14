@@ -901,7 +901,7 @@
             background: #26282c;
             position: relative;
             overflow: auto;
-            min-height: 200px;
+            min-height: 80px;
             -webkit-user-select: none;
             -moz-user-select: none;
             -ms-user-select: none;
@@ -1642,8 +1642,7 @@
         }
         
         .timeline {
-            min-height: 180px;
-            max-height: 280px;
+            min-height: 60px;
             height: 25vh;
             background: #2b2d31;
             border-top: none;
@@ -8743,7 +8742,7 @@
                     if (!isResizing) return;
                     
                     const deltaX = e.clientX - startX;
-                    const newWidth = Math.max(160, Math.min(400, startWidth + deltaX));
+                    const newWidth = Math.max(80, Math.min(600, startWidth + deltaX));
                     layersSection.style.width = newWidth + 'px';
                     // Audio label width is now handled by the main timeline layout
                 };
@@ -8776,7 +8775,7 @@
                 handle.addEventListener('pointermove', (e) => {
                     if (!handle.hasPointerCapture(e.pointerId)) return;
                     const delta = startY - e.clientY; // drag up = bigger
-                    const newH = Math.max(100, Math.min(window.innerHeight * 0.7, startH + delta));
+                    const newH = Math.max(60, Math.min(window.innerHeight * 0.85, startH + delta));
                     timeline.style.height = newH + 'px';
                     timeline.style.minHeight = newH + 'px';
                     timeline.style.maxHeight = newH + 'px';
