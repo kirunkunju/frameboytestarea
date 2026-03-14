@@ -5778,17 +5778,24 @@
                     const layer = this.app.layers.find(l => l.id === entry.layerId);
                     if (layer && layer.frames[entry.frameIndex]) {
                         const frame = layer.frames[entry.frameIndex];
+                        const frameData = {
+                            width: frame.width,
+                            height: frame.height,
+                            originX: frame._originX || 0,
+                            originY: frame._originY || 0,
+                            imageData: frame.getContext('2d').getImageData(0, 0, frame.width, frame.height)
+                        };
+                        // Capture paint sublayer if present (needed for fill/gradient redo)
+                        if (frame._paintCanvas) {
+                            frameData.paintData = frame._paintCanvas.getContext('2d').getImageData(0, 0, frame._paintCanvas.width, frame._paintCanvas.height);
+                            frameData.paintWidth = frame._paintCanvas.width;
+                            frameData.paintHeight = frame._paintCanvas.height;
+                        }
                         return {
                             type: 'frame',
                             layerId: entry.layerId,
                             frameIndex: entry.frameIndex,
-                            frameData: {
-                                width: frame.width,
-                                height: frame.height,
-                                originX: frame._originX || 0,
-                                originY: frame._originY || 0,
-                                imageData: frame.getContext('2d').getImageData(0, 0, frame.width, frame.height)
-                            }
+                            frameData: frameData
                         };
                     }
                     // Layer/frame gone — fall back to full
