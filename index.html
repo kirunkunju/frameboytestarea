@@ -12248,41 +12248,45 @@
                     fileMenuDropdown.classList.remove('show');
                     this.saveProject();
                 });
-                document.getElementById('loadProjectBtn').addEventListener('click', () => {
-                    document.getElementById('loadProjectInput').click();
-                    requestAnimationFrame(() => {
-                        fileMenuDropdown.classList.remove('show');
+                // Helper: wire a button to trigger a file input, with Apple Pencil support.
+                // Apple Pencil doesn't fire 'click' on iOS, so we also listen for 'pointerup'
+                // from pen input. The file input must be triggered synchronously within the
+                // user gesture or iOS Safari will block it.
+                const wireFileButton = (btnId, inputId, closeFn) => {
+                    const btn = document.getElementById(btnId);
+                    const input = document.getElementById(inputId);
+                    const trigger = () => {
+                        input.click();
+                        requestAnimationFrame(() => {
+                            fileMenuDropdown.classList.remove('show');
+                            document.querySelectorAll('.dropdown-submenu-container').forEach(c => c.classList.remove('touch-open'));
+                            if (closeFn) closeFn();
+                        });
+                    };
+                    btn.addEventListener('click', trigger);
+                    // Apple Pencil: pointerup with pointerType==='pen' fires even when click doesn't
+                    btn.addEventListener('pointerup', (e) => {
+                        if (e.pointerType === 'pen') {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            trigger();
+                        }
                     });
-                });
+                };
+                wireFileButton('loadProjectBtn', 'loadProjectInput');
+                wireFileButton('importSequenceBtn', 'importSequenceInput');
+                wireFileButton('importAudioBtn', 'importAudioInput');
                 document.getElementById('loadProjectInput').addEventListener('change', (e) => {
                     if (e.target.files.length > 0) {
                         this.loadProject(e.target.files[0]);
                         e.target.value = ''; // Reset so same file can be loaded again
                     }
                 });
-                document.getElementById('importSequenceBtn').addEventListener('click', () => {
-                    document.getElementById('importSequenceInput').click();
-                    requestAnimationFrame(() => {
-                        fileMenuDropdown.classList.remove('show');
-                        document.querySelectorAll('.dropdown-submenu-container').forEach(c => c.classList.remove('touch-open'));
-                    });
-                });
                 document.getElementById('importSequenceInput').addEventListener('change', (e) => {
                     if (e.target.files.length > 0) {
                         this.importImageSequence(Array.from(e.target.files));
                         e.target.value = '';
                     }
-                });
-                
-                // Audio import — trigger file input BEFORE closing dropdown
-                // so iOS Safari keeps the user-gesture chain intact
-                document.getElementById('importAudioBtn').addEventListener('click', () => {
-                    document.getElementById('importAudioInput').click();
-                    // Close dropdown after triggering the file picker
-                    requestAnimationFrame(() => {
-                        fileMenuDropdown.classList.remove('show');
-                        document.querySelectorAll('.dropdown-submenu-container').forEach(c => c.classList.remove('touch-open'));
-                    });
                 });
                 document.getElementById('importAudioInput').addEventListener('change', (e) => {
                     if (e.target.files.length > 0) {
