@@ -10517,43 +10517,6 @@
                 setupCanvasEvents(this.canvas);
                 setupCanvasEvents(this.selectionCanvas);
 
-                // ── Apple Pencil click fix ──
-                // Apple Pencil (pointerType==='pen') often doesn't fire 'click'
-                // events on UI elements like buttons and dropdown items on iPad.
-                // Synthesize a click from pointerup for pen taps on interactive elements.
-                {
-                    let _penDownTarget = null;
-                    document.addEventListener('pointerdown', (e) => {
-                        if (e.pointerType === 'pen') _penDownTarget = e.target;
-                    }, true);
-                    document.addEventListener('pointerup', (e) => {
-                        if (e.pointerType !== 'pen' || !_penDownTarget) return;
-                        const t = e.target;
-                        const downT = _penDownTarget;
-                        _penDownTarget = null;
-                        // Only synthesize click if up target matches down target (or is a child)
-                        if (!t || (!t.closest('button, .dropdown-item, a, label, input, [role="button"]') &&
-                                    !downT.closest('button, .dropdown-item, a, label, input, [role="button"]'))) return;
-                        // Skip canvas elements (handled by touch path)
-                        if (t === this.canvas || t === this.selectionCanvas) return;
-                        if (downT === this.canvas || downT === this.selectionCanvas) return;
-                        const clickTarget = t.closest('button, .dropdown-item, a, label, input, [role="button"]') ||
-                                           downT.closest('button, .dropdown-item, a, label, input, [role="button"]');
-                        if (clickTarget) {
-                            // Small delay to let native click fire first; if it doesn't, we synthesize
-                            const alreadyClicked = { v: false };
-                            const onNativeClick = () => { alreadyClicked.v = true; };
-                            clickTarget.addEventListener('click', onNativeClick, { once: true, capture: true });
-                            setTimeout(() => {
-                                clickTarget.removeEventListener('click', onNativeClick, { capture: true });
-                                if (!alreadyClicked.v) {
-                                    clickTarget.click();
-                                }
-                            }, 80);
-                        }
-                    }, true);
-                }
-
                 // Dismiss active free transform when clicking outside the canvas
                 // (e.g. timeline, layers panel, etc. — but not toolbar buttons/dropdowns)
                 document.addEventListener('pointerdown', (e) => {
