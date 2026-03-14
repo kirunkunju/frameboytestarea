@@ -5532,7 +5532,7 @@
     <!-- Frame context menu -->
     <input type="file" id="loadProjectInput" accept=".fby" style="display: none;">
     <input type="file" id="importSequenceInput" accept="image/png,image/jpeg,image/gif,image/webp,image/bmp,image/tiff" multiple style="display: none;">
-    <input type="file" id="importAudioInput" accept="audio/*" style="display: none;">
+    <input type="file" id="importAudioInput" accept="audio/*,.mp3,.wav,.ogg,.m4a,.aac,.flac,.webm" style="display: none;">
     <div class="frame-context-menu" id="frameContextMenu">
         <button class="frame-context-menu-item" id="ctxCopyFrame"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><rect x="5" y="1.5" width="8" height="10" rx="1"/><path d="M2 4v8a1 1 0 001 1h6"/></svg> Copy Frame<span class="shortcut">Ctrl+C</span></button>
         <button class="frame-context-menu-item" id="ctxCutFrame"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><circle cx="5" cy="12" r="2.5"/><circle cx="11" cy="12" r="2.5"/><path d="M7.2 10.5L12 2"/><path d="M8.8 10.5L4 2"/></svg> Cut Frame<span class="shortcut">Ctrl+X</span></button>
@@ -12210,8 +12210,10 @@
                     this.saveProject();
                 });
                 document.getElementById('loadProjectBtn').addEventListener('click', () => {
-                    fileMenuDropdown.classList.remove('show');
                     document.getElementById('loadProjectInput').click();
+                    requestAnimationFrame(() => {
+                        fileMenuDropdown.classList.remove('show');
+                    });
                 });
                 document.getElementById('loadProjectInput').addEventListener('change', (e) => {
                     if (e.target.files.length > 0) {
@@ -12220,9 +12222,11 @@
                     }
                 });
                 document.getElementById('importSequenceBtn').addEventListener('click', () => {
-                    fileMenuDropdown.classList.remove('show');
-                    document.querySelectorAll('.dropdown-submenu-container').forEach(c => c.classList.remove('touch-open'));
                     document.getElementById('importSequenceInput').click();
+                    requestAnimationFrame(() => {
+                        fileMenuDropdown.classList.remove('show');
+                        document.querySelectorAll('.dropdown-submenu-container').forEach(c => c.classList.remove('touch-open'));
+                    });
                 });
                 document.getElementById('importSequenceInput').addEventListener('change', (e) => {
                     if (e.target.files.length > 0) {
@@ -12231,11 +12235,15 @@
                     }
                 });
                 
-                // Audio import
+                // Audio import — trigger file input BEFORE closing dropdown
+                // so iOS Safari keeps the user-gesture chain intact
                 document.getElementById('importAudioBtn').addEventListener('click', () => {
-                    fileMenuDropdown.classList.remove('show');
-                    document.querySelectorAll('.dropdown-submenu-container').forEach(c => c.classList.remove('touch-open'));
                     document.getElementById('importAudioInput').click();
+                    // Close dropdown after triggering the file picker
+                    requestAnimationFrame(() => {
+                        fileMenuDropdown.classList.remove('show');
+                        document.querySelectorAll('.dropdown-submenu-container').forEach(c => c.classList.remove('touch-open'));
+                    });
                 });
                 document.getElementById('importAudioInput').addEventListener('change', (e) => {
                     if (e.target.files.length > 0) {
